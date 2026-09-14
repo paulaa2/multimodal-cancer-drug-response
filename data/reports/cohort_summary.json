@@ -1,0 +1,60 @@
+{
+  "created_at_utc": "2026-09-14T16:56:30.421882+00:00",
+  "inputs": {
+    "gdsc_response": "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
+    "depmap_metadata": "data/raw/Model.csv",
+    "depmap_expression": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+    "drug_structures": "data/raw/drug_structures.csv"
+  },
+  "outputs": {
+    "cohort_pairs": "data/processed/cohort_pairs.csv",
+    "summary": "data/reports/cohort_summary.json"
+  },
+  "filters": {
+    "require_expression": true,
+    "require_smiles": true,
+    "response_target": "LN_IC50"
+  },
+  "counts": {
+    "gdsc_response_rows": 242036,
+    "depmap_expression_models": 1719,
+    "model_ready_rows": 149364,
+    "model_ready_cell_lines": 717,
+    "model_ready_sanger_cell_lines": 717,
+    "model_ready_drugs": 238,
+    "rows_missing_expression": 60294,
+    "rows_missing_smiles": 41794,
+    "rows_missing_response": 0
+  },
+  "columns": [
+    "pair_id",
+    "gdsc_dataset",
+    "gdsc_cell_line_name",
+    "sanger_model_id",
+    "gdsc_cancer_type",
+    "drug_id",
+    "gdsc_drug_name",
+    "putative_target",
+    "gdsc_pathway_name",
+    "ln_ic50",
+    "auc",
+    "depmap_id",
+    "depmap_cell_line_name",
+    "depmap_stripped_cell_line_name",
+    "oncotree_lineage",
+    "oncotree_primary_disease",
+    "oncotree_subtype",
+    "cosmic_id",
+    "has_expression",
+    "structure_drug_name",
+    "canonical_smiles",
+    "isomeric_smiles",
+    "inchi_key",
+    "pubchem_cid",
+    "mapping_status",
+    "structure_source",
+    "has_smiles",
+    "has_response",
+    "is_model_ready"
+  ]
+}

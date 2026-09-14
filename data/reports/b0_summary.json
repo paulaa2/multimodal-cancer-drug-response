@@ -1,0 +1,74 @@
+{
+  "created_at_utc": "2026-09-14T17:02:43.142890+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/baselines/b0_metrics.csv",
+  "target": "ln_ic50",
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_drug"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_model": "drug_mean",
+      "rmse": 1.4850831099803845,
+      "mae": 1.1221914921067975,
+      "pearson": 0.8525786165918203,
+      "spearman": 0.7968344417329621,
+      "r2": 0.7253522309403923
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_model": "drug_mean",
+      "rmse": 1.5025219145589268,
+      "mae": 1.1323416608939698,
+      "pearson": 0.8441980360202948,
+      "spearman": 0.7852111145756376,
+      "r2": 0.712572609989392
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_model": "cell_mean",
+      "rmse": 2.6525928608509037,
+      "mae": 1.934925274194298,
+      "pearson": 0.31107723480895677,
+      "spearman": 0.3451121414887336,
+      "r2": 0.031847892168167635
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_model": "cell_mean",
+      "rmse": 3.1912897847723385,
+      "mae": 2.4749380970050376,
+      "pearson": 0.294370147192396,
+      "spearman": 0.29448829930800063,
+      "r2": 0.016511765983727167
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_model": "drug_mean",
+      "rmse": 1.512782261588577,
+      "mae": 1.1474707174350096,
+      "pearson": 0.8459320912903516,
+      "spearman": 0.785926249284151,
+      "r2": 0.7155873197526943
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_model": "drug_mean",
+      "rmse": 1.4959246243109259,
+      "mae": 1.1284517508029674,
+      "pearson": 0.8464901482644694,
+      "spearman": 0.7908151277811473,
+      "r2": 0.7165089149481572
+    }
+  ]
+}

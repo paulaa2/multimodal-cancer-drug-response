@@ -1,0 +1,110 @@
+{
+  "created_at_utc": "2026-09-14T16:56:42.777793+00:00",
+  "input": "data/processed/cohort_pairs.csv",
+  "output_dir": "data/processed/splits",
+  "seed": 42,
+  "validation_size": 0.15,
+  "test_size": 0.15,
+  "splits": {
+    "random_pair": {
+      "path": "data/processed/splits/random_pair.csv",
+      "policy": {
+        "cell_overlap_allowed": true,
+        "drug_overlap_allowed": true
+      },
+      "summary": {
+        "by_split": {
+          "train": {
+            "rows": 104554,
+            "unique_cell_lines": 717,
+            "unique_drugs": 238,
+            "ln_ic50_mean": 2.747525119498058,
+            "ln_ic50_std": 2.823672613362797
+          },
+          "validation": {
+            "rows": 22405,
+            "unique_cell_lines": 716,
+            "unique_drugs": 238,
+            "ln_ic50_mean": 2.7203616542735998,
+            "ln_ic50_std": 2.8096336792075625
+          },
+          "test": {
+            "rows": 22405,
+            "unique_cell_lines": 715,
+            "unique_drugs": 238,
+            "ln_ic50_mean": 2.762920399285874,
+            "ln_ic50_std": 2.8366884348049903
+          }
+        }
+      }
+    },
+    "cold_cell": {
+      "path": "data/processed/splits/cold_cell.csv",
+      "policy": {
+        "cell_overlap_allowed": false,
+        "drug_overlap_allowed": true
+      },
+      "summary": {
+        "by_split": {
+          "train": {
+            "rows": 104294,
+            "unique_cell_lines": 501,
+            "unique_drugs": 238,
+            "ln_ic50_mean": 2.7650889987631118,
+            "ln_ic50_std": 2.825467436068127
+          },
+          "validation": {
+            "rows": 22538,
+            "unique_cell_lines": 108,
+            "unique_drugs": 238,
+            "ln_ic50_mean": 2.7451391618156,
+            "ln_ic50_std": 2.8026339222431935
+          },
+          "test": {
+            "rows": 22532,
+            "unique_cell_lines": 108,
+            "unique_drugs": 238,
+            "ln_ic50_mean": 2.6569118270903602,
+            "ln_ic50_std": 2.833820635947229
+          }
+        },
+        "cell_overlap_train_validation_count": 0,
+        "cell_overlap_train_test_count": 0
+      }
+    },
+    "cold_drug": {
+      "path": "data/processed/splits/cold_drug.csv",
+      "policy": {
+        "cell_overlap_allowed": true,
+        "drug_overlap_allowed": false
+      },
+      "summary": {
+        "by_split": {
+          "train": {
+            "rows": 104631,
+            "unique_cell_lines": 717,
+            "unique_drugs": 166,
+            "ln_ic50_mean": 2.7808870863893116,
+            "ln_ic50_std": 2.7075493769087178
+          },
+          "validation": {
+            "rows": 23245,
+            "unique_cell_lines": 717,
+            "unique_drugs": 36,
+            "ln_ic50_mean": 1.924398486943429,
+            "ln_ic50_std": 3.2180367514524915
+          },
+          "test": {
+            "rows": 21488,
+            "unique_cell_lines": 717,
+            "unique_drugs": 36,
+            "ln_ic50_mean": 3.46323697826694,
+            "ln_ic50_std": 2.6959318188045174
+          }
+        },
+        "drug_overlap_train_validation_count": 0,
+        "drug_overlap_train_test_count": 0
+      }
+    }
+  }
+}

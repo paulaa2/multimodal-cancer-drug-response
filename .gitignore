@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environments
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Raw and generated data
+data/raw/
+data/interim/
+data/processed/
+data/external/
+
+# Large/generated outputs
+results/*
+figures/*
+
+# Local machine files
+.DS_Store
+Thumbs.db
