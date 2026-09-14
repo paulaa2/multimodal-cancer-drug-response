@@ -18,50 +18,6 @@ from typing import Any
 import pandas as pd
 
 
-DEFAULT_AUDIT_CONFIG = {
-    "project": "multimodal-cancer-drug-response",
-    "sources": {
-        "gdsc_response": {
-            "path": "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
-            "description": "GDSC drug-response table. Primary target should become ln(IC50).",
-            "column_roles": {
-                "cell_line_id": ["COSMIC_ID", "cosmic_id", "SANGER_MODEL_ID", "model_id"],
-                "cell_line_name": ["CELL_LINE_NAME", "cell_line_name", "Cell line name"],
-                "drug_id": ["DRUG_ID", "drug_id", "drug_id_gdsc"],
-                "drug_name": ["DRUG_NAME", "drug_name", "Drug name"],
-                "response": ["LN_IC50", "ln_ic50", "IC50", "AUC"],
-            },
-        },
-        "depmap_metadata": {
-            "path": "data/raw/Model.csv",
-            "description": "DepMap / CCLE cell-line metadata with stable DepMap identifiers.",
-            "column_roles": {
-                "depmap_id": ["DepMap_ID", "depmap_id", "ModelID"],
-                "sanger_model_id": ["SangerModelID", "SANGER_MODEL_ID", "sanger_model_id"],
-                "cell_line_name": ["cell_line_name", "StrippedCellLineName", "ModelName"],
-                "primary_disease": ["primary_disease", "OncotreePrimaryDisease", "lineage"],
-            },
-        },
-        "depmap_expression": {
-            "path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
-            "description": "DepMap / CCLE gene-expression matrix. Rows should be cell lines.",
-            "column_roles": {
-                "depmap_id": ["DepMap_ID", "depmap_id", "ModelID"],
-            },
-        },
-        "drug_structures": {
-            "path": "data/raw/drug_structures.csv",
-            "description": "Drug structure table from ChEMBL, PubChem, or a curated GDSC mapping.",
-            "column_roles": {
-                "drug_id": ["DRUG_ID", "drug_id", "compound_id", "chembl_id", "pubchem_cid"],
-                "drug_name": ["DRUG_NAME", "drug_name", "compound_name", "pref_name"],
-                "smiles": ["smiles", "canonical_smiles", "SMILES", "CanonicalSMILES"],
-            },
-        },
-    },
-}
-
-
 @dataclass(frozen=True)
 class ColumnRoleAudit:
     """Detected source column for a semantic role."""
@@ -93,6 +49,19 @@ class TablePreview:
     n_rows: int
     n_columns: int
     columns: list[str]
+
+
+def load_audit_config(path: str | Path) -> dict[str, Any]:
+    """Load a JSON audit configuration.
+
+    JSON is used here so the very first audit can run with only the standard
+    library plus pandas. The rest of the project can still use YAML configs once
+    the environment is installed.
+    """
+
+    config_path = Path(path)
+    with config_path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 def read_table(path: Path) -> pd.DataFrame:
@@ -292,8 +261,6 @@ def write_cell_line_mapping_template(
     config: dict[str, Any],
     root: Path,
 ) -> None:
-    """Write a cell-line mapping template for manual review."""
-
     response_audit = audits.get("gdsc_response")
     metadata_audit = audits.get("depmap_metadata")
     output_path = root / "data/mappings/cell_line_mapping_template.csv"
@@ -364,8 +331,6 @@ def write_drug_mapping_template(
     config: dict[str, Any],
     root: Path,
 ) -> None:
-    """Write a drug mapping template for manual review."""
-
     response_audit = audits.get("gdsc_response")
     structure_audit = audits.get("drug_structures")
     output_path = root / "data/mappings/drug_mapping_template.csv"
@@ -433,7 +398,6 @@ def write_csv(
     rows: list[dict[str, str]],
     fieldnames: list[str],
 ) -> None:
-    """Write rows to CSV, preserving headers even when there are no rows."""
 
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -441,31 +405,11 @@ def write_csv(
         writer.writerows(rows)
 
 
-def make_audit_config(
-    *,
-    gdsc_response: str = "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
-    depmap_metadata: str = "data/raw/Model.csv",
-    depmap_expression: str = "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
-    drug_structures: str = "data/raw/drug_structures.csv",
-) -> dict[str, Any]:
-    """Create the audit configuration from explicit paths."""
-
-    config = json.loads(json.dumps(DEFAULT_AUDIT_CONFIG))
-    config["sources"]["gdsc_response"]["path"] = gdsc_response
-    config["sources"]["depmap_metadata"]["path"] = depmap_metadata
-    config["sources"]["depmap_expression"]["path"] = depmap_expression
-    config["sources"]["drug_structures"]["path"] = drug_structures
-    return config
-
-
-def run_audit(
-    root: str | Path = ".",
-    config: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Run the data audit and write report files."""
+def run_audit(config_path: str | Path, root: str | Path = ".") -> dict[str, Any]:
+    """Run the configured data audit and write report files."""
 
     root_path = Path(root).resolve()
-    config = config or make_audit_config()
+    config = load_audit_config(config_path)
 
     audits = {
         name: audit_source(name, source, root_path)
@@ -478,9 +422,9 @@ def run_audit(
         "sources": {name: asdict(audit) for name, audit in audits.items()},
     }
 
-    report_dir = root_path / "data/reports"
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report_path = report_dir / "data_audit_report.json"
+    manifest_dir = root_path / "data/manifests"
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    report_path = manifest_dir / "data_audit_report.json"
     with report_path.open("w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
 
@@ -495,24 +439,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(description="Run the F0 data audit.")
     parser.add_argument(
-        "--gdsc-response",
-        default="data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
-        help="Path to the GDSC response table.",
-    )
-    parser.add_argument(
-        "--depmap-metadata",
-        default="data/raw/Model.csv",
-        help="Path to DepMap model metadata.",
-    )
-    parser.add_argument(
-        "--depmap-expression",
-        default="data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
-        help="Path to DepMap expression matrix.",
-    )
-    parser.add_argument(
-        "--drug-structures",
-        default="data/raw/drug_structures.csv",
-        help="Path to the drug structures table.",
+        "--config",
+        default="configs/data_audit.example.json",
+        help="Path to the data-audit JSON config.",
     )
     parser.add_argument(
         "--root",
@@ -526,13 +455,7 @@ def main() -> None:
     """Command-line entry point."""
 
     args = build_parser().parse_args()
-    config = make_audit_config(
-        gdsc_response=args.gdsc_response,
-        depmap_metadata=args.depmap_metadata,
-        depmap_expression=args.depmap_expression,
-        drug_structures=args.drug_structures,
-    )
-    report = run_audit(root=args.root, config=config)
+    report = run_audit(args.config, args.root)
 
     print("Data audit complete")
     for name, source in report["sources"].items():
