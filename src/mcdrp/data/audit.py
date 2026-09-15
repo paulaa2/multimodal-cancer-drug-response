@@ -1,17 +1,11 @@
-"""Data-audit command for the first project phase.
-
-The audit does not clean the data or decide final mappings. It gives a
-reproducible first look at which files exist, which identifier columns are
-present, and which mapping templates need human review.
-"""
 
 from __future__ import annotations
 
 import argparse
-import csv
+import csv  
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -417,7 +411,7 @@ def run_audit(config_path: str | Path, root: str | Path = ".") -> dict[str, Any]
     }
 
     report = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": datetime.now(UTC).isoformat(),
         "project": config.get("project"),
         "sources": {name: asdict(audit) for name, audit in audits.items()},
     }
