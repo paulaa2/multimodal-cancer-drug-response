@@ -1,0 +1,102 @@
+{
+  "created_at_utc": "2026-09-15T14:30:31.095535+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/baselines/b4_gnn_metrics.csv",
+  "target": "ln_ic50",
+  "n_pca_components": 256,
+  "batch_size": 256,
+  "max_epochs": 80,
+  "patience": 10,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "graph_hidden_dim": 128,
+  "graph_layers": 3,
+  "cell_hidden_dim": 128,
+  "fusion_hidden_dim": 256,
+  "dropout": 0.1,
+  "device_requested": "cuda",
+  "device_used": "cuda",
+  "random_state": 42,
+  "log_every": 1,
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_drug"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_model": "gnn",
+      "rmse": 1.3804022992934526,
+      "mae": 1.0450090075790697,
+      "pearson": 0.8747232824815384,
+      "spearman": 0.828066209632865,
+      "r2": 0.7627064651568478,
+      "best_epoch": 17,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_model": "gnn",
+      "rmse": 1.3773950833684463,
+      "mae": 1.0413092472390615,
+      "pearson": 0.8719193043543786,
+      "spearman": 0.8210502739292522,
+      "r2": 0.7584519264731445,
+      "best_epoch": 17,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_model": "gnn",
+      "rmse": 3.493343753732792,
+      "mae": 2.2297241561742367,
+      "pearson": 0.07682184648367645,
+      "spearman": 0.23512630694623052,
+      "r2": -0.679132815565578,
+      "best_epoch": 1,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_model": "gnn",
+      "rmse": 2.606859798947316,
+      "mae": 2.02501193352486,
+      "pearson": 0.6010051151062613,
+      "spearman": 0.5569009376906281,
+      "r2": 0.3437458936144725,
+      "best_epoch": 1,
+      "device": "cuda"
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_model": "gnn",
+      "rmse": 1.0853255444860905,
+      "mae": 0.8143871132334232,
+      "pearson": 0.925407432511226,
+      "spearman": 0.8936058023634356,
+      "r2": 0.8536083999368809,
+      "best_epoch": 80,
+      "device": "cuda"
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_model": "gnn",
+      "rmse": 1.071179445221891,
+      "mae": 0.8036068650654595,
+      "pearson": 0.9259910455938316,
+      "spearman": 0.8954255855554967,
+      "r2": 0.8546401571450166,
+      "best_epoch": 80,
+      "device": "cuda"
+    }
+  ]
+}

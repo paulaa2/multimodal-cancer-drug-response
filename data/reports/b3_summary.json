@@ -1,0 +1,100 @@
+{
+  "created_at_utc": "2026-09-15T10:29:45.804432+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/baselines/b3_metrics.csv",
+  "target": "ln_ic50",
+  "n_pca_components": 256,
+  "fp_bits": 2048,
+  "fp_radius": 2,
+  "hidden_layer_sizes": [
+    512,
+    128
+  ],
+  "alpha": 0.0001,
+  "learning_rate_init": 0.001,
+  "batch_size": 512,
+  "max_iter": 120,
+  "early_stopping": true,
+  "validation_fraction": 0.1,
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_drug"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_model": "mlp",
+      "rmse": 1.3213459988781249,
+      "mae": 0.9952244692238278,
+      "pearson": 0.8870069231773694,
+      "spearman": 0.8433790646881125,
+      "r2": 0.7825759075773113,
+      "n_iter": 33,
+      "loss": 0.14740133472385894
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_model": "mlp",
+      "rmse": 1.362512052960954,
+      "mae": 1.0302539735342608,
+      "pearson": 0.8768782911907087,
+      "spearman": 0.8284786538502569,
+      "r2": 0.7636436759854355,
+      "n_iter": 33,
+      "loss": 0.14740133472385894
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_model": "mlp",
+      "rmse": 2.882417010425222,
+      "mae": 2.178929124311487,
+      "pearson": 0.45621283048478173,
+      "spearman": 0.32595426115902976,
+      "r2": -0.14318370830573768,
+      "n_iter": 25,
+      "loss": 0.20954154130236088
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_model": "mlp",
+      "rmse": 2.7513138582805476,
+      "mae": 2.219802416979689,
+      "pearson": 0.5291546079540858,
+      "spearman": 0.46598999710514827,
+      "r2": 0.26900070874837156,
+      "n_iter": 25,
+      "loss": 0.20954154130236088
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_model": "mlp",
+      "rmse": 1.1163826189380321,
+      "mae": 0.8420459079632121,
+      "pearson": 0.9202660424531113,
+      "spearman": 0.8860033094434324,
+      "r2": 0.84511040623404,
+      "n_iter": 30,
+      "loss": 0.16618714615144436
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_model": "mlp",
+      "rmse": 1.1068850578838092,
+      "mae": 0.8364998673102559,
+      "pearson": 0.920330067315191,
+      "spearman": 0.8867356136696422,
+      "r2": 0.8447880934566996,
+      "n_iter": 30,
+      "loss": 0.16618714615144436
+    }
+  ]
+}

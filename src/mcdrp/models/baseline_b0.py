@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -124,7 +124,7 @@ def run_b0(
     metrics.to_csv(output_path, index=False)
 
     summary_data = {
-        "created_at_utc": datetime.now(UTC).isoformat(),
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "cohort_path": str(cohort_path),
         "split_dir": str(split_dir),
         "output": str(output),

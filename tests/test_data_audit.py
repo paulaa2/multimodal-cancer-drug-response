@@ -7,8 +7,8 @@ from mcdrp.data.audit import run_audit
 
 
 def test_run_audit_reports_missing_files(tmp_path: Path) -> None:
-    config = tmp_path / "audit.json"
-    config.write_text(
+    config_path = tmp_path / "audit.json"
+    config_path.write_text(
         json.dumps(
             {
                 "project": "demo",
@@ -26,10 +26,10 @@ def test_run_audit_reports_missing_files(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    report = run_audit(root=tmp_path, config=json.loads(config.read_text()))
+    report = run_audit(config_path=config_path, root=tmp_path)
 
     assert report["sources"]["gdsc_response"]["exists"] is False
-    assert (tmp_path / "data/reports/data_audit_report.json").exists()
+    assert (tmp_path / "data/manifests/data_audit_report.json").exists()
     assert (tmp_path / "data/mappings/cell_line_mapping_template.csv").exists()
     assert (tmp_path / "data/mappings/drug_mapping_template.csv").exists()
 
@@ -45,8 +45,8 @@ def test_run_audit_detects_columns_and_writes_templates(tmp_path: Path) -> None:
         }
     ).to_csv(raw / "gdsc_response.csv", index=False)
 
-    config = tmp_path / "audit.json"
-    config.write_text(
+    config_path = tmp_path / "audit.json"
+    config_path.write_text(
         json.dumps(
             {
                 "project": "demo",
@@ -65,7 +65,7 @@ def test_run_audit_detects_columns_and_writes_templates(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    report = run_audit(root=tmp_path, config=json.loads(config.read_text()))
+    report = run_audit(config_path=config_path, root=tmp_path)
 
     source = report["sources"]["gdsc_response"]
     assert source["exists"] is True
@@ -80,3 +80,4 @@ def test_run_audit_detects_columns_and_writes_templates(tmp_path: Path) -> None:
     )
     assert "A" in cell_mapping
     assert "Drug 1" in drug_mapping
+

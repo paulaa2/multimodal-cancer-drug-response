@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -190,7 +190,7 @@ def build_splits(
     cohort = pd.read_csv(cohort_path)
     output_dir.mkdir(parents=True, exist_ok=True)
     summary_report: dict[str, Any] = {
-        "created_at_utc": datetime.now(UTC).isoformat(),
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "input": str(cohort_path).replace("\\", "/"),
         "output_dir": str(output_dir).replace("\\", "/"),
         "seed": spec.seed,

@@ -145,9 +145,9 @@ python -m venv .venv
 pip install -e ".[dev]"
 ```
 
-Optional modelling dependencies such as PyTorch, PyTorch Geometric, RDKit,
-XGBoost, SHAP, and Captum are declared as extras in `pyproject.toml`. They should
-be installed only when the relevant phase needs them.
+Optional modelling dependencies are declared as extras in `pyproject.toml`.
+Install `.[baselines]` for RDKit/XGBoost and `.[gpu]` for PyTorch-based GPU
+training when the relevant phase needs them.
 
 ## First Implementation Milestones
 
@@ -195,6 +195,7 @@ be installed only when the relevant phase needs them.
    - mean baseline
    - Ridge / Elastic Net with Morgan fingerprints
    - XGBoost with Morgan fingerprints
+   - MLP neural baseline with the same engineered features
 
    Start with the B0 mean baselines:
 
@@ -202,10 +203,66 @@ be installed only when the relevant phase needs them.
    python -m mcdrp.models.baseline_b0
    ```
 
+   Run the first neural baseline on one split:
+
+   ```powershell
+   python -m mcdrp.models.baseline_b3 --splits random_pair --device cuda
+   ```
+
+   B3 is intentionally simple: it uses the same Morgan fingerprint + expression
+   PCA features as B1/B2, but fits an MLP. This tells us whether a basic neural
+   model helps before adding a graph molecular encoder.
+   Use `--device auto` to use CUDA when available and CPU otherwise. B2 XGBoost
+   supports the same device option; B1 Ridge/Elastic Net remains CPU-based.
+
+   After running any baseline, consolidate every available result with the same
+   command:
+
+   ```powershell
+   python -m mcdrp.results.compare_baselines
+   ```
+
+   Optional controlled hyperparameter tuning:
+
+   ```powershell
+   python -m mcdrp.models.tune_b1 --splits random_pair
+   python -m mcdrp.models.tune_b2 --splits random_pair --device cuda
+   python -m mcdrp.models.tune_b3 --splits random_pair --device cuda
+   ```
+
+   `compare_baselines` automatically includes tuning outputs when they exist and
+   keeps only the validation-selected candidates for the final comparison.
+
+   ```powershell
+   python -m mcdrp.results.compare_baselines
+   ```
+
+   Before moving to GNN work, run the baseline-stage quality gate:
+
+   ```powershell
+   python -m mcdrp.results.validate_baseline_stage
+   ```
+
+   This checks cohort/schema integrity, split leakage, metric files, tuning
+   selection rows, and consistency between the comparison CSVs and JSON summary.
+
 4. **Multimodal neural model**
    - transcriptomic encoder
    - molecular graph encoder
    - fusion regression head
+
+   Start with the lightweight pure-PyTorch GNN baseline:
+
+   ```powershell
+   python -m mcdrp.models.gnn_b4 --splits random_pair --device cuda
+   python -m mcdrp.results.compare_baselines
+   ```
+
+   For a fast smoke run, reduce epochs:
+
+   ```powershell
+   python -m mcdrp.models.gnn_b4 --splits random_pair --device cuda --max-epochs 5
+   ```
 
 5. **Biological interpretation**
    - pathway representation

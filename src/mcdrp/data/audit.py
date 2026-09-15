@@ -11,7 +11,7 @@ import argparse
 import csv
 import json
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -417,7 +417,7 @@ def run_audit(config_path: str | Path, root: str | Path = ".") -> dict[str, Any]
     }
 
     report = {
-        "created_at_utc": datetime.now(UTC).isoformat(),
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "project": config.get("project"),
         "sources": {name: asdict(audit) for name, audit in audits.items()},
     }

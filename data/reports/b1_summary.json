@@ -1,0 +1,80 @@
+{
+  "created_at_utc": "2026-09-14T18:43:48.082088+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/baselines/b1_metrics.csv",
+  "target": "ln_ic50",
+  "n_pca_components": 256,
+  "fp_bits": 2048,
+  "fp_radius": 2,
+  "elastic_alpha": 0.02,
+  "elastic_l1_ratio": 0.9,
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_drug"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_model": "ridge",
+      "rmse": 1.353813124202343,
+      "mae": 1.021969068518623,
+      "pearson": 0.8788033759286609,
+      "spearman": 0.8358168252096371,
+      "r2": 0.7717598742924705
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_model": "ridge",
+      "rmse": 1.357396056313627,
+      "mae": 1.0217163068253192,
+      "pearson": 0.8757542443941071,
+      "spearman": 0.8309749344382532,
+      "r2": 0.7654152977392898
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_model": "elastic_net",
+      "rmse": 2.4959168271656598,
+      "mae": 1.836868199626415,
+      "pearson": 0.4626266833758954,
+      "spearman": 0.36073233853804115,
+      "r2": 0.14283857044577153
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_model": "ridge",
+      "rmse": 2.8206559737429986,
+      "mae": 2.201631858890299,
+      "pearson": 0.5160483223267194,
+      "spearman": 0.46971380793449447,
+      "r2": 0.2316892243203702
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_model": "ridge",
+      "rmse": 1.2860959824734222,
+      "mae": 0.9715437015332548,
+      "pearson": 0.8913332277851094,
+      "spearman": 0.8525626542252178,
+      "r2": 0.7944379825742843
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_model": "ridge",
+      "rmse": 1.2853981131955834,
+      "mae": 0.9645629428932899,
+      "pearson": 0.8892104683716401,
+      "spearman": 0.8524956447261286,
+      "r2": 0.7906874348353847
+    }
+  ]
+}

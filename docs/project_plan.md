@@ -38,7 +38,57 @@ Outputs:
 - selected-gene or PCA cell-line features
 - Ridge / Elastic Net baseline
 - XGBoost baseline
+- MLP neural baseline with the same engineered features
 - first metrics table
+
+Run the first neural baseline on one split:
+
+```powershell
+python -m mcdrp.models.baseline_b3 --splits random_pair --device cuda
+```
+
+B3 keeps the same input representation as B1/B2 and changes only the predictor
+to a feed-forward MLP. If this does not beat XGBoost, the next model needs a
+better representation, not just a deeper tabular network.
+B2 XGBoost and B3 MLP support `--device auto|cuda|cpu`; B1 Ridge/Elastic Net is
+CPU-based.
+
+After running any baseline, create the consolidated baseline comparison:
+
+```powershell
+python -m mcdrp.results.compare_baselines
+```
+
+This writes `results/baselines/baseline_comparison.csv`,
+`results/baselines/baseline_best_by_split.csv`, and
+`data/reports/baseline_comparison_summary.json`.
+
+Optional tuning scripts are available when the baseline comparison needs stronger
+validation-selected hyperparameters:
+
+```powershell
+python -m mcdrp.models.tune_b1 --splits random_pair
+python -m mcdrp.models.tune_b2 --splits random_pair --device cuda
+python -m mcdrp.models.tune_b3 --splits random_pair --device cuda
+```
+
+Run one split first because tuning repeats model fitting several times. The same
+comparison command includes standard metrics and tuning outputs when they exist.
+For tuning CSVs, it keeps only the validation-selected candidates:
+
+```powershell
+python -m mcdrp.results.compare_baselines
+```
+
+Before starting GNN work, run the baseline-stage quality gate:
+
+```powershell
+python -m mcdrp.results.validate_baseline_stage
+```
+
+This writes `data/reports/baseline_stage_validation.json` and checks cohort
+schema, split leakage, metric schemas, tuning selection rows, and comparison
+output consistency.
 
 Before modelling, generate the initial split assignment files:
 
@@ -64,6 +114,18 @@ Outputs:
 - concatenation fusion head
 - training loop with early stopping
 - matched comparison against fingerprint MLP baseline
+
+Initial implementation:
+
+```powershell
+python -m mcdrp.models.gnn_b4 --splits random_pair --device cuda
+python -m mcdrp.results.compare_baselines
+```
+
+The first version uses a lightweight pure-PyTorch graph encoder instead of
+PyTorch Geometric. This keeps the dependency surface small while validating that
+drug graphs, cell expression features, batching, training, and comparison are
+wired correctly.
 
 ## F3 - Cold-Start Evaluation
 

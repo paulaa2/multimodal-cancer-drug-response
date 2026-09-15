@@ -1,0 +1,94 @@
+{
+  "created_at_utc": "2026-09-14T19:23:05.002206+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/baselines/b2_metrics.csv",
+  "target": "ln_ic50",
+  "n_pca_components": 256,
+  "fp_bits": 2048,
+  "fp_radius": 2,
+  "xgb_params": {
+    "n_estimators": 500,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "early_stopping_rounds": 30,
+    "objective": "reg:squarederror",
+    "eval_metric": "rmse",
+    "tree_method": "hist",
+    "random_state": 42
+  },
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_drug"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_model": "xgboost",
+      "rmse": 1.30575889569618,
+      "mae": 0.9807620849325394,
+      "pearson": 0.8879117271653195,
+      "spearman": 0.8474019279963521,
+      "r2": 0.787675287642337,
+      "best_iteration": 497
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_model": "xgboost",
+      "rmse": 1.340422490210433,
+      "mae": 1.0072816341067208,
+      "pearson": 0.8783890904828181,
+      "spearman": 0.8346118912296023,
+      "r2": 0.7712453487320321,
+      "best_iteration": 497
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_model": "xgboost",
+      "rmse": 2.273971865031997,
+      "mae": 1.662896678944996,
+      "pearson": 0.5452559805163755,
+      "spearman": 0.45828054310180705,
+      "r2": 0.28850381378077816,
+      "best_iteration": 454
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_model": "xgboost",
+      "rmse": 2.9713803514883343,
+      "mae": 2.266575900479867,
+      "pearson": 0.46416305517870776,
+      "spearman": 0.40944754416775486,
+      "r2": 0.14738458766104612,
+      "best_iteration": 454
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_model": "xgboost",
+      "rmse": 1.1613848227344061,
+      "mae": 0.8753158393645162,
+      "pearson": 0.9129853017488682,
+      "spearman": 0.8790807052814484,
+      "r2": 0.8323712908548883,
+      "best_iteration": 499
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_model": "xgboost",
+      "rmse": 1.1537608523016907,
+      "mae": 0.866787691171161,
+      "pearson": 0.9124076005216851,
+      "spearman": 0.8810747402324332,
+      "r2": 0.831363499214623,
+      "best_iteration": 499
+    }
+  ]
+}
