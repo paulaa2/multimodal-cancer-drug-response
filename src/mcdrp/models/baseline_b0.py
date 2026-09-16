@@ -15,9 +15,7 @@ from typing import Any
 import pandas as pd
 
 from mcdrp.metrics import regression_metrics
-
-
-DEFAULT_SPLITS = ("random_pair", "cold_cell", "cold_drug")
+from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 
 def predict_global_mean(train: pd.DataFrame, target: str, rows: pd.DataFrame) -> pd.Series:

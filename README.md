@@ -108,6 +108,8 @@ model to win.
 multimodal-cancer-drug-response/
 ├── README.md
 ├── pyproject.toml
+├── configs/
+│   └── experiments/
 ├── data/
 │   ├── README.md
 │   ├── reports/
@@ -117,6 +119,7 @@ multimodal-cancer-drug-response/
 ├── src/
 │   └── mcdrp/
 │       ├── data/
+│       ├── experiments/
 │       ├── models/
 │       ├── splits/
 │       └── metrics.py
@@ -125,7 +128,8 @@ multimodal-cancer-drug-response/
 
 Reusable logic belongs in `src/mcdrp/`. Generated data, split files, and result
 tables are written under ignored folders such as `data/processed/` and
-`results/`.
+`results/`. Reproducible experiment definitions belong in
+`configs/experiments/`.
 
 ## Setup
 
@@ -185,11 +189,17 @@ training when the relevant phase needs them.
    - cold-drug split
    - scaffold split after SMILES are available
 
-   Start with the first three splits:
+   Build the full split suite:
 
    ```powershell
    python -m mcdrp.splits.make_splits
    ```
+
+   This writes `random_pair`, `cold_cell`, `cold_drug`, `cold_scaffold`, and
+   `cold_both` split files. `cold_scaffold` groups drugs by Bemis-Murcko
+   scaffold and is the key split for realistic chemical generalization.
+   `cold_both` labels mixed held-out blocks as `unused`; training scripts ignore
+   those rows so train, validation, and test have disjoint cell lines and drugs.
 
 3. **Classical baselines**
    - mean baseline
@@ -258,10 +268,53 @@ training when the relevant phase needs them.
    python -m mcdrp.results.compare_baselines
    ```
 
+   B4 now uses a slightly stronger but still lightweight graph encoder:
+   residual graph-convolution blocks, `LayerNorm`, mean+max graph pooling, and
+   train-only target scaling for more stable neural optimization.
+
    For a fast smoke run, reduce epochs:
 
    ```powershell
    python -m mcdrp.models.gnn_b4 --splits random_pair --device cuda --max-epochs 5
+   ```
+
+   Once B4 is working, run the heavier hybrid GNN model:
+
+   ```powershell
+   python -m mcdrp.models.gnn_b5 --splits random_pair --device cuda
+   python -m mcdrp.results.compare_baselines
+   ```
+
+   B5 is the first "main" multimodal model rather than a lightweight baseline:
+   it combines a deeper residual graph encoder, attention graph pooling, Morgan
+   fingerprints, expression features, target scaling, AdamW, learning-rate
+   scheduling, and multiplicative drug-cell fusion terms. It is deliberately
+   slower to train than B4 and should be run on GPU.
+
+   The same workflow can be launched from an experiment config:
+
+   ```powershell
+   python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json --dry-run
+   python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json
+   ```
+
+   To study which modality is actually responsible for performance, run the B6
+   ablation study:
+
+   ```powershell
+   python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
+   python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
+   ```
+
+   B6 compares `Morgan`, `expression PCA`, `pathway activity`, and their
+   combinations under the same XGBoost model family. By default it uses a small
+   built-in cancer pathway panel; pass `--gene-sets path/to/file.gmt` to use
+   MSigDB Hallmark, Reactome, PROGENy-style signatures, or another GMT resource.
+
+   To regenerate F3/F4 result tables from existing metrics without retraining:
+
+   ```powershell
+   python -m src.mcdrp.experiments.run_experiment configs/experiments/reports_f3_f4.json
    ```
 
 5. **Biological interpretation**

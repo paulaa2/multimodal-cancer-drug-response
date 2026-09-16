@@ -1,0 +1,25 @@
+{
+  "name": "b5_hybrid_random_pair",
+  "description": "Fast first run of the heavier B5 hybrid GNN on the random-pair split.",
+  "steps": [
+    {
+      "name": "train_b5_random_pair",
+      "module": "src.mcdrp.models.gnn_b5",
+      "args": {
+        "splits": ["random_pair"],
+        "device": "cuda",
+        "batch-size": 128,
+        "max-epochs": 120,
+        "patience": 16,
+        "learning-rate": 0.0005,
+        "weight-decay": 0.0003,
+        "dropout": 0.15
+      }
+    },
+    {
+      "name": "compare_models",
+      "module": "src.mcdrp.results.compare_baselines",
+      "args": {}
+    }
+  ]
+}

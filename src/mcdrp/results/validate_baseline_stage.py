@@ -18,16 +18,16 @@ from typing import Any
 import pandas as pd
 
 from mcdrp.results.compare_baselines import REQUIRED_COLUMNS, is_truthy
-from mcdrp.splits.make_splits import SPLIT_LABELS
+from mcdrp.splits.make_splits import DEFAULT_SPLITS, SPLIT_LABELS
 
 
-DEFAULT_SPLITS = ("random_pair", "cold_cell", "cold_drug")
 STANDARD_METRICS = {
     "B0": "results/baselines/b0_metrics.csv",
     "B1": "results/baselines/b1_metrics.csv",
     "B2": "results/baselines/b2_metrics.csv",
     "B3": "results/baselines/b3_metrics.csv",
     "B4_GNN": "results/baselines/b4_gnn_metrics.csv",
+    "B5_hybrid_GNN": "results/models/b5_hybrid_gnn_metrics.csv",
 }
 TUNING_METRICS = {
     "B1_tuned": "results/baselines/b1_tuning_metrics.csv",

@@ -42,10 +42,9 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import assemble_features
+from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_SPLITS = ("random_pair", "cold_cell", "cold_drug")
 
 EXPRESSION_PATH = "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv"
 

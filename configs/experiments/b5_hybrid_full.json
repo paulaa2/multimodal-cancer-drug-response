@@ -1,0 +1,58 @@
+{
+  "name": "b5_hybrid_full",
+  "description": "Full B5 hybrid GNN evaluation across interpolation and cold-start splits.",
+  "steps": [
+    {
+      "name": "build_splits_full",
+      "module": "src.mcdrp.splits.make_splits",
+      "args": {
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ]
+      }
+    },
+    {
+      "name": "train_b5_all_splits",
+      "module": "src.mcdrp.models.gnn_b5",
+      "args": {
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ],
+        "device": "cuda",
+        "batch-size": 128,
+        "max-epochs": 140,
+        "patience": 18,
+        "learning-rate": 0.0003,
+        "weight-decay": 0.001,
+        "dropout": 0.25,
+        "graph-hidden-dim": 192,
+        "graph-output-dim": 192,
+        "fingerprint-hidden-dim": 512,
+        "fingerprint-output-dim": 192,
+        "cell-hidden-dim": 192,
+        "shared-dim": 192,
+        "fusion-hidden-dim": 384
+      }
+    },
+    {
+      "name": "compare_models",
+      "module": "src.mcdrp.results.compare_baselines",
+      "args": {}
+    },
+    {
+      "name": "cold_start_report",
+      "module": "src.mcdrp.results.cold_start_report",
+      "args": {
+        "subset": "test"
+      }
+    }
+  ]
+}

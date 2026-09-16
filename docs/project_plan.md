@@ -127,6 +127,23 @@ PyTorch Geometric. This keeps the dependency surface small while validating that
 drug graphs, cell expression features, batching, training, and comparison are
 wired correctly.
 
+The current B4 improvement keeps that dependency-light design but strengthens
+the encoder with residual graph-convolution blocks, `LayerNorm`, mean+max graph
+pooling, train-only target scaling, and gradient clipping.
+
+Main hybrid model:
+
+```powershell
+python -m mcdrp.models.gnn_b5 --splits random_pair --device cuda
+python -m mcdrp.results.compare_baselines
+```
+
+B5 is intentionally heavier than B4. It combines a deeper residual graph
+encoder, attention pooling, Morgan fingerprints, expression features,
+multiplicative drug-cell interactions, AdamW, learning-rate scheduling, target
+scaling, and gradient clipping. This is the model to use when the project needs
+a more complete multimodal architecture that is meaningfully slower to train.
+
 ## F3 - Cold-Start Evaluation
 
 Goal: make the generalization story scientifically meaningful.
@@ -137,8 +154,36 @@ Outputs:
 - cold-cell split
 - cold-drug split
 - scaffold split
+- cold-both split
 - table reporting metrics and unique drugs/cell lines/pairs per split
 - plot showing random-to-cold performance degradation
+
+The scaffold split is implemented as `cold_scaffold` using Bemis-Murcko
+scaffolds derived from canonical SMILES. This is the key chemical
+generalization benchmark because it holds out structural families rather than
+only individual drug IDs.
+
+The `cold_both` split uses only train/train, validation/validation, and
+test/test cell-drug blocks. Mixed blocks are labelled `unused` and ignored by
+training scripts; this avoids leaking either cell lines or drugs between train
+and evaluation subsets.
+
+Experiment configs live under `configs/experiments/` and can be launched with:
+
+```powershell
+python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json --dry-run
+python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json
+```
+
+After model metrics exist, build the cold-start report:
+
+```powershell
+python -m src.mcdrp.results.compare_baselines
+python -m src.mcdrp.results.cold_start_report --subset test
+```
+
+This writes split composition, best models, and random-to-cold RMSE drop tables
+under `results/reports/`.
 
 ## F4 - Pathways and Ablations
 
@@ -150,6 +195,32 @@ Outputs:
 - pathway activity matrix
 - comparison of selected genes vs PCA vs pathway scores
 - ablation table under identical splits
+- B6 modality ablation metrics and summary
+
+Initial ablation implementation:
+
+```powershell
+python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
+python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
+```
+
+B6 compares `expression_pca`, `pathways`, `morgan`,
+`morgan_expression_pca`, `morgan_pathways`, and
+`morgan_expression_pca_pathways`. Use `--gene-sets path/to/file.gmt` to swap the
+built-in compact cancer pathway panel for MSigDB Hallmark, Reactome, or another
+curated gene-set collection.
+
+After B6 metrics exist, summarize the ablation study:
+
+```powershell
+python -m src.mcdrp.results.ablation_report --subset test
+```
+
+To rebuild both F3 and F4 reports without retraining:
+
+```powershell
+python -m src.mcdrp.experiments.run_experiment configs/experiments/reports_f3_f4.json
+```
 
 ## F5 - Interpretation and Polish
 

@@ -1,0 +1,26 @@
+{
+  "name": "reports_f3_f4",
+  "description": "Regenerate cold-start and ablation reports from existing metrics.",
+  "steps": [
+    {
+      "name": "compare_models",
+      "module": "src.mcdrp.results.compare_baselines",
+      "args": {}
+    },
+    {
+      "name": "cold_start_report",
+      "module": "src.mcdrp.results.cold_start_report",
+      "args": {
+        "subset": "test"
+      }
+    },
+    {
+      "name": "ablation_report",
+      "module": "src.mcdrp.results.ablation_report",
+      "args": {
+        "subset": "test",
+        "reference": "morgan_expression_pca"
+      }
+    }
+  ]
+}

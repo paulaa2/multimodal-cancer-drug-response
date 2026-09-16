@@ -5,6 +5,7 @@ This script is the single reporting entry point for baseline results. It loads:
 - B0 mean baselines
 - standard B1/B2/B3 metrics when available
 - validation-selected tuned B1/B2/B3 metrics when available
+- optional B4/B5/B6 model and ablation metrics when available
 
 For tuned outputs, validation rows are reduced to the best candidate per
 split/model and test rows are reduced to the candidate marked
@@ -32,6 +33,8 @@ OPTIONAL_INPUTS = {
     "B2": "results/baselines/b2_metrics.csv",
     "B3": "results/baselines/b3_metrics.csv",
     "B4_GNN": "results/baselines/b4_gnn_metrics.csv",
+    "B5_hybrid_GNN": "results/models/b5_hybrid_gnn_metrics.csv",
+    "B6_ablation": "results/ablations/b6_modality_ablation_metrics.csv",
 }
 
 OPTIONAL_TUNED_INPUTS = {
@@ -306,6 +309,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional B4 GNN metrics CSV. Included only when the file exists.",
     )
     parser.add_argument(
+        "--b5-hybrid-gnn",
+        default=OPTIONAL_INPUTS["B5_hybrid_GNN"],
+        help="Optional B5 hybrid GNN metrics CSV. Included only when the file exists.",
+    )
+    parser.add_argument(
+        "--b6-ablation",
+        default=OPTIONAL_INPUTS["B6_ablation"],
+        help="Optional B6 modality ablation CSV. Included only when the file exists.",
+    )
+    parser.add_argument(
         "--b1-tuned",
         default=OPTIONAL_TUNED_INPUTS["B1_tuned"],
         help="Optional B1 tuning CSV. Included only when the file exists.",
@@ -349,6 +362,8 @@ def main() -> None:
             "B2": args.b2,
             "B3": args.b3,
             "B4_GNN": args.b4_gnn,
+            "B5_hybrid_GNN": args.b5_hybrid_gnn,
+            "B6_ablation": args.b6_ablation,
         },
         optional_tuned_inputs={
             "B1_tuned": args.b1_tuned,

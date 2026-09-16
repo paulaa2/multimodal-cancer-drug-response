@@ -10,6 +10,12 @@ from mcdrp.features.expression import (
     fit_expression_pipeline,
     transform_expression,
 )
+from mcdrp.features.pathways import (
+    PathwayDefinition,
+    expression_column_to_symbol,
+    fit_pathway_pipeline,
+    transform_pathways,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -141,3 +147,32 @@ class TestExpressionPCA:
         t1 = transform_expression(pipeline, synthetic_expression)
         t2 = transform_expression(pipeline, synthetic_expression)
         np.testing.assert_array_equal(t1, t2)
+
+
+class TestPathwayFeatures:
+    """Tests for pathway activity feature construction."""
+
+    def test_expression_column_to_symbol_strips_entrez_suffix(self) -> None:
+        assert expression_column_to_symbol("TP53 (7157)") == "TP53"
+
+    def test_pathway_scores_have_expected_shape(self) -> None:
+        expression = pd.DataFrame(
+            {
+                "TP53 (7157)": [1.0, 2.0, 3.0],
+                "MDM2 (4193)": [3.0, 2.0, 1.0],
+                "CDKN1A (1026)": [1.0, 1.0, 1.0],
+                "EGFR (1956)": [0.0, 1.0, 2.0],
+            },
+            index=["c1", "c2", "c3"],
+        )
+        definitions = [
+            PathwayDefinition("P53_TEST", ("TP53", "MDM2", "CDKN1A")),
+            PathwayDefinition("TOO_SMALL", ("EGFR",)),
+        ]
+
+        pipeline = fit_pathway_pipeline(expression, definitions, min_genes=2)
+        scores = transform_pathways(pipeline, expression)
+
+        assert pipeline.pathway_names == ["P53_TEST"]
+        assert scores.shape == (3, 1)
+        assert scores.dtype == np.float32

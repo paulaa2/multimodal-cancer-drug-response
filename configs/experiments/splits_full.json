@@ -1,0 +1,19 @@
+{
+  "name": "splits_full",
+  "description": "Generate random, cold-cell, cold-drug, cold-scaffold, and cold-both split assignments.",
+  "steps": [
+    {
+      "name": "build_splits_full",
+      "module": "src.mcdrp.splits.make_splits",
+      "args": {
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ]
+      }
+    }
+  ]
+}

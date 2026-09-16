@@ -14,6 +14,7 @@ import pandas as pd
 
 
 SPLIT_LABELS = ("train", "validation", "test")
+DEFAULT_SPLITS = ("random_pair", "cold_cell", "cold_drug", "cold_scaffold", "cold_both")
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,80 @@ def make_group_split(
     return assignments[["pair_id", "split"]]
 
 
+def smiles_to_scaffold(smiles: str, fallback: str) -> str:
+    """Return a Bemis-Murcko scaffold key for one molecule."""
+
+    if not isinstance(smiles, str) or not smiles.strip():
+        return f"invalid:{fallback}"
+
+    try:
+        from rdkit import Chem
+        from rdkit.Chem.Scaffolds import MurckoScaffold
+    except ImportError as exc:  # pragma: no cover - depends on optional RDKit install.
+        raise RuntimeError(
+            "cold_scaffold requires RDKit. Install the baselines extra before "
+            "building scaffold splits."
+        ) from exc
+
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return f"invalid:{fallback}"
+    scaffold = MurckoScaffold.MurckoScaffoldSmiles(mol=mol, includeChirality=False)
+    return scaffold or f"acyclic:{Chem.MolToSmiles(mol, canonical=True)}"
+
+
+def make_scaffold_split(cohort: pd.DataFrame, spec: SplitSpec) -> pd.DataFrame:
+    """Split pairs by holding out whole chemical scaffolds."""
+
+    if "canonical_smiles" not in cohort.columns:
+        raise ValueError("cold_scaffold requires a canonical_smiles column.")
+
+    scaffold_frame = cohort[["drug_id", "canonical_smiles"]].drop_duplicates("drug_id")
+    scaffold_map = {
+        str(row.drug_id): smiles_to_scaffold(row.canonical_smiles, str(row.drug_id))
+        for row in scaffold_frame.itertuples(index=False)
+    }
+    scaffolded = cohort.copy()
+    scaffolded["chemical_scaffold"] = scaffolded["drug_id"].astype(str).map(scaffold_map)
+    if scaffolded["chemical_scaffold"].isna().any():
+        raise ValueError("Some drugs could not be assigned to a chemical scaffold.")
+
+    assignments = make_group_split(scaffolded, "chemical_scaffold", spec)
+    return assignments.merge(
+        scaffolded[["pair_id", "chemical_scaffold"]],
+        on="pair_id",
+        how="left",
+        validate="one_to_one",
+    )
+
+
+def make_cold_both_split(cohort: pd.DataFrame, spec: SplitSpec) -> pd.DataFrame:
+    """Hold out cell lines and drugs simultaneously.
+
+    Only pure train/train, validation/validation, and test/test blocks are used.
+    Mixed blocks are labelled ``unused`` so no cell line or drug can appear in
+    both training and evaluation subsets.
+    """
+
+    rng = np.random.default_rng(spec.seed)
+    cell_lines = pd.Series(cohort["depmap_id"].dropna().unique()).sort_values().to_numpy()
+    drugs = pd.Series(cohort["drug_id"].dropna().unique()).sort_values().to_numpy()
+    cell_labels = assign_labels(len(cell_lines), spec, rng)
+    drug_labels = assign_labels(len(drugs), spec, rng)
+    cell_map = dict(zip(cell_lines, cell_labels, strict=True))
+    drug_map = dict(zip(drugs, drug_labels, strict=True))
+
+    assignments = cohort[["pair_id", "depmap_id", "drug_id"]].copy()
+    assignments["cell_split"] = assignments["depmap_id"].map(cell_map)
+    assignments["drug_split"] = assignments["drug_id"].map(drug_map)
+
+    assignments["split"] = "unused"
+    for label in SPLIT_LABELS:
+        mask = assignments["cell_split"].eq(label) & assignments["drug_split"].eq(label)
+        assignments.loc[mask, "split"] = label
+    return assignments[["pair_id", "split"]]
+
+
 def make_split(
     cohort: pd.DataFrame,
     split_name: str,
@@ -103,6 +178,10 @@ def make_split(
         return make_group_split(cohort, "depmap_id", spec)
     if split_name == "cold_drug":
         return make_group_split(cohort, "drug_id", spec)
+    if split_name == "cold_scaffold":
+        return make_scaffold_split(cohort, spec)
+    if split_name == "cold_both":
+        return make_cold_both_split(cohort, spec)
 
     raise ValueError(f"Unknown split name: {split_name}")
 
@@ -124,6 +203,7 @@ def summarize_split(cohort: pd.DataFrame, assignments: pd.DataFrame) -> dict[str
             "ln_ic50_mean": float(part["ln_ic50"].mean()),
             "ln_ic50_std": float(part["ln_ic50"].std()),
         }
+    unused_rows = int(merged["split"].eq("unused").sum())
 
     train = merged.loc[merged["split"].eq("train")]
     validation = merged.loc[merged["split"].eq("validation")]
@@ -131,6 +211,7 @@ def summarize_split(cohort: pd.DataFrame, assignments: pd.DataFrame) -> dict[str
 
     return {
         "by_split": by_split,
+        "unused_rows": unused_rows,
         "cell_overlap_train_validation": sorted(
             set(train["depmap_id"]) & set(validation["depmap_id"])
         ),
@@ -139,17 +220,54 @@ def summarize_split(cohort: pd.DataFrame, assignments: pd.DataFrame) -> dict[str
             set(train["drug_id"]) & set(validation["drug_id"])
         ),
         "drug_overlap_train_test": sorted(set(train["drug_id"]) & set(test["drug_id"])),
+        "scaffold_overlap_train_validation": scaffold_overlap(
+            train,
+            validation,
+        ),
+        "scaffold_overlap_train_test": scaffold_overlap(train, test),
     }
+
+
+def scaffold_overlap(left: pd.DataFrame, right: pd.DataFrame) -> list[str]:
+    """Return scaffold overlaps when scaffold metadata is available."""
+
+    if "chemical_scaffold" not in left.columns or "chemical_scaffold" not in right.columns:
+        return []
+    return sorted(set(left["chemical_scaffold"]) & set(right["chemical_scaffold"]))
 
 
 def expected_overlap_policy(split_name: str) -> dict[str, bool]:
     """Describe which entity overlaps are expected for a split."""
 
     if split_name == "cold_cell":
-        return {"cell_overlap_allowed": False, "drug_overlap_allowed": True}
+        return {
+            "cell_overlap_allowed": False,
+            "drug_overlap_allowed": True,
+            "scaffold_overlap_allowed": True,
+        }
     if split_name == "cold_drug":
-        return {"cell_overlap_allowed": True, "drug_overlap_allowed": False}
-    return {"cell_overlap_allowed": True, "drug_overlap_allowed": True}
+        return {
+            "cell_overlap_allowed": True,
+            "drug_overlap_allowed": False,
+            "scaffold_overlap_allowed": True,
+        }
+    if split_name == "cold_scaffold":
+        return {
+            "cell_overlap_allowed": True,
+            "drug_overlap_allowed": False,
+            "scaffold_overlap_allowed": False,
+        }
+    if split_name == "cold_both":
+        return {
+            "cell_overlap_allowed": False,
+            "drug_overlap_allowed": False,
+            "scaffold_overlap_allowed": True,
+        }
+    return {
+        "cell_overlap_allowed": True,
+        "drug_overlap_allowed": True,
+        "scaffold_overlap_allowed": True,
+    }
 
 
 def validate_no_leakage(split_name: str, summary: dict[str, Any]) -> None:
@@ -162,6 +280,12 @@ def validate_no_leakage(split_name: str, summary: dict[str, Any]) -> None:
     if not policy["drug_overlap_allowed"]:
         if summary["drug_overlap_train_validation"] or summary["drug_overlap_train_test"]:
             raise ValueError(f"Drug leakage detected in {split_name}.")
+    if not policy["scaffold_overlap_allowed"]:
+        if (
+            summary["scaffold_overlap_train_validation"]
+            or summary["scaffold_overlap_train_test"]
+        ):
+            raise ValueError(f"Scaffold leakage detected in {split_name}.")
 
 
 def build_splits(
@@ -172,7 +296,7 @@ def build_splits(
     seed: int = 42,
     validation_size: float = 0.15,
     test_size: float = 0.15,
-    split_names: tuple[str, ...] = ("random_pair", "cold_cell", "cold_drug"),
+    split_names: tuple[str, ...] = DEFAULT_SPLITS,
 ) -> dict[str, Any]:
     """Build split assignment files."""
 
@@ -223,7 +347,10 @@ def compact_summary(split_name: str, summary: dict[str, Any]) -> dict[str, Any]:
     """Keep the JSON summary readable while preserving leakage evidence."""
 
     policy = expected_overlap_policy(split_name)
-    compact = {"by_split": summary["by_split"]}
+    compact = {
+        "by_split": summary["by_split"],
+        "unused_rows": summary["unused_rows"],
+    }
     if not policy["cell_overlap_allowed"]:
         compact["cell_overlap_train_validation_count"] = len(
             summary["cell_overlap_train_validation"]
@@ -234,6 +361,13 @@ def compact_summary(split_name: str, summary: dict[str, Any]) -> dict[str, Any]:
             summary["drug_overlap_train_validation"]
         )
         compact["drug_overlap_train_test_count"] = len(summary["drug_overlap_train_test"])
+    if not policy["scaffold_overlap_allowed"]:
+        compact["scaffold_overlap_train_validation_count"] = len(
+            summary["scaffold_overlap_train_validation"]
+        )
+        compact["scaffold_overlap_train_test_count"] = len(
+            summary["scaffold_overlap_train_test"]
+        )
     return compact
 
 
@@ -277,8 +411,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--splits",
         nargs="+",
-        default=["random_pair", "cold_cell", "cold_drug"],
-        choices=["random_pair", "cold_cell", "cold_drug"],
+        default=list(DEFAULT_SPLITS),
+        choices=list(DEFAULT_SPLITS),
         help="Split types to create.",
     )
     return parser
