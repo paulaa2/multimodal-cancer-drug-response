@@ -10,7 +10,6 @@ from typing import Any
 
 import pandas as pd
 
-
 DEFAULT_REFERENCE = "morgan_expression_pca"
 
 

@@ -10,7 +10,6 @@ from typing import Any
 
 import pandas as pd
 
-
 SPLIT_ORDER = ("random_pair", "cold_cell", "cold_drug", "cold_scaffold", "cold_both")
 
 

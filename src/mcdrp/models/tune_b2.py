@@ -36,7 +36,10 @@ def iter_param_grid(grid: dict[str, tuple[Any, ...]]) -> list[dict[str, Any]]:
     """Expand a small parameter grid."""
 
     keys = list(grid)
-    return [dict(zip(keys, values, strict=True)) for values in itertools.product(*(grid[k] for k in keys))]
+    return [
+        dict(zip(keys, values, strict=True))
+        for values in itertools.product(*(grid[key] for key in keys))
+    ]
 
 
 def subset_features(

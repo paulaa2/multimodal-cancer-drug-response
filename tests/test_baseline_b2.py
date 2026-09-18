@@ -3,7 +3,6 @@ import pandas as pd
 import pytest
 
 from mcdrp.features.fingerprints import build_fingerprint_matrix
-from mcdrp.models.baseline_b1 import assemble_features
 from mcdrp.models.baseline_b2 import run_b2_for_split
 
 

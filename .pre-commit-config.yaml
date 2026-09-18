@@ -1,0 +1,35 @@
+# Runs the same lint and type gates as CI before a commit is created.
+#
+#   pip install pre-commit
+#   pre-commit install
+#
+# Tests are deliberately not a hook: the suite needs RDKit and XGBoost and is
+# better run explicitly with `pytest`.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      # Result CSVs and split assignments belong in ignored folders, not git.
+      - id: check-added-large-files
+        args: [--maxkb=512]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(src|tests)/
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        files: ^src/
+        pass_filenames: false
+        additional_dependencies: [numpy, pandas-stubs]

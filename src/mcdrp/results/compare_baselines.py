@@ -5,7 +5,7 @@ This script is the single reporting entry point for baseline results. It loads:
 - B0 mean baselines
 - standard B1/B2/B3 metrics when available
 - validation-selected tuned B1/B2/B3 metrics when available
-- optional B4/B5/B6 model and ablation metrics when available
+- optional B4/B5/B6/B7 model and ablation metrics when available
 
 For tuned outputs, validation rows are reduced to the best candidate per
 split/model and test rows are reduced to the candidate marked
@@ -23,7 +23,6 @@ from typing import Any
 
 import pandas as pd
 
-
 DEFAULT_INPUTS = {
     "B0": "results/baselines/b0_metrics.csv",
 }
@@ -35,12 +34,14 @@ OPTIONAL_INPUTS = {
     "B4_GNN": "results/baselines/b4_gnn_metrics.csv",
     "B5_hybrid_GNN": "results/models/b5_hybrid_gnn_metrics.csv",
     "B6_ablation": "results/ablations/b6_modality_ablation_metrics.csv",
+    "B7_pretrained": "results/models/b7_pretrained_drug_pathway_metrics.csv",
 }
 
 OPTIONAL_TUNED_INPUTS = {
     "B1_tuned": "results/baselines/b1_tuning_metrics.csv",
     "B2_tuned": "results/baselines/b2_tuning_metrics.csv",
     "B3_tuned": "results/baselines/b3_tuning_metrics.csv",
+    "B7_tuned": "results/models/b7_tuning_metrics.csv",
 }
 
 REQUIRED_COLUMNS = {
@@ -319,6 +320,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional B6 modality ablation CSV. Included only when the file exists.",
     )
     parser.add_argument(
+        "--b7-pretrained",
+        default=OPTIONAL_INPUTS["B7_pretrained"],
+        help="Optional B7 pretrained embedding CSV. Included only when the file exists.",
+    )
+    parser.add_argument(
         "--b1-tuned",
         default=OPTIONAL_TUNED_INPUTS["B1_tuned"],
         help="Optional B1 tuning CSV. Included only when the file exists.",
@@ -332,6 +338,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--b3-tuned",
         default=OPTIONAL_TUNED_INPUTS["B3_tuned"],
         help="Optional B3 tuning CSV. Included only when the file exists.",
+    )
+    parser.add_argument(
+        "--b7-tuned",
+        default=OPTIONAL_TUNED_INPUTS["B7_tuned"],
+        help="Optional B7 tuning CSV. Included only when the file exists.",
     )
     parser.add_argument(
         "--output",
@@ -364,11 +375,13 @@ def main() -> None:
             "B4_GNN": args.b4_gnn,
             "B5_hybrid_GNN": args.b5_hybrid_gnn,
             "B6_ablation": args.b6_ablation,
+            "B7_pretrained": args.b7_pretrained,
         },
         optional_tuned_inputs={
             "B1_tuned": args.b1_tuned,
             "B2_tuned": args.b2_tuned,
             "B3_tuned": args.b3_tuned,
+            "B7_tuned": args.b7_tuned,
         },
         output=args.output,
         best_output=args.best_output,

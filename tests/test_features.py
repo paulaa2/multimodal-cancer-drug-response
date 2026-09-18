@@ -4,19 +4,17 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mcdrp.features.fingerprints import build_fingerprint_matrix, smiles_to_morgan
 from mcdrp.features.expression import (
-    ExpressionPipeline,
     fit_expression_pipeline,
     transform_expression,
 )
+from mcdrp.features.fingerprints import build_fingerprint_matrix, smiles_to_morgan
 from mcdrp.features.pathways import (
     PathwayDefinition,
     expression_column_to_symbol,
     fit_pathway_pipeline,
     transform_pathways,
 )
-
 
 # ---------------------------------------------------------------------------
 # Morgan fingerprint tests

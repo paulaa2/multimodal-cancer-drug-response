@@ -104,7 +104,7 @@ def run_experiment(
 
     for step in steps:
         command = build_command(step)
-        entry = {
+        entry: dict[str, Any] = {
             "name": step.name,
             "module": step.module,
             "command": command,

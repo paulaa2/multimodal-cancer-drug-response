@@ -19,7 +19,6 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-
 PUBCHEM_PROPERTY_URL = (
     "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
     "{name}/property/ConnectivitySMILES,IsomericSMILES,InChIKey/JSON"

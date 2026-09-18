@@ -13,7 +13,7 @@ def test_group_split_has_no_train_overlap_for_group_column() -> None:
     cohort = pd.DataFrame(
         {
             "pair_id": [f"p{i}" for i in range(12)],
-            "depmap_id": ["c1", "c1", "c2", "c2", "c3", "c3", "c4", "c4", "c5", "c5", "c6", "c6"],
+            "depmap_id": [f"c{i // 2 + 1}" for i in range(12)],
             "drug_id": ["d1", "d2"] * 6,
             "ln_ic50": list(range(12)),
         }

@@ -69,7 +69,9 @@ if nn is not None:
             return self.network(features)
 
 else:
-    TorchMLP = None
+    # Torch is optional, so the class only exists when nn imported. The B3
+    # runner falls back to the sklearn MLP backend in that case.
+    TorchMLP = None  # type: ignore[assignment,misc]
 
 
 @dataclass
@@ -308,7 +310,10 @@ def fit_torch_mlp(
     epochs_without_improvement = 0
     last_train_loss = float("nan")
 
+    completed_epochs = 0
+
     for epoch in range(1, max_iter + 1):
+        completed_epochs = epoch
         model.train()
         batch_losses: list[float] = []
         for batch_x, batch_y in loader:
@@ -341,7 +346,7 @@ def fit_torch_mlp(
         model=model,
         backend="torch",
         device=device,
-        n_iter=epoch,
+        n_iter=completed_epochs,
         loss=last_train_loss,
     )
 

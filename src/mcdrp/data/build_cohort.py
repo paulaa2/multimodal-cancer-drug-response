@@ -16,6 +16,9 @@ from typing import Any
 
 import pandas as pd
 
+DEFAULT_EXPRESSION_PATH = (
+    "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv"
+)
 
 GDSC_COLUMNS = [
     "DATASET",
@@ -135,7 +138,7 @@ def load_gdsc(path: str | Path) -> pd.DataFrame:
 def build_cohort(
     gdsc_response: str | Path = "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
     depmap_metadata: str | Path = "data/raw/Model.csv",
-    depmap_expression: str | Path = "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+    depmap_expression: str | Path = DEFAULT_EXPRESSION_PATH,
     drug_structures: str | Path = "data/raw/drug_structures.csv",
     output: str | Path = "data/processed/cohort_pairs.csv",
     summary: str | Path = "data/reports/cohort_summary.json",
@@ -247,7 +250,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--depmap-expression",
-        default="data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+        default=DEFAULT_EXPRESSION_PATH,
         help="Path to DepMap expression matrix.",
     )
     parser.add_argument(

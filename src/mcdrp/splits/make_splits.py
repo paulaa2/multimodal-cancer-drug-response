@@ -12,7 +12,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-
 SPLIT_LABELS = ("train", "validation", "test")
 DEFAULT_SPLITS = ("random_pair", "cold_cell", "cold_drug", "cold_scaffold", "cold_both")
 
@@ -274,18 +273,16 @@ def validate_no_leakage(split_name: str, summary: dict[str, Any]) -> None:
     """Fail if a cold split leaks held-out groups into train."""
 
     policy = expected_overlap_policy(split_name)
-    if not policy["cell_overlap_allowed"]:
-        if summary["cell_overlap_train_validation"] or summary["cell_overlap_train_test"]:
-            raise ValueError(f"Cell-line leakage detected in {split_name}.")
-    if not policy["drug_overlap_allowed"]:
-        if summary["drug_overlap_train_validation"] or summary["drug_overlap_train_test"]:
-            raise ValueError(f"Drug leakage detected in {split_name}.")
-    if not policy["scaffold_overlap_allowed"]:
-        if (
-            summary["scaffold_overlap_train_validation"]
-            or summary["scaffold_overlap_train_test"]
-        ):
-            raise ValueError(f"Scaffold leakage detected in {split_name}.")
+    labels = {"cell": "Cell-line", "drug": "Drug", "scaffold": "Scaffold"}
+    for entity, label in labels.items():
+        if policy[f"{entity}_overlap_allowed"]:
+            continue
+        leaked = (
+            summary[f"{entity}_overlap_train_validation"]
+            or summary[f"{entity}_overlap_train_test"]
+        )
+        if leaked:
+            raise ValueError(f"{label} leakage detected in {split_name}.")
 
 
 def build_splits(

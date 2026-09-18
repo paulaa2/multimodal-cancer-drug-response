@@ -26,13 +26,11 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.features.pathways import build_pathway_features
 from mcdrp.metrics import regression_metrics
-from mcdrp.models.baseline_b1 import assemble_features
 from mcdrp.models.baseline_b2 import fit_xgboost, predict_xgboost, xgb_device_params
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 

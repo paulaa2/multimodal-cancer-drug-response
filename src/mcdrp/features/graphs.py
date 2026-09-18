@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -30,7 +31,7 @@ class MolecularGraph:
     valid: bool
 
 
-def atom_features(atom: object) -> np.ndarray:
+def atom_features(atom: Any) -> np.ndarray:
     """Create a compact numeric atom feature vector."""
 
     features = np.zeros(ATOM_FEATURE_DIM, dtype=np.float32)
