@@ -80,7 +80,7 @@ class TestRunB1ForSplit:
         synthetic_cell_features: dict[str, np.ndarray],
     ) -> None:
         fp_matrix = build_fingerprint_matrix(synthetic_cohort["canonical_smiles"])
-        results = run_b1_for_split(
+        results, frames = run_b1_for_split(
             synthetic_cohort,
             synthetic_split,
             fp_matrix,
@@ -97,6 +97,12 @@ class TestRunB1ForSplit:
             assert r["subset"] in ("validation", "test")
             assert r["rmse"] >= 0
 
+        # Every metric row must have a matching prediction frame.
+        assert len(frames) == len(results)
+        for frame, r in zip(frames, results, strict=True):
+            assert len(frame) == r["n_rows"]
+            assert frame["stage"].unique().tolist() == ["B1"]
+
     def test_results_contain_expected_models(
         self,
         synthetic_cohort: pd.DataFrame,
@@ -104,7 +110,7 @@ class TestRunB1ForSplit:
         synthetic_cell_features: dict[str, np.ndarray],
     ) -> None:
         fp_matrix = build_fingerprint_matrix(synthetic_cohort["canonical_smiles"])
-        results = run_b1_for_split(
+        results, frames = run_b1_for_split(
             synthetic_cohort,
             synthetic_split,
             fp_matrix,
@@ -114,3 +120,4 @@ class TestRunB1ForSplit:
         )
         models = {r["model"] for r in results}
         assert models == {"ridge", "elastic_net"}
+        assert {f["model"].iloc[0] for f in frames} == models

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 from mcdrp.metrics import MeanEffectsReference, regression_metrics
+from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS, TISSUE_COLUMN
 
 
@@ -88,30 +90,49 @@ def evaluate_predictions(
     }
 
 
-def run_b0_for_split(
-    cohort: pd.DataFrame,
-    split_assignments: pd.DataFrame,
-    *,
-    split_name: str,
+def b0_model_specs(
+    train: pd.DataFrame,
+    data: pd.DataFrame,
     target: str,
-) -> list[dict[str, Any]]:
-    data = cohort.merge(split_assignments, on="pair_id", how="inner", validate="one_to_one")
-    train = data.loc[data["split"].eq("train")].copy()
-    results: list[dict[str, Any]] = []
+) -> list[tuple[str, Callable[[pd.DataFrame], pd.Series]]]:
+    """List the B0 variants, adding tissue_mean when lineage is available."""
 
-    model_specs = [
+    specs: list[tuple[str, Callable[[pd.DataFrame], pd.Series]]] = [
         ("global_mean", lambda rows: predict_global_mean(train, target, rows)),
         ("drug_mean", lambda rows: predict_group_mean(train, target, rows, "drug_id")),
         ("cell_mean", lambda rows: predict_group_mean(train, target, rows, "depmap_id")),
         ("mean_effects", lambda rows: predict_mean_effects(train, target, rows)),
     ]
     if TISSUE_COLUMN in data.columns:
-        model_specs.append(
+        specs.append(
             (
                 "tissue_mean",
                 lambda rows: predict_group_mean(train, target, rows, TISSUE_COLUMN),
             )
         )
+    return specs
+
+
+def run_b0_for_split(
+    cohort: pd.DataFrame,
+    split_assignments: pd.DataFrame,
+    *,
+    split_name: str,
+    target: str,
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
+    """Evaluate every B0 variant on one split.
+
+    Returns both the metric rows and tidy prediction frames. The predictions
+    are the durable artifact: ``mcdrp.results.metrics_report`` recomputes all
+    metric families from them without refitting anything.
+    """
+
+    data = cohort.merge(split_assignments, on="pair_id", how="inner", validate="one_to_one")
+    train = data.loc[data["split"].eq("train")].copy()
+    results: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
+
+    model_specs = b0_model_specs(train, data, target)
 
     for subset in ("validation", "test"):
         rows = data.loc[data["split"].eq(subset)].copy()
@@ -130,8 +151,19 @@ def run_b0_for_split(
                     reference_pred=reference_pred,
                 )
             )
+            frames.append(
+                prediction_frame(
+                    rows,
+                    rows[target].to_numpy(),
+                    predictions.to_numpy(),
+                    stage="B0",
+                    model=model_name,
+                    split_name=split_name,
+                    subset=subset,
+                )
+            )
 
-    return results
+    return results, frames
 
 
 def run_b0(
@@ -139,6 +171,7 @@ def run_b0(
     split_dir: str | Path = "data/processed/splits",
     output: str | Path = "results/baselines/b0_metrics.csv",
     summary: str | Path = "data/reports/b0_summary.json",
+    predictions_output: str | Path = "results/predictions/b0.csv",
     *,
     target: str = "ln_ic50",
     split_names: tuple[str, ...] = DEFAULT_SPLITS,
@@ -148,28 +181,32 @@ def run_b0(
     split_dir = Path(split_dir)
 
     all_results: list[dict[str, Any]] = []
+    all_frames: list[pd.DataFrame] = []
     for split_name in split_names:
         split_path = split_dir / f"{split_name}.csv"
         assignments = pd.read_csv(split_path)
-        all_results.extend(
-            run_b0_for_split(
-                cohort,
-                assignments,
-                split_name=split_name,
-                target=target,
-            )
+        results, frames = run_b0_for_split(
+            cohort,
+            assignments,
+            split_name=split_name,
+            target=target,
         )
+        all_results.extend(results)
+        all_frames.extend(frames)
 
     metrics = pd.DataFrame(all_results)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
 
+    write_predictions(all_frames, predictions_output)
+
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "cohort_path": str(cohort_path),
         "split_dir": str(split_dir),
         "output": str(output),
+        "predictions_output": str(predictions_output),
         "target": target,
         "splits": list(split_names),
         "best_by_split_subset": summarize_best(metrics),
@@ -231,6 +268,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output JSON summary.",
     )
     parser.add_argument(
+        "--predictions-output",
+        default="results/predictions/b0.csv",
+        help="Output per-row predictions CSV consumed by mcdrp.results.metrics_report.",
+    )
+    parser.add_argument(
         "--target",
         default="ln_ic50",
         help="Regression target column.",
@@ -252,10 +294,12 @@ def main() -> None:
         split_dir=args.split_dir,
         output=args.output,
         summary=args.summary,
+        predictions_output=args.predictions_output,
         target=args.target,
         split_names=tuple(args.splits),
     )
     print(f"Wrote B0 metrics to {args.output}")
+    print(f"Wrote B0 predictions to {args.predictions_output}")
     for _, row in metrics.sort_values(["split_name", "subset", "rmse"]).iterrows():
         print(
             f"- {row['split_name']} / {row['subset']} / {row['model']}: "

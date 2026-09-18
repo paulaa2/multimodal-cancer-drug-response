@@ -23,6 +23,7 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import assemble_features
+from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ def run_b2_for_split(
     target: str,
     xgb_params: dict[str, Any],
     device: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run XGBoost for one split configuration."""
 
     data = cohort.merge(
@@ -49,6 +50,7 @@ def run_b2_for_split(
     pair_id_to_idx = {pid: idx for idx, pid in enumerate(cohort["pair_id"])}
 
     results: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
 
     # Prepare subsets.
     subsets: dict[str, tuple[pd.DataFrame, np.ndarray]] = {}
@@ -114,8 +116,19 @@ def run_b2_for_split(
                 **metrics,
             }
         )
+        frames.append(
+            prediction_frame(
+                subset_rows,
+                subset_rows[target].to_numpy(),
+                predictions,
+                stage="B2",
+                model="xgboost",
+                split_name=split_name,
+                subset=subset_name,
+            )
+        )
 
-    return results
+    return results, frames
 
 
 def run_b2(
@@ -124,6 +137,7 @@ def run_b2(
     expression_path: str | Path = EXPRESSION_PATH,
     output: str | Path = "results/baselines/b2_metrics.csv",
     summary: str | Path = "data/reports/b2_summary.json",
+    predictions_output: str | Path = "results/predictions/b2.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -158,6 +172,7 @@ def run_b2(
     logger.info("Fingerprint matrix shape: %s", fp_matrix.shape)
 
     all_results: list[dict[str, Any]] = []
+    all_frames: list[pd.DataFrame] = []
 
     for split_name in split_names:
         logger.info("=== Processing split: %s ===", split_name)
@@ -179,7 +194,7 @@ def run_b2(
             _pipeline.explained_variance_ratio_sum * 100,
         )
 
-        split_results = run_b2_for_split(
+        split_results, split_frames = run_b2_for_split(
             cohort,
             assignments,
             fp_matrix,
@@ -190,11 +205,14 @@ def run_b2(
             device=device,
         )
         all_results.extend(split_results)
+        all_frames.extend(split_frames)
 
     metrics = pd.DataFrame(all_results)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+
+    write_predictions(all_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -322,6 +340,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output JSON summary.",
     )
     parser.add_argument(
+        "--predictions-output",
+        default="results/predictions/b2.csv",
+        help="Output per-row predictions CSV consumed by mcdrp.results.metrics_report.",
+    )
+    parser.add_argument(
         "--target",
         default="ln_ic50",
         help="Regression target column.",
@@ -388,6 +411,7 @@ def main() -> None:
         expression_path=args.expression,
         output=args.output,
         summary=args.summary,
+        predictions_output=args.predictions_output,
         target=args.target,
         n_components=args.n_components,
         split_names=tuple(args.splits),

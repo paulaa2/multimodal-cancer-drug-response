@@ -78,7 +78,7 @@ class TestRunB2ForSplit:
             "n_jobs": 1,
         }
 
-        results = run_b2_for_split(
+        results, frames = run_b2_for_split(
             synthetic_cohort,
             synthetic_split,
             fp_matrix,
@@ -97,3 +97,8 @@ class TestRunB2ForSplit:
             assert "pearson" in r
             assert r["rmse"] >= 0
             assert "best_iteration" in r
+
+        assert len(frames) == len(results)
+        for frame, r in zip(frames, results, strict=True):
+            assert len(frame) == r["n_rows"]
+            assert frame["stage"].unique().tolist() == ["B2"]

@@ -1,8 +1,9 @@
 {
-  "created_at_utc": "2026-09-18T08:20:36.113034+00:00",
+  "created_at_utc": "2026-09-18T09:27:17.570941+00:00",
   "cohort_path": "data/processed/cohort_pairs.csv",
   "split_dir": "data\\processed\\splits",
   "output": "results/baselines/b0_metrics.csv",
+  "predictions_output": "results/predictions/b0.csv",
   "target": "ln_ic50",
   "splits": [
     "random_pair",

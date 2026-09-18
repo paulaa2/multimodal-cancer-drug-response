@@ -22,6 +22,7 @@ from sklearn.linear_model import ElasticNet, RidgeCV
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
+from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -73,8 +74,8 @@ def evaluate_model(
     target: str,
     split_name: str,
     subset: str,
-) -> dict[str, Any]:
-    """Predict and compute regression metrics for one model on one subset."""
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Predict once, returning both the metric row and the tidy predictions."""
     predictions = model.predict(X)
     metrics = regression_metrics(
         rows[target].to_numpy(),
@@ -82,7 +83,7 @@ def evaluate_model(
         cell_keys=rows["depmap_id"].tolist(),
         drug_keys=rows["drug_id"].tolist(),
     )
-    return {
+    row = {
         "model": model_name,
         "split_name": split_name,
         "subset": subset,
@@ -91,6 +92,16 @@ def evaluate_model(
         "n_drugs": int(rows["drug_id"].nunique()),
         **metrics,
     }
+    frame = prediction_frame(
+        rows,
+        rows[target].to_numpy(),
+        predictions,
+        stage="B1",
+        model=model_name,
+        split_name=split_name,
+        subset=subset,
+    )
+    return row, frame
 
 
 def run_b1_for_split(
@@ -103,7 +114,7 @@ def run_b1_for_split(
     target: str,
     elastic_alpha: float = 0.02,
     elastic_l1_ratio: float = 0.9,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run Ridge + Elastic Net for one split configuration."""
 
     data = cohort.merge(
@@ -114,6 +125,7 @@ def run_b1_for_split(
     pair_id_to_idx = {pid: idx for idx, pid in enumerate(cohort["pair_id"])}
 
     results: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
 
     # Prepare train features.
     train_mask = data["split"].eq("train")
@@ -174,19 +186,19 @@ def run_b1_for_split(
         )
 
         for model_name, model in models:
-            results.append(
-                evaluate_model(
-                    model,
-                    model_name,
-                    X_subset,
-                    subset_rows,
-                    target=target,
-                    split_name=split_name,
-                    subset=subset,
-                )
+            row, frame = evaluate_model(
+                model,
+                model_name,
+                X_subset,
+                subset_rows,
+                target=target,
+                split_name=split_name,
+                subset=subset,
             )
+            results.append(row)
+            frames.append(frame)
 
-    return results
+    return results, frames
 
 
 def run_b1(
@@ -195,6 +207,7 @@ def run_b1(
     expression_path: str | Path = EXPRESSION_PATH,
     output: str | Path = "results/baselines/b1_metrics.csv",
     summary: str | Path = "data/reports/b1_summary.json",
+    predictions_output: str | Path = "results/predictions/b1.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -213,6 +226,7 @@ def run_b1(
     logger.info("Fingerprint matrix shape: %s", fp_matrix.shape)
 
     all_results: list[dict[str, Any]] = []
+    all_frames: list[pd.DataFrame] = []
 
     for split_name in split_names:
         logger.info("=== Processing split: %s ===", split_name)
@@ -235,7 +249,7 @@ def run_b1(
             _pipeline.explained_variance_ratio_sum * 100,
         )
 
-        split_results = run_b1_for_split(
+        split_results, split_frames = run_b1_for_split(
             cohort,
             assignments,
             fp_matrix,
@@ -246,11 +260,14 @@ def run_b1(
             elastic_l1_ratio=elastic_l1_ratio,
         )
         all_results.extend(split_results)
+        all_frames.extend(split_frames)
 
     metrics = pd.DataFrame(all_results)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+
+    write_predictions(all_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -258,6 +275,7 @@ def run_b1(
         "expression_path": str(expression_path),
         "split_dir": str(split_dir),
         "output": str(output),
+        "predictions_output": str(predictions_output),
         "target": target,
         "n_pca_components": n_components,
         "fp_bits": 2048,
@@ -332,6 +350,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output JSON summary.",
     )
     parser.add_argument(
+        "--predictions-output",
+        default="results/predictions/b1.csv",
+        help="Output per-row predictions CSV consumed by mcdrp.results.metrics_report.",
+    )
+    parser.add_argument(
         "--target",
         default="ln_ic50",
         help="Regression target column.",
@@ -379,6 +402,7 @@ def main() -> None:
         expression_path=args.expression,
         output=args.output,
         summary=args.summary,
+        predictions_output=args.predictions_output,
         target=args.target,
         n_components=args.n_components,
         split_names=tuple(args.splits),

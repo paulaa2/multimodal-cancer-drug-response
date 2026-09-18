@@ -104,9 +104,14 @@ def regression_metrics(
     """Compute regression metrics for drug-response prediction.
 
     ``reference_pred`` should hold mean-effects predictions for the same rows.
-    When given, normalized metrics are added that measure only the differential
-    response signal beyond drug and cell-line mean effects. When ``drug_keys``
-    or ``cell_keys`` are given, correlations stratified by that entity are added.
+    When given, normalized metrics are added that measure performance relative
+    to those mean effects rather than in absolute terms: ``r2_normalized`` is
+    the fraction of the reference's squared error that the model removes, and
+    the normalized correlations measure whether the model tracks the
+    differential response the reference cannot express.
+
+    When ``drug_keys`` or ``cell_keys`` are given, correlations stratified by
+    that entity are added.
     """
 
     y_true = np.asarray(y_true, dtype=float)
@@ -126,9 +131,21 @@ def regression_metrics(
         reference_pred = np.asarray(reference_pred, dtype=float)
         residual_true = y_true - reference_pred
         residual_pred = y_pred - reference_pred
+        ss_model = float(np.sum((y_true - y_pred) ** 2))
+        ss_reference = float(np.sum(residual_true**2))
         metrics.update(
             {
-                "r2_normalized": r2_score(residual_true, residual_pred),
+                # Squared error relative to the reference: exactly 0 when the
+                # model matches the mean-effects baseline, 1 when perfect, and
+                # negative when the model is worse than knowing nothing but
+                # drug and cell-line averages.
+                "r2_normalized": (
+                    1.0 - ss_model / ss_reference
+                    if ss_reference > 0
+                    else float("nan")
+                ),
+                # Correlation of the residuals: does the model track the
+                # differential response that the reference cannot express?
                 "pearson_normalized": safe_corr(
                     residual_true, residual_pred, method="pearson"
                 ),
