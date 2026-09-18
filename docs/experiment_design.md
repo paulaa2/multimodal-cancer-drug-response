@@ -74,8 +74,10 @@ fingerprints and graph encoders in the same split protocol.
 ## High-impact next upgrades
 
 Prioritized in [`research_roadmap.md`](research_roadmap.md). The short version:
-multi-seed dispersion and persisted per-row predictions come before any new
-modality, because without them no comparison between models is interpretable.
+per-row predictions are in place; multi-seed dispersion is implemented as
+`mcdrp.experiments.multiseed` and still needs to be run before any new
+modality, because without those numbers no comparison between models is
+interpretable.
 
 ## Claim discipline
 

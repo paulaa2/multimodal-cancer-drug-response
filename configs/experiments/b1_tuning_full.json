@@ -1,0 +1,32 @@
+{
+  "name": "b1_tuning_full",
+  "description": "Tune B1 Ridge/ElasticNet independently on every evaluation split, including cold_tissue.",
+  "steps": [
+    {
+      "name": "tune_b1_all_splits",
+      "module": "mcdrp.models.tune_b1",
+      "args": {
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_tissue",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ]
+      }
+    },
+    {
+      "name": "compare_models",
+      "module": "mcdrp.results.compare_baselines",
+      "args": {}
+    },
+    {
+      "name": "cold_start_report",
+      "module": "mcdrp.results.cold_start_report",
+      "args": {
+        "subset": "test"
+      }
+    }
+  ]
+}

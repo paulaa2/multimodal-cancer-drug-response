@@ -128,6 +128,7 @@ def fit_expression_pipeline(
     expression: pd.DataFrame,
     *,
     n_components: int = 256,
+    random_state: int = 42,
 ) -> ExpressionPipeline:
     """Fit StandardScaler + PCA on training gene expression rows.
 
@@ -138,6 +139,8 @@ def fit_expression_pipeline(
         Must contain **only training** cell lines to avoid leakage.
     n_components:
         Number of PCA components to retain.
+    random_state:
+        Seed for randomized SVD, so multi-seed runs also vary PCA.
 
     Returns
     -------
@@ -151,7 +154,7 @@ def fit_expression_pipeline(
     scaler = StandardScaler()
     scaled = scaler.fit_transform(values)
 
-    pca = PCA(n_components=n_components, random_state=42)
+    pca = PCA(n_components=n_components, random_state=random_state)
     pca.fit(scaled)
 
     explained = pca.explained_variance_ratio_.sum()
@@ -201,6 +204,7 @@ def build_cell_features(
     train_depmap_ids: set[str],
     *,
     n_components: int = 256,
+    random_state: int = 42,
 ) -> tuple[ExpressionPipeline, dict[str, np.ndarray]]:
     """End-to-end helper: load expression, fit PCA on train, transform all.
 
@@ -214,6 +218,8 @@ def build_cell_features(
         Set of ``depmap_id`` values belonging to training rows.
     n_components:
         PCA components.
+    random_state:
+        Seed forwarded to PCA.
 
     Returns
     -------
@@ -225,7 +231,11 @@ def build_cell_features(
 
     # Fit on training cell lines only.
     train_expr = expression.loc[expression.index.isin(train_depmap_ids)]
-    pipeline = fit_expression_pipeline(train_expr, n_components=n_components)
+    pipeline = fit_expression_pipeline(
+        train_expr,
+        n_components=n_components,
+        random_state=random_state,
+    )
 
     # Transform all cell lines that appear in the expression matrix.
     all_transformed = transform_expression(pipeline, expression)

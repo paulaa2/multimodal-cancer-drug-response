@@ -1,4 +1,8 @@
-"""Validation-based hyperparameter tuning for B2 XGBoost baseline."""
+"""Validation-based hyperparameter tuning for B2 XGBoost baseline.
+
+Each split selects on its own validation RMSE. Omitting ``--splits`` tunes
+the full suite, including ``cold_tissue``.
+"""
 
 from __future__ import annotations
 

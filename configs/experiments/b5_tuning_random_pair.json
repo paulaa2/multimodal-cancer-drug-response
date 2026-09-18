@@ -1,6 +1,6 @@
 {
   "name": "b5_tuning_random_pair",
-  "description": "Tune B5 hybrid GNN learning rate and dropout on validation RMSE for the random-pair split.",
+  "description": "Smoke test: tune B5 hybrid GNN on random_pair only. Not a cold-start result; use b5_tuning_full.json for that.",
   "steps": [
     {
       "name": "tune_b5_random_pair",

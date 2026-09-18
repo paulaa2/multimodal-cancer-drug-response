@@ -4,9 +4,11 @@ The grid is deliberately small: four candidates over learning rate and dropout.
 Architecture width/depth stay at the B4 defaults so the search answers whether
 the published defaults were lucky, without turning into a full NAS run.
 
-Selection is validation RMSE. On a fixed split that ranking is identical to
-r2_normalized, because the mean-effects reference is constant across candidates.
-Test is scored only for the selected candidate.
+Selection is validation RMSE, independently on each split. Transferring a
+winner from ``random_pair`` to a cold split is not a valid protocol. On a
+fixed split that ranking is identical to r2_normalized, because the
+mean-effects reference is constant across candidates. Test is scored only for
+the selected candidate.
 """
 
 from __future__ import annotations

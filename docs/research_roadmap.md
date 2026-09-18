@@ -10,7 +10,9 @@ The model ladder B0-B7 is implemented. Every model writes per-row predictions,
 reporting computes mean-effect normalized and stratified metrics, and the
 leave-tissue-out split is wired into the default split suite and full
 experiment configs. B4/B5 have a four-point validation tuner; B6 reuses
-validation-selected B2 XGBoost hyperparameters.
+validation-selected B2 XGBoost hyperparameters. A multi-seed runner rebuilds
+splits and models under several seeds and reports mean and spread, without
+p-values.
 
 The first thing that machinery revealed, on the `random_pair` test set:
 
@@ -28,19 +30,16 @@ this is why the reporting rules in
 
 ## Tier 1 — required before any result is a finding
 
-### 1. Multi-seed runs with dispersion
+### 1. Multi-seed runs with dispersion — code done, numbers pending
 
-Every number in the repository is a single run. Differences of a few percent
-between models are currently uninterpretable, which means the model ranking in
-the README is provisional.
+`python -m mcdrp.experiments.multiseed` rebuilds splits and retrains under
+several seeds, then writes mean and spread. Split construction and model
+initialization share the same seed. Canonical seed-42 artifacts are not
+overwritten. The runner does not compute p-values: pairs are not independent,
+and the units of replication are cell lines and drugs.
 
-Run each model/split with several seeds and report mean and spread. Seeds must
-vary both the split construction and model initialization, since split
-composition is a large variance source for cold settings.
-
-Because drug-cell-line pairs are not independent — the units of replication are
-cell lines and drugs — any significance test must account for that grouping.
-Until then, make no significance claims. This is the pseudoreplication trap.
+The experiment that counts is `configs/experiments/multiseed_b0_b2_full.json`.
+Until those numbers exist, the README ranking remains provisional.
 
 ### 2. Persist per-row predictions — done
 

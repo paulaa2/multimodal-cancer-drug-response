@@ -251,6 +251,7 @@ def run_b6_ablation(
     max_depth: int = 6,
     early_stopping_rounds: int = 40,
     device: str = "auto",
+    random_state: int = 42,
 ) -> pd.DataFrame:
     """Run the B6 feature ablation study."""
 
@@ -267,7 +268,7 @@ def run_b6_ablation(
         "objective": "reg:squarederror",
         "eval_metric": "rmse",
         "tree_method": "hist",
-        "random_state": 42,
+        "random_state": random_state,
         "n_jobs": -1,
     }
     xgb_params.update(xgb_device_params(device))
@@ -288,6 +289,7 @@ def run_b6_ablation(
             cohort,
             train_ids,
             n_components=n_components,
+            random_state=random_state,
         )
         pathway_pipeline, pathway_feature_map = build_pathway_features(
             str(expression_path),
@@ -423,6 +425,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="auto",
     )
     parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Seed for XGBoost and PCA.",
+    )
+    parser.add_argument(
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
@@ -464,6 +472,7 @@ def main() -> None:
         max_depth=args.max_depth,
         early_stopping_rounds=args.early_stopping_rounds,
         device=args.device,
+        random_state=args.random_state,
     )
     print(f"\nWrote B6 ablation metrics to {args.output}")
     print("=" * 72)

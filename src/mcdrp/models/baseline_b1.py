@@ -114,6 +114,7 @@ def run_b1_for_split(
     target: str,
     elastic_alpha: float = 0.02,
     elastic_l1_ratio: float = 0.9,
+    random_state: int = 42,
 ) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run Ridge + Elastic Net for one split configuration."""
 
@@ -161,7 +162,7 @@ def run_b1_for_split(
         alpha=elastic_alpha,
         l1_ratio=elastic_l1_ratio,
         max_iter=2000,
-        random_state=42,
+        random_state=random_state,
         selection="random",
         copy_X=False,
     )
@@ -214,6 +215,7 @@ def run_b1(
     split_names: tuple[str, ...] = DEFAULT_SPLITS,
     elastic_alpha: float = 0.02,
     elastic_l1_ratio: float = 0.9,
+    random_state: int = 42,
 ) -> pd.DataFrame:
     """Run B1 baselines across all splits."""
 
@@ -243,6 +245,7 @@ def run_b1(
             cohort,
             train_ids,
             n_components=n_components,
+            random_state=random_state,
         )
         logger.info(
             "PCA explained variance: %.1f%%",
@@ -258,6 +261,7 @@ def run_b1(
             target=target,
             elastic_alpha=elastic_alpha,
             elastic_l1_ratio=elastic_l1_ratio,
+            random_state=random_state,
         )
         all_results.extend(split_results)
         all_frames.extend(split_frames)
@@ -282,6 +286,7 @@ def run_b1(
         "fp_radius": 2,
         "elastic_alpha": elastic_alpha,
         "elastic_l1_ratio": elastic_l1_ratio,
+        "random_state": random_state,
         "splits": list(split_names),
         "best_by_split_subset": _summarize_best(metrics),
     }
@@ -378,6 +383,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fixed ElasticNet l1_ratio.",
     )
     parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Seed for ElasticNet and PCA.",
+    )
+    parser.add_argument(
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
@@ -408,6 +419,7 @@ def main() -> None:
         split_names=tuple(args.splits),
         elastic_alpha=args.elastic_alpha,
         elastic_l1_ratio=args.elastic_l1_ratio,
+        random_state=args.random_state,
     )
     print(f"\nWrote B1 metrics to {args.output}")
     print("=" * 72)

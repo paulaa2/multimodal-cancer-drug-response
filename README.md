@@ -58,9 +58,10 @@ Per split, best model against the strongest B0 baseline (test sets):
 | `cold_both` | B7 pretrained + pathways | 2.375 | 10.7% |
 
 **These are single-seed runs and carry no dispersion estimate, so small
-differences between models are not yet interpretable.** Establishing multi-seed
-robustness is the top priority in
-[`docs/research_roadmap.md`](docs/research_roadmap.md). Note also the expected
+differences between models are not yet interpretable.** The runner is
+`python -m mcdrp.experiments.multiseed`; the experiment that counts is
+`configs/experiments/multiseed_b0_b2_full.json`. Until those replications
+exist, the ranking above is provisional. Note also the expected
 pattern: the models hold up best where interpolation is possible and degrade
 sharply on unseen chemistry.
 

@@ -147,6 +147,7 @@ def run_b2(
     max_depth: int = 6,
     early_stopping_rounds: int = 30,
     device: str = "auto",
+    random_state: int = 42,
 ) -> pd.DataFrame:
     """Run B2 XGBoost baseline across all splits."""
 
@@ -161,7 +162,7 @@ def run_b2(
         "objective": "reg:squarederror",
         "eval_metric": "rmse",
         "tree_method": "hist",
-        "random_state": 42,
+        "random_state": random_state,
         "n_jobs": -1,
     }
     xgb_params.update(xgb_device_params(device))
@@ -188,6 +189,7 @@ def run_b2(
             cohort,
             train_ids,
             n_components=n_components,
+            random_state=random_state,
         )
         logger.info(
             "PCA explained variance: %.1f%%",
@@ -226,6 +228,7 @@ def run_b2(
         "fp_radius": 2,
         "xgb_params": {k: v for k, v in xgb_params.items() if k != "n_jobs"},
         "xgb_device_requested": device,
+        "random_state": random_state,
         "splits": list(split_names),
         "best_by_split_subset": _summarize_best(metrics),
     }
@@ -436,6 +439,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Training device. auto tries CUDA and falls back to CPU.",
     )
     parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Seed for XGBoost and PCA.",
+    )
+    parser.add_argument(
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
@@ -469,6 +478,7 @@ def main() -> None:
         max_depth=args.max_depth,
         early_stopping_rounds=args.early_stopping_rounds,
         device=args.device,
+        random_state=args.random_state,
     )
     print(f"\nWrote B2 metrics to {args.output}")
     print("=" * 72)

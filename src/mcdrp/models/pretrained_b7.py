@@ -241,6 +241,7 @@ def run_b7_pretrained(
     max_depth: int = 5,
     early_stopping_rounds: int = 50,
     device: str = "auto",
+    random_state: int = 42,
 ) -> pd.DataFrame:
     """Run B7 pretrained embedding experiments."""
 
@@ -266,7 +267,7 @@ def run_b7_pretrained(
         "objective": "reg:squarederror",
         "eval_metric": "rmse",
         "tree_method": "hist",
-        "random_state": 42,
+        "random_state": random_state,
         "n_jobs": -1,
     }
     xgb_params.update(xgb_device_params(device))
@@ -287,6 +288,7 @@ def run_b7_pretrained(
             cohort,
             train_ids,
             n_components=n_components,
+            random_state=random_state,
         )
         pathway_pipeline, pathway_feature_map = build_pathway_features(
             str(expression_path),
@@ -441,6 +443,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--early-stopping-rounds", type=int, default=50)
     parser.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto")
     parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Seed for XGBoost and PCA.",
+    )
+    parser.add_argument(
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
@@ -486,6 +494,7 @@ def main() -> None:
         max_depth=args.max_depth,
         early_stopping_rounds=args.early_stopping_rounds,
         device=args.device,
+        random_state=args.random_state,
     )
     print(f"\nWrote B7 pretrained metrics to {args.output}")
     print("=" * 72)

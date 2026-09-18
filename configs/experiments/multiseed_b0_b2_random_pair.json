@@ -1,0 +1,16 @@
+{
+  "name": "multiseed_b0_b2_random_pair",
+  "description": "Rebuild splits and B0–B2 under three seeds on random_pair, then report mean and spread.",
+  "steps": [
+    {
+      "name": "run_multiseed",
+      "module": "mcdrp.experiments.multiseed",
+      "args": {
+        "seeds": [42, 7, 13],
+        "models": ["B0", "B1", "B2"],
+        "splits": ["random_pair"],
+        "device": "cuda"
+      }
+    }
+  ]
+}

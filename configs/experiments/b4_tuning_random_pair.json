@@ -1,6 +1,6 @@
 {
   "name": "b4_tuning_random_pair",
-  "description": "Tune B4 GNN learning rate and dropout on validation RMSE for the random-pair split.",
+  "description": "Smoke test: tune B4 GNN on random_pair only. Not a cold-start result; use b4_tuning_full.json for that.",
   "steps": [
     {
       "name": "tune_b4_random_pair",

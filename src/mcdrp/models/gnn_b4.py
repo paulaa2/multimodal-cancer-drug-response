@@ -659,6 +659,7 @@ def run_b4(
             cohort,
             train_ids,
             n_components=n_components,
+            random_state=random_state,
         )
         logger.info(
             "PCA explained variance: %.1f%%",

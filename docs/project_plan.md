@@ -63,26 +63,39 @@ This writes `results/baselines/baseline_comparison.csv`,
 `results/baselines/baseline_best_by_split.csv`, and
 `data/reports/baseline_comparison_summary.json`.
 
-Optional tuning scripts are available when the baseline comparison needs stronger
-validation-selected hyperparameters:
+Those tables are one seed. To estimate spread, rebuild splits and B0–B2 under
+several seeds. Split construction and model initialization share the seed, and
+the summary reports mean and std with no p-values:
 
 ```powershell
-python -m mcdrp.models.tune_b1 --splits random_pair
-python -m mcdrp.models.tune_b2 --splits random_pair --device cuda
-python -m mcdrp.models.tune_b3 --splits random_pair --device cuda
-python -m mcdrp.models.tune_b4 --splits random_pair --device cuda
-python -m mcdrp.models.tune_b5 --splits random_pair --device cuda
+python -m mcdrp.experiments.run_experiment configs/experiments/multiseed_b0_b2_full.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/multiseed_b0_b2_full.json
+```
+
+Optional tuning scripts are available when the baseline comparison needs stronger
+validation-selected hyperparameters. Omit `--splits` to tune every split,
+including `cold_tissue`; each split selects on its own validation set:
+
+```powershell
+python -m mcdrp.models.tune_b1
+python -m mcdrp.models.tune_b2 --device cuda
+python -m mcdrp.models.tune_b3 --device cuda
+python -m mcdrp.models.tune_b4 --device cuda
+python -m mcdrp.models.tune_b5 --device cuda
+```
+
+Or launch the full configs:
+
+```powershell
+python -m mcdrp.experiments.run_experiment configs/experiments/b2_tuning_full.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b4_tuning_full.json --dry-run
 ```
 
 `tune_b4` and `tune_b5` search a four-point grid of learning rate × dropout,
 keep architecture at the published defaults, and score test only for the
-validation-selected candidate. Full-split configs include `cold_tissue`.
-B6 ablations overlay the validation-selected B2 XGBoost hyperparameters so the
-ablation measures modalities rather than a weaker booster.
-
-Run one split first because tuning repeats model fitting several times. The same
-comparison command includes standard metrics and tuning outputs when they exist.
-For tuning CSVs, it keeps only the validation-selected candidates:
+validation-selected candidate of that split. A `random_pair` smoke test does
+not substitute for this. B6 overlays the B2 hyperparameters of the **same**
+split, so B2 has to be tuned on every split B6 will report.
 
 ```powershell
 python -m mcdrp.results.compare_baselines
@@ -137,7 +150,7 @@ wired correctly.
 
 ```powershell
 python -m mcdrp.experiments.run_experiment configs/experiments/b4_gnn_full.json --dry-run
-python -m mcdrp.models.tune_b4 --splits random_pair --device cuda
+python -m mcdrp.experiments.run_experiment configs/experiments/b4_tuning_full.json --dry-run
 ```
 
 The current B4 improvement keeps that dependency-light design but strengthens
@@ -147,8 +160,8 @@ pooling, train-only target scaling, and gradient clipping.
 Main hybrid model:
 
 ```powershell
-python -m mcdrp.models.gnn_b5 --splits random_pair --device cuda
-python -m mcdrp.models.tune_b5 --splits random_pair --device cuda
+python -m mcdrp.models.gnn_b5 --device cuda
+python -m mcdrp.models.tune_b5 --device cuda
 python -m mcdrp.results.compare_baselines
 ```
 
@@ -273,11 +286,11 @@ B7 variants:
 
 The embedding CSV format is documented in `docs/external_embeddings.md`.
 
-Tuned B7 entry point:
+Tuned B7 entry point (all splits; `b7_tuning_random_pair.json` is only a smoke test):
 
 ```powershell
-python -m mcdrp.experiments.run_experiment configs/experiments/b7_tuning_random_pair.json --dry-run
-python -m mcdrp.experiments.run_experiment configs/experiments/b7_tuning_random_pair.json
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_tuning_full.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_tuning_full.json
 ```
 
 The tuning stage keeps the same B7 feature variants but searches a small

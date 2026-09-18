@@ -1,0 +1,23 @@
+{
+  "name": "multiseed_b0_b2_full",
+  "description": "Rebuild splits and B0–B2 under three seeds across all evaluation splits, including cold_tissue.",
+  "steps": [
+    {
+      "name": "run_multiseed",
+      "module": "mcdrp.experiments.multiseed",
+      "args": {
+        "seeds": [42, 7, 13],
+        "models": ["B0", "B1", "B2"],
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_tissue",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ],
+        "device": "cuda"
+      }
+    }
+  ]
+}

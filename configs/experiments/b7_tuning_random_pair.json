@@ -1,6 +1,6 @@
 {
   "name": "b7_tuning_random_pair",
-  "description": "Tune B7 pretrained drug embedding models on the random-pair split.",
+  "description": "Smoke test: tune B7 on random_pair only. Not a cold-start result; use b7_tuning_full.json for that.",
   "steps": [
     {
       "name": "tune_b7_random_pair",

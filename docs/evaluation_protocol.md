@@ -64,6 +64,9 @@ numbers.
   training rows only, separately for every split.
 - Never use test rows for early stopping, checkpoint selection, or
   hyperparameter choice. Select on validation, then report test once.
+- Select hyperparameters **independently on each split**. A setting chosen on
+  `random_pair` is not valid for a cold-start claim. The `*_tuning_random_pair`
+  configs are smoke tests; the `*_tuning_full` configs are the result.
 - Never report the best test metric across epochs, seeds, or configurations.
   The selection rule must be fixed before looking at test.
 - Keep every row of a held-out entity out of training, not just some rows.
@@ -155,11 +158,13 @@ A result table is complete when it has all of:
 Known gaps in the current results, which should be closed before any of this is
 written up as a finding:
 
-- **Single seed.** Every number is one run. Differences of a few percent are
-  not interpretable yet. Multi-seed runs with dispersion are required.
+- **Single seed.** The comparison tables in the README are one run. The
+  multi-seed runner exists (`mcdrp.experiments.multiseed`); it reports mean and
+  spread and does not compute p-values. Until those replications are generated,
+  differences of a few percent are not interpretable.
 - **Pseudoreplication.** Pairs are not independent; the units of replication are
   cell lines and drugs. Significance claims must account for the grouping, so no
-  significance is claimed at present.
+  significance is claimed.
 - **`cold_tissue` has baselines only.** No trained model has been run on it yet.
 - **Single source.** GDSC2 only, so nothing here speaks to cross-study transfer.
 
