@@ -1,8 +1,7 @@
 import numpy as np
+import pytest
 
 from mcdrp.features.graphs import ATOM_FEATURE_DIM, smiles_to_graph
-from mcdrp.models.gnn_b4 import collate_graph_batch
-from mcdrp.models.gnn_b5 import collate_hybrid_graph_batch
 
 
 def test_smiles_to_graph_builds_valid_graph() -> None:
@@ -16,6 +15,9 @@ def test_smiles_to_graph_builds_valid_graph() -> None:
 
 
 def test_collate_graph_batch_pads_variable_size_graphs() -> None:
+    pytest.importorskip("torch", reason="B4 collate helpers require PyTorch.")
+    from mcdrp.models.gnn_b4 import collate_graph_batch
+
     graph_a = smiles_to_graph("CCO")
     graph_b = smiles_to_graph("c1ccccc1")
     batch = collate_graph_batch(
@@ -43,6 +45,9 @@ def test_collate_graph_batch_pads_variable_size_graphs() -> None:
 
 
 def test_collate_hybrid_graph_batch_adds_fingerprints() -> None:
+    pytest.importorskip("torch", reason="B5 collate helpers require PyTorch.")
+    from mcdrp.models.gnn_b5 import collate_hybrid_graph_batch
+
     graph_a = smiles_to_graph("CCO")
     graph_b = smiles_to_graph("c1ccccc1")
     batch = collate_hybrid_graph_batch(

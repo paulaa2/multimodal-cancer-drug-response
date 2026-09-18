@@ -57,6 +57,7 @@ def test_compare_tuned_baselines_keeps_selected_test_rows(tmp_path: Path) -> Non
         b0=b0,
         b1_tuned=b1,
         b2_tuned=tmp_path / "missing_b2.csv",
+        b3_tuned=tmp_path / "missing_b3.csv",
         output=tmp_path / "comparison.csv",
         best_output=tmp_path / "best.csv",
         summary=tmp_path / "summary.json",

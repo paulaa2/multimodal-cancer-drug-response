@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +20,6 @@ import pandas as pd
 
 from mcdrp.results.compare_baselines import REQUIRED_COLUMNS, is_truthy
 from mcdrp.splits.make_splits import DEFAULT_SPLITS, SPLIT_LABELS
-
 
 STANDARD_METRICS = {
     "B0": "results/baselines/b0_metrics.csv",
@@ -74,7 +74,7 @@ def read_csv(path: str | Path) -> pd.DataFrame:
 
 
 def check_required_files(
-    paths: dict[str, str | Path],
+    paths: Mapping[str, str | Path],
     *,
     required: tuple[str, ...],
     check_name: str,
@@ -297,7 +297,9 @@ def validate_tuning_table(stage: str, path: str | Path) -> CheckResult:
     if value_check.status == "fail":
         return value_check
 
-    selected_test = pd.DataFrame()
+    # Keep the column schema so the pair comparison below works even when no
+    # candidate was marked as selected.
+    selected_test = table.iloc[:0]
     if "selected_by_validation" in table.columns:
         selected = table["selected_by_validation"].map(is_truthy).fillna(False)
         selected_test = table.loc[table["subset"].eq("test") & selected]

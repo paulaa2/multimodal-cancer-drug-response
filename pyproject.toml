@@ -35,3 +35,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Makes the suite runnable straight from a clone, without an editable install.
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"
