@@ -1,352 +1,181 @@
 # Robust Multimodal Cancer Drug Response Prediction
 
-Independent computational biology portfolio project combining cancer cell-line
-transcriptomics with molecular graph representations to predict continuous drug
-response.
+Predicting how cancer cell lines respond to drugs, from transcriptomic state and
+molecular structure — and measuring honestly how much of that ability survives
+when the model meets an unseen cell line, an unseen tissue, or an unseen
+compound.
 
-The project is intentionally built around realistic generalization: random
-drug-cell-line splits are useful for debugging, but the core scientific question
-is how much performance survives when the model sees unseen cell lines, unseen
-drugs, or unseen chemical scaffolds.
+## Research question
 
-## Research Question
+> Can a multimodal model combining transcriptomic state and molecular structure
+> predict cancer drug response robustly under realistic distribution shifts, and
+> do biologically informed pathway representations improve generalization and
+> interpretability?
 
-Can a multimodal model that combines transcriptomic state and molecular graph
-structure predict cancer drug response robustly under realistic distribution
-shifts, and do biologically informed pathway representations improve
-generalization and interpretability?
+The evaluation design is the point of this project, not the architecture. Recent
+critical reviews of this field find that about half of published models do not
+significantly outperform a baseline that only knows the average response of each
+drug and each cell line, and that confirmed data leakage affects roughly 70% of
+audited methods. So the project is built around a strong feature-free reference,
+leakage-safe splits, and metrics that separate real signal from mean-effect
+memorization. See [`docs/related_work.md`](docs/related_work.md).
 
-## Project Status
+## Task
 
-Current phase: **F0 - repository and data-audit scaffolding**.
-
-The repository currently contains the project design document and the initial
-implementation structure. The next milestone is to build a reproducible data
-audit that integrates:
-
-- GDSC response labels
-- DepMap / CCLE transcriptomic profiles
-- ChEMBL or PubChem chemical structures
-- optional pathway resources such as MSigDB
-
-No model results should be trusted until identifier mappings, data-audit
-summaries, and leakage-safe splits are in place.
-
-## Scientific Setup
-
-Each training example is a measured response for one cancer cell line and one
-drug:
+Each example is one measured response for a (cell line, drug) pair:
 
 ```text
-(cell line c, drug d) -> response y_cd
+y_hat = f(x_cell, G_drug)     target: ln(IC50)
 ```
 
-The model receives:
+`x_cell` is a transcriptomic vector or pathway activity profile, `G_drug` is a
+molecular graph, Morgan fingerprint, or pretrained embedding. Regression, not
+classification, because sensitive/resistant thresholds add assumptions.
 
-- a transcriptomic vector for the cell line, `x_cell`
-- a molecular representation of the drug, `G_drug`
-- a continuous response target, recommended first target: `ln(IC50)`
+## Status
 
-The prediction task is regression:
+Baselines through B7 are implemented and have been run across the split suite.
+The headline comparison, on the `random_pair` test set:
 
-```text
-y_hat = f_theta(x_cell, G_drug)
-```
-
-Classification into sensitive/resistant groups can be added later, but it is not
-the primary task because response thresholds introduce extra assumptions.
-
-## Planned Data Sources
-
-| Resource | Role | Main object |
-| --- | --- | --- |
-| GDSC | Drug-response labels | drug-cell-line pair -> ln(IC50) / AUC |
-| DepMap / CCLE | Transcriptomic profiles and cell-line metadata | cell line -> RNA-seq expression |
-| ChEMBL or PubChem | Canonical chemical structures | drug -> canonical SMILES |
-| MSigDB / pathway resource | Optional pathway representation | gene set -> pathway definition |
-
-The project should use one frozen release of each resource. Mixing different
-release versions inside the same experiment can silently create inconsistent
-labels, features, or identifiers.
-
-## Evaluation Splits
-
-The evaluation design is the most important part of this project.
-
-| Split | Held out | Question answered |
-| --- | --- | --- |
-| Random pair | drug-cell-line pairs | Can the model interpolate among known drugs and known cell lines? |
-| Cold cell | entire cell lines | Can the model generalize to a new biological context? |
-| Cold drug | entire drugs | Can the model generalize to unseen compounds? |
-| Scaffold | chemical scaffolds | Can the model generalize to structurally novel chemistry? |
-| Cold both | drugs and cell lines | Can it generalize when both modalities are novel? |
-
-Feature selection, scaling, PCA, and pathway-derived transformations must be fit
-only on training data for each split.
-
-## Model Roadmap
-
-The project should grow from simple, auditable baselines to multimodal deep
-learning.
-
-| ID | Model | Cell representation | Drug representation |
+| Model | Features | RMSE | vs. `mean_effects` |
 | --- | --- | --- | --- |
-| B0 | Mean baseline | none | none |
-| B1 | Ridge / Elastic Net | selected genes or PCA | Morgan fingerprint |
-| B2 | XGBoost | selected genes or PCA | Morgan fingerprint |
-| B3 | Multimodal MLP | gene, PCA, or pathway encoder | Morgan fingerprint |
-| M1 | Multimodal GNN | gene encoder | molecular graph |
-| M2 | Pathway + GNN | pathway encoder | molecular graph |
+| B0 `mean_effects` | none | 1.203 | reference |
+| B5 hybrid GNN | graph + Morgan + expression PCA | **0.931** | −22.6% |
 
-If Morgan fingerprints plus XGBoost match or beat the GNN, that is still a valid
-scientific result. The goal is rigorous comparison, not forcing a preferred
-model to win.
+The `mean_effects` baseline reaches a global Pearson correlation of 0.906 using
+no features at all, which is why it is the reference the models are measured
+against. B5 beating it by 22.6% is evidence the modalities genuinely contribute.
 
-## Repository Structure
+Per split, best model against the strongest B0 baseline (test sets):
+
+| Split | Best model | RMSE | Improvement |
+| --- | --- | --- | --- |
+| `random_pair` | B5 hybrid GNN | 0.931 | 22.6% |
+| `cold_cell` | B2 tuned XGBoost | 1.299 | 12.6% |
+| `cold_tissue` | *not yet run* | — | — |
+| `cold_drug` | B2 tuned XGBoost | 2.218 | 16.4% |
+| `cold_scaffold` | B5 hybrid GNN | 2.736 | 19.3% |
+| `cold_both` | B7 pretrained + pathways | 2.375 | 10.7% |
+
+**These are single-seed runs and carry no dispersion estimate, so small
+differences between models are not yet interpretable.** Establishing multi-seed
+robustness is the top priority in
+[`docs/research_roadmap.md`](docs/research_roadmap.md). Note also the expected
+pattern: the models hold up best where interpolation is possible and degrade
+sharply on unseen chemistry.
+
+## Quickstart
+
+```powershell
+conda create -n mcdrp python=3.12
+conda activate mcdrp
+pip install -e ".[dev,baselines]"
+pytest
+```
+
+The package uses a `src/` layout and must be installed to import as `mcdrp`.
+Always invoke modules as `python -m mcdrp.<module>`; see
+[`docs/workflow.md`](docs/workflow.md) for why the `src.mcdrp.` form is a trap.
+
+Raw data is not in the repository. Follow
+[`docs/data_audit.md`](docs/data_audit.md) to place the GDSC, DepMap, and
+structure files, then:
+
+```powershell
+python -m mcdrp.data.audit             # identifier mappings and audit report
+python -m mcdrp.data.drug_structures   # canonical SMILES
+python -m mcdrp.data.build_cohort      # model-ready pair table
+python -m mcdrp.splits.make_splits     # the six leakage-checked splits
+python -m mcdrp.models.baseline_b0     # feature-free reference
+python -m mcdrp.results.compare_baselines
+```
+
+Larger stages run from versioned configs, so an experiment is reproducible from
+one file:
+
+```powershell
+python -m mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json
+```
+
+`--dry-run` prints the commands without executing them. Every run writes a
+manifest to `results/experiments/<name>/manifest.json`.
+
+## Evaluation design
+
+Six splits, each answering one question. Bracketed names are the conventional
+ones in the literature.
+
+| Split | Held out | Question |
+| --- | --- | --- |
+| `random_pair` [LPO] | individual pairs | can it fill gaps in a measured matrix? |
+| `cold_cell` [LCO] | whole cell lines | a new biological context? |
+| `cold_tissue` [LTO] | whole tissues | a new cancer type? (repurposing) |
+| `cold_drug` [LDO] | whole drugs | an unseen compound? |
+| `cold_scaffold` | Bemis-Murcko scaffolds | structurally novel chemistry? |
+| `cold_both` | drugs and cell lines | both novel at once? |
+
+Metrics come in three families, because global RMSE and Pearson are dominated by
+differences in mean potency between drugs: global, mean-effect **normalized**,
+and **stratified** per drug and per cell line. The full rationale, the leakage
+rules, and the reporting requirements are in
+[`docs/evaluation_protocol.md`](docs/evaluation_protocol.md) — read this before
+interpreting any number in this repository.
+
+## Model ladder
+
+Each rung isolates one question, and a simple model winning is a valid result.
+
+| ID | Model | Cell features | Drug features |
+| --- | --- | --- | --- |
+| B0 | mean baselines | none | none |
+| B1 | Ridge / ElasticNet | genes or PCA | Morgan |
+| B2 | XGBoost | genes or PCA | Morgan |
+| B3 | MLP | genes, PCA, or pathways | Morgan |
+| B4 | lightweight GNN | expression PCA | graph |
+| B5 | hybrid GNN | expression PCA | graph + Morgan |
+| B6 | modality ablation | PCA / pathways | Morgan |
+| B7 | pretrained-drug benchmark | PCA / pathways | frozen embedding |
+
+## Repository layout
 
 ```text
-multimodal-cancer-drug-response/
-├── README.md
-├── pyproject.toml
-├── configs/
-│   └── experiments/
+├── configs/experiments/   versioned experiment definitions
 ├── data/
-│   ├── README.md
-│   ├── reports/
-│   └── mappings/
-├── docs/
-│   └── project_plan.md
-├── src/
-│   └── mcdrp/
-│       ├── data/
-│       ├── experiments/
-│       ├── models/
-│       ├── splits/
-│       └── metrics.py
+│   ├── reports/           small JSON run summaries (tracked)
+│   └── mappings/          identifier mapping tables (tracked)
+├── docs/                  design, protocol, and literature
+├── src/mcdrp/
+│   ├── data/              audit, structures, cohort assembly
+│   ├── features/          fingerprints, expression, pathways, graphs, embeddings
+│   ├── splits/            leakage-checked split construction
+│   ├── models/            B0-B7 and tuning drivers
+│   ├── results/           comparison, cold-start, and ablation reporting
+│   ├── experiments/       config-driven pipeline runner
+│   └── metrics.py         metrics and the mean-effects reference
 └── tests/
 ```
 
-Reusable logic belongs in `src/mcdrp/`. Generated data, split files, and result
-tables are written under ignored folders such as `data/processed/` and
-`results/`. Reproducible experiment definitions belong in
-`configs/experiments/`.
+Generated data and result tables are written to gitignored folders
+(`data/raw/`, `data/processed/`, `results/`, `figures/`).
 
-## Setup
+## Documentation
 
-Create and activate a Python environment, then install the project:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-```
-
-On Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-```
-
-Optional modelling dependencies are declared as extras in `pyproject.toml`.
-Install `.[baselines]` for RDKit/XGBoost and `.[gpu]` for PyTorch-based GPU
-training when the relevant phase needs them.
-
-## First Implementation Milestones
-
-1. **Data audit**
-   - collect raw source files outside git
-   - standardize cell-line, drug, and gene identifiers
-   - create explicit mapping tables with status flags
-   - write a short cohort summary
-
-   Start here:
-
-   ```powershell
-   python -m mcdrp.data.audit
-   ```
-
-   This creates an audit report in `data/reports/` and mapping templates in
-   `data/mappings/`. See `docs/data_audit.md` for the expected raw files and
-   workflow.
-
-   Once `drug_mapping_template.csv` exists, build the initial SMILES table:
-
-   ```powershell
-   python -m mcdrp.data.drug_structures
-   ```
-
-   Then build the first integrated cohort:
-
-   ```powershell
-   python -m mcdrp.data.build_cohort
-   ```
-
-2. **Leakage-safe splits**
-   - random pair split
-   - cold-cell split
-   - cold-drug split
-   - scaffold split after SMILES are available
-
-   Build the full split suite:
-
-   ```powershell
-   python -m mcdrp.splits.make_splits
-   ```
-
-   This writes `random_pair`, `cold_cell`, `cold_drug`, `cold_scaffold`, and
-   `cold_both` split files. `cold_scaffold` groups drugs by Bemis-Murcko
-   scaffold and is the key split for realistic chemical generalization.
-   `cold_both` labels mixed held-out blocks as `unused`; training scripts ignore
-   those rows so train, validation, and test have disjoint cell lines and drugs.
-
-3. **Classical baselines**
-   - mean baseline
-   - Ridge / Elastic Net with Morgan fingerprints
-   - XGBoost with Morgan fingerprints
-   - MLP neural baseline with the same engineered features
-
-   Start with the B0 mean baselines:
-
-   ```powershell
-   python -m mcdrp.models.baseline_b0
-   ```
-
-   Run the first neural baseline on one split:
-
-   ```powershell
-   python -m mcdrp.models.baseline_b3 --splits random_pair --device cuda
-   ```
-
-   B3 is intentionally simple: it uses the same Morgan fingerprint + expression
-   PCA features as B1/B2, but fits an MLP. This tells us whether a basic neural
-   model helps before adding a graph molecular encoder.
-   Use `--device auto` to use CUDA when available and CPU otherwise. B2 XGBoost
-   supports the same device option; B1 Ridge/Elastic Net remains CPU-based.
-
-   After running any baseline, consolidate every available result with the same
-   command:
-
-   ```powershell
-   python -m mcdrp.results.compare_baselines
-   ```
-
-   Optional controlled hyperparameter tuning:
-
-   ```powershell
-   python -m mcdrp.models.tune_b1 --splits random_pair
-   python -m mcdrp.models.tune_b2 --splits random_pair --device cuda
-   python -m mcdrp.models.tune_b3 --splits random_pair --device cuda
-   ```
-
-   `compare_baselines` automatically includes tuning outputs when they exist and
-   keeps only the validation-selected candidates for the final comparison.
-
-   ```powershell
-   python -m mcdrp.results.compare_baselines
-   ```
-
-   Before moving to GNN work, run the baseline-stage quality gate:
-
-   ```powershell
-   python -m mcdrp.results.validate_baseline_stage
-   ```
-
-   This checks cohort/schema integrity, split leakage, metric files, tuning
-   selection rows, and consistency between the comparison CSVs and JSON summary.
-
-4. **Multimodal neural model**
-   - transcriptomic encoder
-   - molecular graph encoder
-   - fusion regression head
-
-   Start with the lightweight pure-PyTorch GNN baseline:
-
-   ```powershell
-   python -m mcdrp.models.gnn_b4 --splits random_pair --device cuda
-   python -m mcdrp.results.compare_baselines
-   ```
-
-   B4 now uses a slightly stronger but still lightweight graph encoder:
-   residual graph-convolution blocks, `LayerNorm`, mean+max graph pooling, and
-   train-only target scaling for more stable neural optimization.
-
-   For a fast smoke run, reduce epochs:
-
-   ```powershell
-   python -m mcdrp.models.gnn_b4 --splits random_pair --device cuda --max-epochs 5
-   ```
-
-   Once B4 is working, run the heavier hybrid GNN model:
-
-   ```powershell
-   python -m mcdrp.models.gnn_b5 --splits random_pair --device cuda
-   python -m mcdrp.results.compare_baselines
-   ```
-
-   B5 is the first "main" multimodal model rather than a lightweight baseline:
-   it combines a deeper residual graph encoder, attention graph pooling, Morgan
-   fingerprints, expression features, target scaling, AdamW, learning-rate
-   scheduling, and multiplicative drug-cell fusion terms. It is deliberately
-   slower to train than B4 and should be run on GPU.
-
-   The same workflow can be launched from an experiment config:
-
-   ```powershell
-   python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json --dry-run
-   python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json
-   ```
-
-   To study which modality is actually responsible for performance, run the B6
-   ablation study:
-
-   ```powershell
-   python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
-   python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
-   ```
-
-   B6 compares `Morgan`, `expression PCA`, `pathway activity`, and their
-   combinations under the same XGBoost model family. By default it uses a small
-   built-in cancer pathway panel; pass `--gene-sets path/to/file.gmt` to use
-   MSigDB Hallmark, Reactome, PROGENy-style signatures, or another GMT resource.
-
-   To regenerate F3/F4 result tables from existing metrics without retraining:
-
-   ```powershell
-   python -m src.mcdrp.experiments.run_experiment configs/experiments/reports_f3_f4.json
-   ```
-
-5. **Biological interpretation**
-   - pathway representation
-   - gene/pathway attribution
-   - 2-3 case studies with known drug biology
-
-## Leakage Controls
-
-- Create train/validation/test groups before fitting any preprocessing step.
-- Fit scalers, PCA, and feature selection only on training data.
-- Keep all rows for a held-out drug out of training during cold-drug evaluation.
-- Keep all rows for a held-out cell line out of training during cold-cell
-  evaluation.
-- Use scaffold grouping instead of naive random drug grouping for chemical
-  generalization.
-- Report unique drugs, unique cell lines, and total response pairs for every
-  split.
-
-## Final Portfolio Deliverables
-
-- reproducible GitHub repository
-- documented data-integration audit
-- model comparison table across random and cold-start splits
-- plot showing random-to-cold performance drop
-- architecture figure and data-integration figure
-- at least one biological interpretation figure or case study
-- short report or release summary
+| Document | Contents |
+| --- | --- |
+| [`evaluation_protocol.md`](docs/evaluation_protocol.md) | splits, metrics, leakage rules, reporting bar |
+| [`related_work.md`](docs/related_work.md) | literature and the reasoning behind the design |
+| [`research_roadmap.md`](docs/research_roadmap.md) | prioritized next steps |
+| [`workflow.md`](docs/workflow.md) | environment, quality gates, git conventions |
+| [`project_plan.md`](docs/project_plan.md) | phases F0-F7 with commands |
+| [`experiment_design.md`](docs/experiment_design.md) | model ladder and ablation rationale |
+| [`data_audit.md`](docs/data_audit.md) | expected raw files and audit workflow |
+| [`external_embeddings.md`](docs/external_embeddings.md) | B7 embedding format and generation |
 
 ## Limitations
 
-This project should be presented as a preclinical cell-line modelling and
-research-engineering project, not as a clinically validated precision-medicine
-system. Cell-line drug response is an experimental proxy, and model attributions
-should not be interpreted as causal biomarkers.
+A preclinical cell-line modelling and research-engineering project, not a
+clinically validated precision-medicine system. Cell-line drug response is an
+experimental proxy, model attributions are not causal biomarkers, and the
+literature shows transfer from cell lines to patient data is currently poor.
+Results here are single-seed and single-source (GDSC2).

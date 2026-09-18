@@ -11,16 +11,9 @@ chemical scaffolds?
 
 ## Evaluation protocol
 
-The main comparison should report metrics for:
-
-- `random_pair`: interpolation among known drugs and cell lines.
-- `cold_cell`: new cell lines with known drugs.
-- `cold_drug`: new drugs with known cell lines.
-- `cold_scaffold`: new chemical scaffolds, the strongest chemistry split.
-- `cold_both`: new drugs and new cell lines simultaneously.
-
-All preprocessing must be fit inside each split using training rows only:
-expression PCA, feature scaling, target scaling, and any feature selection.
+Defined in [`evaluation_protocol.md`](evaluation_protocol.md), which is the
+single source of truth for splits, metrics, baselines, leakage rules, and the
+reporting bar. This document covers only the model and ablation design.
 
 ## Model hierarchy
 
@@ -32,6 +25,8 @@ Use the following hierarchy to make conclusions easy to defend:
 - B3: MLP Morgan + expression PCA.
 - B4: lightweight GNN + expression PCA.
 - B5: hybrid GNN + Morgan + expression PCA.
+- B6: modality ablations with Morgan, expression PCA, and pathway activity.
+- B7: pretrained molecular embedding benchmark with biological cell features.
 
 B4 answers whether a graph encoder helps over fingerprints. B5 answers whether
 a stronger multimodal neural model can improve interpolation and cold-start
@@ -56,27 +51,35 @@ source is responsible for each gain.
 The first implemented ablation layer is B6:
 
 ```powershell
-python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
-python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
+python -m mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
 ```
 
 B6 compares Morgan fingerprints, PCA expression, pathway scores, and their
 combinations under the same XGBoost model family. It can use either the built-in
 compact cancer pathway panel or an external GMT file such as MSigDB Hallmark.
 
+The next representation layer is B7:
+
+```powershell
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_pretrained_random_pair.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_pretrained_random_pair.json
+```
+
+B7 consumes frozen external molecular embeddings and compares them alone and in
+combination with expression PCA and pathway activity. This directly tests
+whether learned molecule representations add value over handcrafted Morgan
+fingerprints and graph encoders in the same split protocol.
+
 ## High-impact next upgrades
 
-1. Add pathway-level transcriptomic features from MSigDB Hallmark, Reactome, or
-   PROGENy.
-2. Add pretrained molecular embeddings from a model such as ChemBERTa or
-   MolFormer.
-3. Report mean and standard deviation across multiple seeds.
-4. Add uncertainty estimation with deep ensembles or conformal prediction.
-5. Build figures for architecture, random-to-cold performance drop, ablations,
-   and scaffold-level errors.
+Prioritized in [`research_roadmap.md`](research_roadmap.md). The short version:
+multi-seed dispersion and persisted per-row predictions come before any new
+modality, because without them no comparison between models is interpretable.
 
 ## Claim discipline
 
 This is a preclinical cell-line modelling project. Claims should be phrased as
 model generalization and representation-learning findings, not as clinical
-precision-medicine validation.
+precision-medicine validation. See
+[`evaluation_protocol.md`](evaluation_protocol.md) section 6.

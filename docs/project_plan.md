@@ -152,11 +152,17 @@ Outputs:
 
 - random-pair split
 - cold-cell split
+- cold-tissue split
 - cold-drug split
 - scaffold split
 - cold-both split
 - table reporting metrics and unique drugs/cell lines/pairs per split
 - plot showing random-to-cold performance degradation
+
+`cold_tissue` holds out whole DepMap Oncotree lineages, so held-out cell lines
+share no tissue of origin with training. It is the leave-tissue-out setting
+relevant to drug repurposing, and it is stricter than `cold_cell`. Baselines
+have been run on it; no trained model has been yet.
 
 The scaffold split is implemented as `cold_scaffold` using Bemis-Murcko
 scaffolds derived from canonical SMILES. This is the key chemical
@@ -171,15 +177,15 @@ and evaluation subsets.
 Experiment configs live under `configs/experiments/` and can be launched with:
 
 ```powershell
-python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json --dry-run
-python -m src.mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json
+python -m mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b5_hybrid_full.json
 ```
 
 After model metrics exist, build the cold-start report:
 
 ```powershell
-python -m src.mcdrp.results.compare_baselines
-python -m src.mcdrp.results.cold_start_report --subset test
+python -m mcdrp.results.compare_baselines
+python -m mcdrp.results.cold_start_report --subset test
 ```
 
 This writes split composition, best models, and random-to-cold RMSE drop tables
@@ -200,8 +206,8 @@ Outputs:
 Initial ablation implementation:
 
 ```powershell
-python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
-python -m src.mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
+python -m mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b6_ablation_random_pair.json
 ```
 
 B6 compares `expression_pca`, `pathways`, `morgan`,
@@ -213,16 +219,68 @@ curated gene-set collection.
 After B6 metrics exist, summarize the ablation study:
 
 ```powershell
-python -m src.mcdrp.results.ablation_report --subset test
+python -m mcdrp.results.ablation_report --subset test
 ```
 
 To rebuild both F3 and F4 reports without retraining:
 
 ```powershell
-python -m src.mcdrp.experiments.run_experiment configs/experiments/reports_f3_f4.json
+python -m mcdrp.experiments.run_experiment configs/experiments/reports_f3_f4.json
 ```
 
-## F5 - Interpretation and Polish
+## F5 - Pretrained Molecular Representations
+
+Goal: compare handcrafted molecular representations against frozen embeddings
+from pretrained molecule encoders.
+
+Implemented entry point:
+
+```powershell
+python -m mcdrp.models.pretrained_b7 --drug-embeddings data/external/drug_embeddings.csv --splits random_pair --device cuda
+```
+
+Config workflow:
+
+```powershell
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_pretrained_random_pair.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_pretrained_random_pair.json
+```
+
+B7 variants:
+
+- `pretrained_drug`
+- `pretrained_drug_expression_pca`
+- `pretrained_drug_pathways`
+- `pretrained_drug_expression_pca_pathways`
+
+The embedding CSV format is documented in `docs/external_embeddings.md`.
+
+Tuned B7 entry point:
+
+```powershell
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_tuning_random_pair.json --dry-run
+python -m mcdrp.experiments.run_experiment configs/experiments/b7_tuning_random_pair.json
+```
+
+The tuning stage keeps the same B7 feature variants but searches a small
+XGBoost grid and keeps validation-selected test rows, matching the earlier
+B1-B3 tuning protocol.
+
+## F6 - Multi-Omics Extension
+
+Goal: add additional cell-line modalities after B7 tuning has established
+whether pretrained drug embeddings are useful.
+
+Candidate modalities:
+
+- copy-number alteration features
+- mutation features for cancer driver genes
+- methylation or proteomics, if a clean matched source is available
+
+The key rule stays the same: every scaler, reducer, selector, and imputer must
+be fit inside each split using training cell lines only.
+
+## F7 - Interpretation and Polish
 
 Goal: turn the implementation into a portfolio-ready scientific artifact.
 
