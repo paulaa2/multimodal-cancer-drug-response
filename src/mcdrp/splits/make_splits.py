@@ -13,7 +13,17 @@ import numpy as np
 import pandas as pd
 
 SPLIT_LABELS = ("train", "validation", "test")
-DEFAULT_SPLITS = ("random_pair", "cold_cell", "cold_drug", "cold_scaffold", "cold_both")
+DEFAULT_SPLITS = (
+    "random_pair",
+    "cold_cell",
+    "cold_tissue",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both",
+)
+
+# DepMap Oncotree lineage, used as the tissue-of-origin grouping for cold_tissue.
+TISSUE_COLUMN = "oncotree_lineage"
 
 
 @dataclass(frozen=True)
@@ -137,6 +147,27 @@ def make_scaffold_split(cohort: pd.DataFrame, spec: SplitSpec) -> pd.DataFrame:
     )
 
 
+def make_tissue_split(cohort: pd.DataFrame, spec: SplitSpec) -> pd.DataFrame:
+    """Hold out whole tissues of origin.
+
+    This is the leave-tissue-out setting. It is stricter than cold_cell because
+    held-out cell lines share no lineage with training cell lines, which matches
+    the drug-repurposing question of moving a drug to a new cancer type.
+    """
+
+    if TISSUE_COLUMN not in cohort.columns:
+        raise ValueError(
+            f"cold_tissue requires a {TISSUE_COLUMN} column. Rebuild the cohort "
+            "with mcdrp.data.build_cohort so DepMap lineage metadata is present."
+        )
+    if cohort[TISSUE_COLUMN].isna().any():
+        raise ValueError(
+            f"cold_tissue requires a non-null {TISSUE_COLUMN} for every pair."
+        )
+
+    return make_group_split(cohort, TISSUE_COLUMN, spec)
+
+
 def make_cold_both_split(cohort: pd.DataFrame, spec: SplitSpec) -> pd.DataFrame:
     """Hold out cell lines and drugs simultaneously.
 
@@ -175,6 +206,8 @@ def make_split(
         return make_random_pair_split(cohort, spec)
     if split_name == "cold_cell":
         return make_group_split(cohort, "depmap_id", spec)
+    if split_name == "cold_tissue":
+        return make_tissue_split(cohort, spec)
     if split_name == "cold_drug":
         return make_group_split(cohort, "drug_id", spec)
     if split_name == "cold_scaffold":
@@ -224,48 +257,45 @@ def summarize_split(cohort: pd.DataFrame, assignments: pd.DataFrame) -> dict[str
             validation,
         ),
         "scaffold_overlap_train_test": scaffold_overlap(train, test),
+        "tissue_overlap_train_validation": column_overlap(
+            train,
+            validation,
+            TISSUE_COLUMN,
+        ),
+        "tissue_overlap_train_test": column_overlap(train, test, TISSUE_COLUMN),
     }
 
 
 def scaffold_overlap(left: pd.DataFrame, right: pd.DataFrame) -> list[str]:
     """Return scaffold overlaps when scaffold metadata is available."""
 
-    if "chemical_scaffold" not in left.columns or "chemical_scaffold" not in right.columns:
+    return column_overlap(left, right, "chemical_scaffold")
+
+
+def column_overlap(left: pd.DataFrame, right: pd.DataFrame, column: str) -> list[str]:
+    """Return shared values of ``column`` when both frames carry it."""
+
+    if column not in left.columns or column not in right.columns:
         return []
-    return sorted(set(left["chemical_scaffold"]) & set(right["chemical_scaffold"]))
+    return sorted(set(left[column].dropna()) & set(right[column].dropna()))
 
 
 def expected_overlap_policy(split_name: str) -> dict[str, bool]:
     """Describe which entity overlaps are expected for a split."""
 
-    if split_name == "cold_cell":
-        return {
-            "cell_overlap_allowed": False,
-            "drug_overlap_allowed": True,
-            "scaffold_overlap_allowed": True,
-        }
-    if split_name == "cold_drug":
-        return {
-            "cell_overlap_allowed": True,
-            "drug_overlap_allowed": False,
-            "scaffold_overlap_allowed": True,
-        }
-    if split_name == "cold_scaffold":
-        return {
-            "cell_overlap_allowed": True,
-            "drug_overlap_allowed": False,
-            "scaffold_overlap_allowed": False,
-        }
-    if split_name == "cold_both":
-        return {
-            "cell_overlap_allowed": False,
-            "drug_overlap_allowed": False,
-            "scaffold_overlap_allowed": True,
-        }
+    policies = {
+        "cold_cell": (False, True, True, True),
+        "cold_tissue": (False, True, True, False),
+        "cold_drug": (True, False, True, True),
+        "cold_scaffold": (True, False, False, True),
+        "cold_both": (False, False, True, True),
+    }
+    cell, drug, scaffold, tissue = policies.get(split_name, (True, True, True, True))
     return {
-        "cell_overlap_allowed": True,
-        "drug_overlap_allowed": True,
-        "scaffold_overlap_allowed": True,
+        "cell_overlap_allowed": cell,
+        "drug_overlap_allowed": drug,
+        "scaffold_overlap_allowed": scaffold,
+        "tissue_overlap_allowed": tissue,
     }
 
 
@@ -273,7 +303,12 @@ def validate_no_leakage(split_name: str, summary: dict[str, Any]) -> None:
     """Fail if a cold split leaks held-out groups into train."""
 
     policy = expected_overlap_policy(split_name)
-    labels = {"cell": "Cell-line", "drug": "Drug", "scaffold": "Scaffold"}
+    labels = {
+        "cell": "Cell-line",
+        "drug": "Drug",
+        "scaffold": "Scaffold",
+        "tissue": "Tissue",
+    }
     for entity, label in labels.items():
         if policy[f"{entity}_overlap_allowed"]:
             continue
@@ -344,27 +379,16 @@ def compact_summary(split_name: str, summary: dict[str, Any]) -> dict[str, Any]:
     """Keep the JSON summary readable while preserving leakage evidence."""
 
     policy = expected_overlap_policy(split_name)
-    compact = {
+    compact: dict[str, Any] = {
         "by_split": summary["by_split"],
         "unused_rows": summary["unused_rows"],
     }
-    if not policy["cell_overlap_allowed"]:
-        compact["cell_overlap_train_validation_count"] = len(
-            summary["cell_overlap_train_validation"]
-        )
-        compact["cell_overlap_train_test_count"] = len(summary["cell_overlap_train_test"])
-    if not policy["drug_overlap_allowed"]:
-        compact["drug_overlap_train_validation_count"] = len(
-            summary["drug_overlap_train_validation"]
-        )
-        compact["drug_overlap_train_test_count"] = len(summary["drug_overlap_train_test"])
-    if not policy["scaffold_overlap_allowed"]:
-        compact["scaffold_overlap_train_validation_count"] = len(
-            summary["scaffold_overlap_train_validation"]
-        )
-        compact["scaffold_overlap_train_test_count"] = len(
-            summary["scaffold_overlap_train_test"]
-        )
+    for entity in ("cell", "drug", "scaffold", "tissue"):
+        if policy[f"{entity}_overlap_allowed"]:
+            continue
+        for subset in ("validation", "test"):
+            key = f"{entity}_overlap_train_{subset}"
+            compact[f"{key}_count"] = len(summary[key])
     return compact
 
 

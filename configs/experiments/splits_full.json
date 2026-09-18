@@ -9,6 +9,7 @@
         "splits": [
           "random_pair",
           "cold_cell",
+          "cold_tissue",
           "cold_drug",
           "cold_scaffold",
           "cold_both"
