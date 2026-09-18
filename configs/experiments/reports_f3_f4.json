@@ -4,19 +4,19 @@
   "steps": [
     {
       "name": "compare_models",
-      "module": "src.mcdrp.results.compare_baselines",
+      "module": "mcdrp.results.compare_baselines",
       "args": {}
     },
     {
       "name": "cold_start_report",
-      "module": "src.mcdrp.results.cold_start_report",
+      "module": "mcdrp.results.cold_start_report",
       "args": {
         "subset": "test"
       }
     },
     {
       "name": "ablation_report",
-      "module": "src.mcdrp.results.ablation_report",
+      "module": "mcdrp.results.ablation_report",
       "args": {
         "subset": "test",
         "reference": "morgan_expression_pca"

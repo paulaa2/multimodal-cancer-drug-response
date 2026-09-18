@@ -4,7 +4,7 @@
   "steps": [
     {
       "name": "train_b5_random_pair",
-      "module": "src.mcdrp.models.gnn_b5",
+      "module": "mcdrp.models.gnn_b5",
       "args": {
         "splits": ["random_pair"],
         "device": "cuda",
@@ -18,7 +18,7 @@
     },
     {
       "name": "compare_models",
-      "module": "src.mcdrp.results.compare_baselines",
+      "module": "mcdrp.results.compare_baselines",
       "args": {}
     }
   ]

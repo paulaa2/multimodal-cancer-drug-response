@@ -19,7 +19,7 @@ class ExperimentStep:
 
     name: str
     module: str
-    args: dict[str, Any]
+    args: dict[str, Any] | list[str]
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
@@ -42,14 +42,42 @@ def parse_steps(config: dict[str, Any]) -> list[ExperimentStep]:
     for index, raw in enumerate(config["steps"], start=1):
         if "module" not in raw:
             raise ValueError(f"Step {index} is missing required field: module")
+        module = validate_module(str(raw["module"]), index)
+        raw_args = raw.get("args", {})
+        if not isinstance(raw_args, (dict, list)):
+            raise ValueError(
+                f"Step {index} args must be either an object or a list of CLI tokens."
+            )
         steps.append(
             ExperimentStep(
                 name=str(raw.get("name", f"step_{index}")),
-                module=str(raw["module"]),
-                args=dict(raw.get("args", {})),
+                module=module,
+                args=raw_args,
             )
         )
     return steps
+
+
+def validate_module(module: str, index: int) -> str:
+    """Reject module paths that will not import as installed packages.
+
+    A ``src.mcdrp.*`` path resolves through the source directory as a namespace
+    package, so it appears to work for modules without internal imports and
+    then fails for every module that imports ``mcdrp`` itself. Catching it here
+    turns a confusing mid-pipeline ImportError into an immediate config error.
+    """
+
+    if module.startswith("src."):
+        raise ValueError(
+            f"Step {index} uses module '{module}'. Drop the 'src.' prefix and "
+            f"use '{module.removeprefix('src.')}' instead. Install the package "
+            'with `pip install -e ".[dev]"` so it imports as `mcdrp`.'
+        )
+    if not module.startswith("mcdrp."):
+        raise ValueError(
+            f"Step {index} uses module '{module}', which is outside the mcdrp package."
+        )
+    return module
 
 
 def serialize_arg(flag: str, value: Any) -> list[str]:
@@ -69,6 +97,9 @@ def build_command(step: ExperimentStep) -> list[str]:
     """Build the Python module command for one step."""
 
     command = [sys.executable, "-m", step.module]
+    if isinstance(step.args, list):
+        command.extend(str(item) for item in step.args)
+        return command
     for flag, value in step.args.items():
         command.extend(serialize_arg(flag, value))
     return command

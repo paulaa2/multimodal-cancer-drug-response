@@ -4,7 +4,7 @@
   "steps": [
     {
       "name": "build_splits_full",
-      "module": "src.mcdrp.splits.make_splits",
+      "module": "mcdrp.splits.make_splits",
       "args": {
         "splits": [
           "random_pair",

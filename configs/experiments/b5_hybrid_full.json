@@ -4,7 +4,7 @@
   "steps": [
     {
       "name": "build_splits_full",
-      "module": "src.mcdrp.splits.make_splits",
+      "module": "mcdrp.splits.make_splits",
       "args": {
         "splits": [
           "random_pair",
@@ -17,7 +17,7 @@
     },
     {
       "name": "train_b5_all_splits",
-      "module": "src.mcdrp.models.gnn_b5",
+      "module": "mcdrp.models.gnn_b5",
       "args": {
         "splits": [
           "random_pair",
@@ -44,12 +44,12 @@
     },
     {
       "name": "compare_models",
-      "module": "src.mcdrp.results.compare_baselines",
+      "module": "mcdrp.results.compare_baselines",
       "args": {}
     },
     {
       "name": "cold_start_report",
-      "module": "src.mcdrp.results.cold_start_report",
+      "module": "mcdrp.results.cold_start_report",
       "args": {
         "subset": "test"
       }

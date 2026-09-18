@@ -4,7 +4,7 @@
   "steps": [
     {
       "name": "run_b6_ablation_random_pair",
-      "module": "src.mcdrp.models.ablation_b6",
+      "module": "mcdrp.models.ablation_b6",
       "args": {
         "splits": ["random_pair"],
         "device": "cuda",
@@ -13,12 +13,12 @@
     },
     {
       "name": "compare_models",
-      "module": "src.mcdrp.results.compare_baselines",
+      "module": "mcdrp.results.compare_baselines",
       "args": {}
     },
     {
       "name": "ablation_report",
-      "module": "src.mcdrp.results.ablation_report",
+      "module": "mcdrp.results.ablation_report",
       "args": {
         "subset": "test",
         "reference": "morgan_expression_pca"
