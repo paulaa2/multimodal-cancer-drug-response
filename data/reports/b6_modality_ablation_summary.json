@@ -1,0 +1,150 @@
+{
+  "created_at_utc": "2026-09-16T18:47:00.953557+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/ablations/b6_modality_ablation_metrics.csv",
+  "target": "ln_ic50",
+  "n_pca_components": 256,
+  "gene_sets": "builtin_cancer_core",
+  "min_pathway_genes": 3,
+  "pathways": [
+    "MAPK_SIGNALING",
+    "PI3K_AKT_MTOR",
+    "P53_APOPTOSIS",
+    "DNA_DAMAGE_REPAIR",
+    "CELL_CYCLE",
+    "EMT_INVASION",
+    "HYPOXIA_ANGIOGENESIS",
+    "INFLAMMATION_NFKB"
+  ],
+  "ablations": [
+    "expression_pca",
+    "pathways",
+    "morgan",
+    "morgan_expression_pca",
+    "morgan_pathways",
+    "morgan_expression_pca_pathways"
+  ],
+  "xgb_params": {
+    "n_estimators": 600,
+    "learning_rate": 0.03,
+    "max_depth": 5,
+    "early_stopping_rounds": 40,
+    "objective": "reg:squarederror",
+    "eval_metric": "rmse",
+    "tree_method": "hist",
+    "random_state": 42,
+    "device": "cuda"
+  },
+  "device_requested": "cuda",
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_both",
+      "subset": "test",
+      "best_model": "morgan_expression_pca_pathways",
+      "rmse": 2.6035840440012157,
+      "mae": 2.04315466243761,
+      "pearson": 0.4279344560099031,
+      "spearman": 0.24285865949020263,
+      "r2": 0.0736708678564505
+    },
+    {
+      "split_name": "cold_both",
+      "subset": "validation",
+      "best_model": "expression_pca",
+      "rmse": 2.3918736012042223,
+      "mae": 1.8382528670308949,
+      "pearson": 0.2399514190369209,
+      "spearman": 0.26327518725821014,
+      "r2": 0.03125464797049937
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_model": "morgan_expression_pca_pathways",
+      "rmse": 1.3485784407523882,
+      "mae": 1.0219943234067825,
+      "pearson": 0.88179685721759,
+      "spearman": 0.838962512930163,
+      "r2": 0.773521498456785
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_model": "morgan_expression_pca_pathways",
+      "rmse": 1.362243205320999,
+      "mae": 1.0343573892671887,
+      "pearson": 0.8755408634090673,
+      "spearman": 0.8311280622459544,
+      "r2": 0.7637369413192753
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_model": "morgan_expression_pca",
+      "rmse": 2.246953926908051,
+      "mae": 1.6683506303989217,
+      "pearson": 0.5750515092656812,
+      "spearman": 0.49306410472157663,
+      "r2": 0.30531049581072356
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_model": "morgan_expression_pca_pathways",
+      "rmse": 2.8890346292737226,
+      "mae": 2.1995835593897506,
+      "pearson": 0.4950882483067701,
+      "spearman": 0.4557936528237216,
+      "r2": 0.1939867530924554
+    },
+    {
+      "split_name": "cold_scaffold",
+      "subset": "test",
+      "best_model": "expression_pca",
+      "rmse": 3.3909107394427584,
+      "mae": 2.5342766929359772,
+      "pearson": 0.30831386035436914,
+      "spearman": 0.31209389896069495,
+      "r2": -0.059983253284451976
+    },
+    {
+      "split_name": "cold_scaffold",
+      "subset": "validation",
+      "best_model": "expression_pca",
+      "rmse": 2.385990609040495,
+      "mae": 1.9033096652872499,
+      "pearson": 0.3499503533119194,
+      "spearman": 0.3644270652960216,
+      "r2": 0.11982947276870981
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_model": "morgan_expression_pca",
+      "rmse": 1.2286777488379823,
+      "mae": 0.9336026998498179,
+      "pearson": 0.904370045227723,
+      "spearman": 0.8692757009092279,
+      "r2": 0.8123830399570736
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_model": "morgan_expression_pca",
+      "rmse": 1.2236032071176437,
+      "mae": 0.9274603472091563,
+      "pearson": 0.9030305299285448,
+      "spearman": 0.8703532467175039,
+      "r2": 0.810328885039153
+    }
+  ]
+}

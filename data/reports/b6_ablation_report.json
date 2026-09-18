@@ -1,0 +1,103 @@
+{
+  "created_at_utc": "2026-09-16T18:47:05.380504+00:00",
+  "metrics_path": "results/ablations/b6_modality_ablation_metrics.csv",
+  "reference": "morgan_expression_pca",
+  "subset": "test",
+  "outputs": {
+    "best_ablation_by_split": "results\\ablations\\b6_best_ablation_by_split.csv",
+    "deltas_vs_reference": "results\\ablations\\b6_ablation_deltas_vs_morgan_expression_pca.csv",
+    "rmse_matrix": "results\\ablations\\b6_ablation_rmse_matrix_test.csv"
+  },
+  "best_by_split_subset": [
+    {
+      "split_name": "cold_both",
+      "subset": "test",
+      "best_ablation": "morgan_expression_pca_pathways",
+      "rmse": 2.603584044001216,
+      "mae": 2.04315466243761,
+      "pearson": 0.4279344560099031,
+      "r2": 0.0736708678564505
+    },
+    {
+      "split_name": "cold_both",
+      "subset": "validation",
+      "best_ablation": "expression_pca",
+      "rmse": 2.3918736012042223,
+      "mae": 1.8382528670308949,
+      "pearson": 0.2399514190369209,
+      "r2": 0.0312546479704993
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "test",
+      "best_ablation": "morgan_expression_pca_pathways",
+      "rmse": 1.3485784407523882,
+      "mae": 1.0219943234067823,
+      "pearson": 0.88179685721759,
+      "r2": 0.773521498456785
+    },
+    {
+      "split_name": "cold_cell",
+      "subset": "validation",
+      "best_ablation": "morgan_expression_pca_pathways",
+      "rmse": 1.362243205320999,
+      "mae": 1.034357389267189,
+      "pearson": 0.8755408634090673,
+      "r2": 0.7637369413192753
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "test",
+      "best_ablation": "morgan_expression_pca",
+      "rmse": 2.246953926908051,
+      "mae": 1.6683506303989215,
+      "pearson": 0.5750515092656812,
+      "r2": 0.3053104958107235
+    },
+    {
+      "split_name": "cold_drug",
+      "subset": "validation",
+      "best_ablation": "morgan_expression_pca_pathways",
+      "rmse": 2.8890346292737226,
+      "mae": 2.1995835593897506,
+      "pearson": 0.4950882483067701,
+      "r2": 0.1939867530924554
+    },
+    {
+      "split_name": "cold_scaffold",
+      "subset": "test",
+      "best_ablation": "expression_pca",
+      "rmse": 3.3909107394427584,
+      "mae": 2.534276692935977,
+      "pearson": 0.3083138603543691,
+      "r2": -0.0599832532844519
+    },
+    {
+      "split_name": "cold_scaffold",
+      "subset": "validation",
+      "best_ablation": "expression_pca",
+      "rmse": 2.385990609040495,
+      "mae": 1.9033096652872497,
+      "pearson": 0.3499503533119194,
+      "r2": 0.1198294727687098
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "test",
+      "best_ablation": "morgan_expression_pca",
+      "rmse": 1.2286777488379823,
+      "mae": 0.933602699849818,
+      "pearson": 0.904370045227723,
+      "r2": 0.8123830399570736
+    },
+    {
+      "split_name": "random_pair",
+      "subset": "validation",
+      "best_ablation": "morgan_expression_pca",
+      "rmse": 1.2236032071176437,
+      "mae": 0.9274603472091564,
+      "pearson": 0.9030305299285448,
+      "r2": 0.810328885039153
+    }
+  ]
+}

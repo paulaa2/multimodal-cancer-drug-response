@@ -1,0 +1,21 @@
+{
+  "name": "drug_embeddings_chemberta",
+  "description": "Generate frozen ChemBERTa-style drug embeddings for B7.",
+  "steps": [
+    {
+      "name": "create_drug_embeddings",
+      "module": "mcdrp.features.create_drug_embeddings",
+      "args": [
+        "--cohort", "data/processed/cohort_pairs.csv",
+        "--output", "data/external/drug_embeddings.csv",
+        "--summary", "data/reports/drug_embeddings_summary.json",
+        "--model", "DeepChem/ChemBERTa-77M-MLM",
+        "--revision", "main",
+        "--batch-size", "32",
+        "--max-length", "256",
+        "--pooling", "mean",
+        "--device", "cuda"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "b7_pretrained_full",
+  "description": "Full B7 pretrained drug embedding experiment across interpolation and cold-start splits.",
+  "steps": [
+    {
+      "name": "run_b7_pretrained_all_splits",
+      "module": "mcdrp.models.pretrained_b7",
+      "args": [
+        "--drug-embeddings", "data/external/drug_embeddings.csv",
+        "--embedding-prefix", "emb_",
+        "--device", "cuda"
+      ]
+    },
+    {
+      "name": "compare_models",
+      "module": "mcdrp.results.compare_baselines"
+    },
+    {
+      "name": "cold_start_report",
+      "module": "mcdrp.results.cold_start_report"
+    }
+  ]
+}

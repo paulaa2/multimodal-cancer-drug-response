@@ -1,0 +1,17 @@
+{
+  "created_at_utc": "2026-09-17T10:42:28.986725+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "output": "data\\external\\drug_embeddings.csv",
+  "n_drugs": 238,
+  "n_embedding_dimensions": 384,
+  "embedding_prefix": "emb_",
+  "model_name": "DeepChem/ChemBERTa-77M-MLM",
+  "revision": "main",
+  "batch_size": 32,
+  "max_length": 256,
+  "pooling": "mean",
+  "device_requested": "cuda",
+  "device_used": "cuda",
+  "trust_remote_code": false,
+  "limit": null
+}

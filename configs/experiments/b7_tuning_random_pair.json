@@ -1,0 +1,20 @@
+{
+  "name": "b7_tuning_random_pair",
+  "description": "Tune B7 pretrained drug embedding models on the random-pair split.",
+  "steps": [
+    {
+      "name": "tune_b7_random_pair",
+      "module": "mcdrp.models.tune_b7",
+      "args": [
+        "--drug-embeddings", "data/external/drug_embeddings.csv",
+        "--embedding-prefix", "emb_",
+        "--splits", "random_pair",
+        "--device", "cuda"
+      ]
+    },
+    {
+      "name": "compare_models",
+      "module": "mcdrp.results.compare_baselines"
+    }
+  ]
+}

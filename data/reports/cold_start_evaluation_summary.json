@@ -1,0 +1,54 @@
+{
+  "created_at_utc": "2026-09-17T10:56:03.072763+00:00",
+  "comparison_path": "results/baselines/baseline_comparison.csv",
+  "splits_summary_path": "data/reports/splits_summary.json",
+  "subset": "test",
+  "outputs": {
+    "model_split_metrics": "results\\reports\\cold_start_model_metrics_test.csv",
+    "rmse_drop": "results\\reports\\cold_start_rmse_drop_test.csv",
+    "best_models": "results\\reports\\cold_start_best_models_test.csv",
+    "split_composition": "results\\reports\\split_composition.csv"
+  },
+  "best_by_split": [
+    {
+      "split_name": "cold_both",
+      "model_id": "B7_pretrained_pretrained_drug_expression_pca_pathways",
+      "rmse": 2.3749563535893987,
+      "mae": 1.902499578093628,
+      "pearson": 0.506102256055582,
+      "r2": 0.2292147680185623
+    },
+    {
+      "split_name": "cold_cell",
+      "model_id": "B2_tuned_xgboost",
+      "rmse": 1.2985675039288436,
+      "mae": 0.9721865281232764,
+      "pearson": 0.8889200826295849,
+      "r2": 0.7900075796276256
+    },
+    {
+      "split_name": "cold_drug",
+      "model_id": "B2_tuned_xgboost",
+      "rmse": 2.2176426782705363,
+      "mae": 1.649229836176048,
+      "pearson": 0.5901475674342382,
+      "r2": 0.3233165663261992
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model_id": "B5_hybrid_GNN_hybrid_gnn",
+      "rmse": 2.735752411285909,
+      "mae": 2.038571777442413,
+      "pearson": 0.6286041635011831,
+      "r2": 0.3100464134810644
+    },
+    {
+      "split_name": "random_pair",
+      "model_id": "B5_hybrid_GNN_hybrid_gnn",
+      "rmse": 0.931486815665334,
+      "mae": 0.6775945692732142,
+      "pearson": 0.9451530914247116,
+      "r2": 0.8921675336439616
+    }
+  ]
+}
