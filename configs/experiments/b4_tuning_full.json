@@ -1,0 +1,33 @@
+{
+  "name": "b4_tuning_full",
+  "description": "Tune B4 GNN learning rate and dropout on validation RMSE across all evaluation splits.",
+  "steps": [
+    {
+      "name": "tune_b4_all_splits",
+      "module": "mcdrp.models.tune_b4",
+      "args": {
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_tissue",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ],
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "compare_models",
+      "module": "mcdrp.results.compare_baselines",
+      "args": {}
+    },
+    {
+      "name": "cold_start_report",
+      "module": "mcdrp.results.cold_start_report",
+      "args": {
+        "subset": "test"
+      }
+    }
+  ]
+}

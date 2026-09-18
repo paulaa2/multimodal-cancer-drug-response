@@ -33,6 +33,9 @@ TUNING_METRICS = {
     "B1_tuned": "results/baselines/b1_tuning_metrics.csv",
     "B2_tuned": "results/baselines/b2_tuning_metrics.csv",
     "B3_tuned": "results/baselines/b3_tuning_metrics.csv",
+    "B4_tuned": "results/baselines/b4_tuning_metrics.csv",
+    "B5_tuned": "results/models/b5_tuning_metrics.csv",
+    "B7_tuned": "results/models/b7_tuning_metrics.csv",
 }
 
 

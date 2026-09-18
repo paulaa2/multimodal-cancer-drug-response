@@ -70,7 +70,15 @@ validation-selected hyperparameters:
 python -m mcdrp.models.tune_b1 --splits random_pair
 python -m mcdrp.models.tune_b2 --splits random_pair --device cuda
 python -m mcdrp.models.tune_b3 --splits random_pair --device cuda
+python -m mcdrp.models.tune_b4 --splits random_pair --device cuda
+python -m mcdrp.models.tune_b5 --splits random_pair --device cuda
 ```
+
+`tune_b4` and `tune_b5` search a four-point grid of learning rate × dropout,
+keep architecture at the published defaults, and score test only for the
+validation-selected candidate. Full-split configs include `cold_tissue`.
+B6 ablations overlay the validation-selected B2 XGBoost hyperparameters so the
+ablation measures modalities rather than a weaker booster.
 
 Run one split first because tuning repeats model fitting several times. The same
 comparison command includes standard metrics and tuning outputs when they exist.
@@ -127,6 +135,11 @@ PyTorch Geometric. This keeps the dependency surface small while validating that
 drug graphs, cell expression features, batching, training, and comparison are
 wired correctly.
 
+```powershell
+python -m mcdrp.experiments.run_experiment configs/experiments/b4_gnn_full.json --dry-run
+python -m mcdrp.models.tune_b4 --splits random_pair --device cuda
+```
+
 The current B4 improvement keeps that dependency-light design but strengthens
 the encoder with residual graph-convolution blocks, `LayerNorm`, mean+max graph
 pooling, train-only target scaling, and gradient clipping.
@@ -135,6 +148,7 @@ Main hybrid model:
 
 ```powershell
 python -m mcdrp.models.gnn_b5 --splits random_pair --device cuda
+python -m mcdrp.models.tune_b5 --splits random_pair --device cuda
 python -m mcdrp.results.compare_baselines
 ```
 
@@ -161,8 +175,9 @@ Outputs:
 
 `cold_tissue` holds out whole DepMap Oncotree lineages, so held-out cell lines
 share no tissue of origin with training. It is the leave-tissue-out setting
-relevant to drug repurposing, and it is stricter than `cold_cell`. Baselines
-have been run on it; no trained model has been yet.
+relevant to drug repurposing, and it is stricter than `cold_cell`. Full
+experiment and tuning configs now include it; the remaining gap is generating
+the trained-model numbers.
 
 The scaffold split is implemented as `cold_scaffold` using Bemis-Murcko
 scaffolds derived from canonical SMILES. This is the key chemical
@@ -212,9 +227,12 @@ python -m mcdrp.experiments.run_experiment configs/experiments/b6_ablation_rando
 
 B6 compares `expression_pca`, `pathways`, `morgan`,
 `morgan_expression_pca`, `morgan_pathways`, and
-`morgan_expression_pca_pathways`. Use `--gene-sets path/to/file.gmt` to swap the
-built-in compact cancer pathway panel for MSigDB Hallmark, Reactome, or another
-curated gene-set collection.
+`morgan_expression_pca_pathways` under the same XGBoost family. When
+`results/baselines/b2_tuning_metrics.csv` exists, B6 overlays the
+validation-selected B2 hyperparameters per split so the ablation measures
+modalities rather than a weaker booster. Use `--gene-sets path/to/file.gmt` to
+swap the built-in compact cancer pathway panel for MSigDB Hallmark, Reactome,
+or another curated gene-set collection.
 
 After B6 metrics exist, summarize the ablation study:
 

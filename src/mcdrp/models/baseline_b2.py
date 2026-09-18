@@ -264,6 +264,55 @@ def _summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
+def load_selected_xgb_params(
+    path: str | Path | None,
+    *,
+    fallback: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Load per-split XGBoost params chosen on validation by ``tune_b2``.
+
+    Missing files or missing splits fall back to ``fallback``, so ablations can
+    still run before B2 has been tuned. Selected test rows are preferred; if a
+    table has no ``selected_by_validation`` column, the lowest validation RMSE
+    per split is used instead.
+    """
+
+    if path is None:
+        return {}
+
+    metric_path = Path(path)
+    if not metric_path.exists():
+        logger.warning(
+            "B2 tuning file %s is missing; using fallback XGBoost params.",
+            metric_path,
+        )
+        return {}
+
+    from mcdrp.results.compare_baselines import is_truthy
+
+    table = pd.read_csv(metric_path)
+    if "selected_by_validation" in table.columns:
+        selected_mask = table["selected_by_validation"].map(is_truthy).fillna(False)
+        selected = table.loc[table["subset"].eq("test") & selected_mask]
+    else:
+        selected = pd.DataFrame()
+
+    if selected.empty:
+        selected = (
+            table.loc[table["subset"].eq("validation")]
+            .sort_values("rmse")
+            .groupby("split_name", as_index=False)
+            .first()
+        )
+
+    by_split: dict[str, dict[str, Any]] = {}
+    for row in selected.to_dict("records"):
+        raw_params = row.get("params", "{}")
+        parsed = json.loads(raw_params) if isinstance(raw_params, str) else {}
+        by_split[str(row["split_name"])] = {**fallback, **parsed}
+    return by_split
+
+
 def xgb_device_params(device: str) -> dict[str, str]:
     """Return XGBoost device parameters for the requested device mode."""
 

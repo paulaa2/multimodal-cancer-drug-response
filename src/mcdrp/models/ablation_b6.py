@@ -31,7 +31,13 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.features.pathways import build_pathway_features
 from mcdrp.metrics import regression_metrics
-from mcdrp.models.baseline_b2 import fit_xgboost, predict_xgboost, xgb_device_params
+from mcdrp.models.baseline_b2 import (
+    fit_xgboost,
+    load_selected_xgb_params,
+    predict_xgboost,
+    xgb_device_params,
+)
+from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -101,8 +107,8 @@ def metric_row(
     fit_seconds: float,
     best_iteration: int,
     device: str,
-) -> dict[str, Any]:
-    """Create one ablation metrics row."""
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Create one ablation metrics row and its tidy predictions."""
 
     metrics = regression_metrics(
         rows[target].to_numpy(),
@@ -110,7 +116,7 @@ def metric_row(
         cell_keys=rows["depmap_id"].tolist(),
         drug_keys=rows["drug_id"].tolist(),
     )
-    return {
+    row = {
         "model": model_name,
         "split_name": split_name,
         "subset": subset,
@@ -123,6 +129,16 @@ def metric_row(
         "device": device,
         **metrics,
     }
+    frame = prediction_frame(
+        rows,
+        rows[target].to_numpy(),
+        predictions,
+        stage="B6",
+        model=model_name,
+        split_name=split_name,
+        subset=subset,
+    )
+    return row, frame
 
 
 def run_ablation_for_split(
@@ -137,7 +153,7 @@ def run_ablation_for_split(
     ablations: tuple[str, ...],
     xgb_params: dict[str, Any],
     device: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run every ablation for one split."""
 
     data = cohort.merge(assignments, on="pair_id", how="inner", validate="one_to_one")
@@ -147,6 +163,7 @@ def run_ablation_for_split(
     }
 
     results: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
     for ablation in ablations:
         x_train = assemble_ablation_features(
             subsets["train"],
@@ -197,21 +214,21 @@ def run_ablation_for_split(
                 pathway_feature_map=pathway_feature_map,
             )
             predictions = predict_xgboost(model, x_subset)
-            results.append(
-                metric_row(
-                    ablation,
-                    split_name,
-                    subset,
-                    rows,
-                    predictions,
-                    target,
-                    n_features=x_subset.shape[1],
-                    fit_seconds=fit_seconds,
-                    best_iteration=best_iteration,
-                    device=actual_device,
-                )
+            row, frame = metric_row(
+                ablation,
+                split_name,
+                subset,
+                rows,
+                predictions,
+                target,
+                n_features=x_subset.shape[1],
+                fit_seconds=fit_seconds,
+                best_iteration=best_iteration,
+                device=actual_device,
             )
-    return results
+            results.append(row)
+            frames.append(frame)
+    return results, frames
 
 
 def run_b6_ablation(
@@ -220,6 +237,8 @@ def run_b6_ablation(
     expression_path: str | Path = EXPRESSION_PATH,
     output: str | Path = "results/ablations/b6_modality_ablation_metrics.csv",
     summary: str | Path = "data/reports/b6_modality_ablation_summary.json",
+    predictions_output: str | Path = "results/predictions/b6.csv",
+    b2_tuned: str | Path | None = "results/baselines/b2_tuning_metrics.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -227,9 +246,9 @@ def run_b6_ablation(
     min_pathway_genes: int = 3,
     split_names: tuple[str, ...] = DEFAULT_SPLITS,
     ablations: tuple[str, ...] = DEFAULT_ABLATIONS,
-    n_estimators: int = 600,
-    learning_rate: float = 0.03,
-    max_depth: int = 5,
+    n_estimators: int = 700,
+    learning_rate: float = 0.05,
+    max_depth: int = 6,
     early_stopping_rounds: int = 40,
     device: str = "auto",
 ) -> pd.DataFrame:
@@ -252,8 +271,11 @@ def run_b6_ablation(
         "n_jobs": -1,
     }
     xgb_params.update(xgb_device_params(device))
+    selected_by_split = load_selected_xgb_params(b2_tuned, fallback=xgb_params)
 
     all_results: list[dict[str, Any]] = []
+    all_frames: list[pd.DataFrame] = []
+    used_params: dict[str, dict[str, Any]] = {}
     pathway_names: list[str] = []
     for split_name in split_names:
         logger.info("=== Processing B6 ablations split: %s ===", split_name)
@@ -282,25 +304,32 @@ def run_b6_ablation(
             len(pathway_names),
         )
 
-        all_results.extend(
-            run_ablation_for_split(
-                cohort,
-                assignments,
-                fp_matrix,
-                pca_feature_map,
-                pathway_feature_map,
-                split_name=split_name,
-                target=target,
-                ablations=ablations,
-                xgb_params=xgb_params,
-                device=device,
-            )
+        split_params = selected_by_split.get(split_name, xgb_params)
+        used_params[split_name] = {
+            key: value for key, value in split_params.items() if key != "n_jobs"
+        }
+        logger.info("B6 %s XGBoost params: %s", split_name, used_params[split_name])
+
+        split_results, split_frames = run_ablation_for_split(
+            cohort,
+            assignments,
+            fp_matrix,
+            pca_feature_map,
+            pathway_feature_map,
+            split_name=split_name,
+            target=target,
+            ablations=ablations,
+            xgb_params=split_params,
+            device=device,
         )
+        all_results.extend(split_results)
+        all_frames.extend(split_frames)
 
     metrics = pd.DataFrame(all_results)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+    write_predictions(all_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -308,13 +337,16 @@ def run_b6_ablation(
         "expression_path": str(expression_path),
         "split_dir": str(split_dir),
         "output": str(output),
+        "predictions_output": str(predictions_output),
+        "b2_tuned": None if b2_tuned is None else str(b2_tuned),
         "target": target,
         "n_pca_components": n_components,
         "gene_sets": str(gene_sets),
         "min_pathway_genes": min_pathway_genes,
         "pathways": pathway_names,
         "ablations": list(ablations),
-        "xgb_params": {k: v for k, v in xgb_params.items() if k != "n_jobs"},
+        "xgb_params_fallback": {k: v for k, v in xgb_params.items() if k != "n_jobs"},
+        "xgb_params_by_split": used_params,
         "device_requested": device,
         "splits": list(split_names),
         "best_by_split_subset": summarize_best(metrics),
@@ -366,13 +398,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--summary",
         default="data/reports/b6_modality_ablation_summary.json",
     )
+    parser.add_argument("--predictions-output", default="results/predictions/b6.csv")
+    parser.add_argument(
+        "--b2-tuned",
+        default="results/baselines/b2_tuning_metrics.csv",
+        help="Validation-selected B2 tuning CSV. Used so ablations share B2's hyperparameters.",
+    )
+    parser.add_argument(
+        "--no-b2-tuned",
+        action="store_true",
+        help="Ignore the B2 tuning file and use the CLI XGBoost hyperparameters instead.",
+    )
     parser.add_argument("--target", default="ln_ic50")
     parser.add_argument("--n-components", type=int, default=256)
     parser.add_argument("--gene-sets", default="builtin_cancer_core")
     parser.add_argument("--min-pathway-genes", type=int, default=3)
-    parser.add_argument("--n-estimators", type=int, default=600)
-    parser.add_argument("--learning-rate", type=float, default=0.03)
-    parser.add_argument("--max-depth", type=int, default=5)
+    parser.add_argument("--n-estimators", type=int, default=700)
+    parser.add_argument("--learning-rate", type=float, default=0.05)
+    parser.add_argument("--max-depth", type=int, default=6)
     parser.add_argument("--early-stopping-rounds", type=int, default=40)
     parser.add_argument(
         "--device",
@@ -408,6 +451,8 @@ def main() -> None:
         expression_path=args.expression,
         output=args.output,
         summary=args.summary,
+        predictions_output=args.predictions_output,
+        b2_tuned=None if args.no_b2_tuned else args.b2_tuned,
         target=args.target,
         n_components=args.n_components,
         gene_sets=args.gene_sets,

@@ -6,10 +6,11 @@ citations are in [`related_work.md`](related_work.md).
 
 ## Where the project stands
 
-The model ladder B0-B7 is implemented and has been run across the split suite.
-The evaluation machinery now includes a `mean_effects` reference, mean-effect
-normalized metrics, per-drug and per-cell-line stratified metrics, and a
-leave-tissue-out split.
+The model ladder B0-B7 is implemented. Every model writes per-row predictions,
+reporting computes mean-effect normalized and stratified metrics, and the
+leave-tissue-out split is wired into the default split suite and full
+experiment configs. B4/B5 have a four-point validation tuner; B6 reuses
+validation-selected B2 XGBoost hyperparameters.
 
 The first thing that machinery revealed, on the `random_pair` test set:
 
@@ -41,31 +42,23 @@ Because drug-cell-line pairs are not independent — the units of replication ar
 cell lines and drugs — any significance test must account for that grouping.
 Until then, make no significance claims. This is the pseudoreplication trap.
 
-### 2. Persist per-row predictions
+### 2. Persist per-row predictions — done
 
-Models currently write only aggregate metrics, so no new metric can be computed
-without retraining, and error analysis is impossible.
+B0–B7 write tidy prediction files (`pair_id`, `split_name`, `subset`, `model`,
+`y_true`, `y_pred`) under `results/predictions/`. `metrics_report` computes all
+metric families from those files, so a new metric no longer requires retraining.
 
-Have every model write a tidy predictions file (`pair_id`, `split_name`,
-`subset`, `model`, `y_true`, `y_pred`), then compute all metric families in one
-reporting step. This makes evaluation uniform by construction instead of by
-convention, and unlocks tiers 2 and 3 cheaply. It also removes the largest
-source of duplication in `src/mcdrp/models/`, where the metric-row builder,
-argument parser, and summary writer are copy-pasted across a dozen files.
+### 3. Normalized metrics for every model — done
 
-### 3. Normalized metrics for every model
+Mean-effect normalized metrics, including `r2_normalized`, are computed in
+reporting from the prediction artifacts and the split-wise `mean_effects`
+reference. They are no longer limited to B0.
 
-`mean_effects` normalization is currently wired into B0 only, because the
-reference has to be fitted on the training rows of each split and the model
-scripts do not thread that context into their metric builders. Item 2 makes this
-a non-issue: normalize during reporting, where the split is known.
+### 4. Close the `cold_tissue` gap — code done, numbers pending
 
-### 4. Close the `cold_tissue` gap
-
-The leave-tissue-out split exists and has baselines, but no trained model has
-been run on it. It is the setting relevant to drug repurposing and the one where
-the literature reports the sharpest degradation, so leaving it empty is a
-conspicuous hole.
+`cold_tissue` is in `DEFAULT_SPLITS` and in the full B4–B7 experiment and
+tuning configs. The remaining hole is generating the trained-model numbers on
+that split.
 
 ## Tier 2 — strengthens the scientific contribution
 

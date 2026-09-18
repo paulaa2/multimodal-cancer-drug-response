@@ -1,6 +1,6 @@
 {
   "name": "splits_full",
-  "description": "Generate random, cold-cell, cold-drug, cold-scaffold, and cold-both split assignments.",
+  "description": "Generate leakage-safe split assignments, including cold_tissue.",
   "steps": [
     {
       "name": "build_splits_full",

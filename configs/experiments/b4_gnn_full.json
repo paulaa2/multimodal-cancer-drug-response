@@ -1,0 +1,33 @@
+{
+  "name": "b4_gnn_full",
+  "description": "Full B4 GNN evaluation across interpolation and cold-start splits, including cold_tissue.",
+  "steps": [
+    {
+      "name": "train_b4_all_splits",
+      "module": "mcdrp.models.gnn_b4",
+      "args": {
+        "splits": [
+          "random_pair",
+          "cold_cell",
+          "cold_tissue",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_both"
+        ],
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "compare_models",
+      "module": "mcdrp.results.compare_baselines",
+      "args": {}
+    },
+    {
+      "name": "cold_start_report",
+      "module": "mcdrp.results.cold_start_report",
+      "args": {
+        "subset": "test"
+      }
+    }
+  ]
+}

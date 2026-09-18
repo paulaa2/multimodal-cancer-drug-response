@@ -30,6 +30,7 @@ from mcdrp.features.pathways import build_pathway_features
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.ablation_b6 import feature_matrix_from_cell_map
 from mcdrp.models.baseline_b2 import fit_xgboost, predict_xgboost, xgb_device_params
+from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -87,8 +88,8 @@ def metric_row(
     fit_seconds: float,
     best_iteration: int,
     device: str,
-) -> dict[str, Any]:
-    """Create one metrics row."""
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Create one metrics row and its tidy predictions."""
 
     metrics = regression_metrics(
         rows[target].to_numpy(),
@@ -96,7 +97,7 @@ def metric_row(
         cell_keys=rows["depmap_id"].tolist(),
         drug_keys=rows["drug_id"].tolist(),
     )
-    return {
+    row = {
         "model": model_name,
         "split_name": split_name,
         "subset": subset,
@@ -109,6 +110,16 @@ def metric_row(
         "device": device,
         **metrics,
     }
+    frame = prediction_frame(
+        rows,
+        rows[target].to_numpy(),
+        predictions,
+        stage="B7",
+        model=model_name,
+        split_name=split_name,
+        subset=subset,
+    )
+    return row, frame
 
 
 def run_b7_for_split(
@@ -125,7 +136,7 @@ def run_b7_for_split(
     device: str,
     cohort_key_column: str,
     missing_embeddings: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run every B7 variant for one split."""
 
     data = cohort.merge(assignments, on="pair_id", how="inner", validate="one_to_one")
@@ -135,6 +146,7 @@ def run_b7_for_split(
     }
 
     results: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
     for model_name in model_names:
         x_train = assemble_b7_features(
             subsets["train"],
@@ -188,21 +200,21 @@ def run_b7_for_split(
                 missing_embeddings=missing_embeddings,
             )
             predictions = predict_xgboost(model, x_subset)
-            results.append(
-                metric_row(
-                    model_name,
-                    split_name,
-                    subset,
-                    rows,
-                    predictions,
-                    target,
-                    n_features=x_subset.shape[1],
-                    fit_seconds=fit_seconds,
-                    best_iteration=best_iteration,
-                    device=actual_device,
-                )
+            row, frame = metric_row(
+                model_name,
+                split_name,
+                subset,
+                rows,
+                predictions,
+                target,
+                n_features=x_subset.shape[1],
+                fit_seconds=fit_seconds,
+                best_iteration=best_iteration,
+                device=actual_device,
             )
-    return results
+            results.append(row)
+            frames.append(frame)
+    return results, frames
 
 
 def run_b7_pretrained(
@@ -212,6 +224,7 @@ def run_b7_pretrained(
     drug_embeddings: str | Path = "data/external/drug_embeddings.csv",
     output: str | Path = "results/models/b7_pretrained_drug_pathway_metrics.csv",
     summary: str | Path = "data/reports/b7_pretrained_drug_pathway_summary.json",
+    predictions_output: str | Path = "results/predictions/b7.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -259,6 +272,7 @@ def run_b7_pretrained(
     xgb_params.update(xgb_device_params(device))
 
     all_results: list[dict[str, Any]] = []
+    all_frames: list[pd.DataFrame] = []
     pathway_names: list[str] = []
     pca_variance_by_split: dict[str, float] = {}
 
@@ -292,27 +306,28 @@ def run_b7_pretrained(
             len(pathway_names),
         )
 
-        all_results.extend(
-            run_b7_for_split(
-                cohort,
-                assignments,
-                embedding_table,
-                pca_feature_map,
-                pathway_feature_map,
-                split_name=split_name,
-                target=target,
-                model_names=model_names,
-                xgb_params=xgb_params,
-                device=device,
-                cohort_key_column=cohort_key_column,
-                missing_embeddings=missing_embeddings,
-            )
+        split_results, split_frames = run_b7_for_split(
+            cohort,
+            assignments,
+            embedding_table,
+            pca_feature_map,
+            pathway_feature_map,
+            split_name=split_name,
+            target=target,
+            model_names=model_names,
+            xgb_params=xgb_params,
+            device=device,
+            cohort_key_column=cohort_key_column,
+            missing_embeddings=missing_embeddings,
         )
+        all_results.extend(split_results)
+        all_frames.extend(split_frames)
 
     metrics = pd.DataFrame(all_results)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+    write_predictions(all_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -321,6 +336,7 @@ def run_b7_pretrained(
         "split_dir": str(split_dir),
         "drug_embeddings": embedding_table.source_path,
         "output": str(output),
+        "predictions_output": str(predictions_output),
         "target": target,
         "embedding_key_column": embedding_key_column,
         "cohort_key_column": cohort_key_column,
@@ -393,6 +409,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--summary",
         default="data/reports/b7_pretrained_drug_pathway_summary.json",
     )
+    parser.add_argument("--predictions-output", default="results/predictions/b7.csv")
     parser.add_argument("--target", default="ln_ic50")
     parser.add_argument("--n-components", type=int, default=256)
     parser.add_argument("--gene-sets", default="builtin_cancer_core")
@@ -453,6 +470,7 @@ def main() -> None:
         drug_embeddings=args.drug_embeddings,
         output=args.output,
         summary=args.summary,
+        predictions_output=args.predictions_output,
         target=args.target,
         n_components=args.n_components,
         gene_sets=args.gene_sets,

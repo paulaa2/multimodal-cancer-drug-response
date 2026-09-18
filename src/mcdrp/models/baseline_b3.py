@@ -42,6 +42,7 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import assemble_features
+from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -380,8 +381,8 @@ def metric_row(
     split_name: str,
     subset: str,
     target: str,
-) -> dict[str, Any]:
-    """Predict one subset and return standard regression metrics."""
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Predict one subset and return metrics plus tidy predictions."""
 
     predictions = predict_mlp(fit, features)
     metrics = regression_metrics(
@@ -390,7 +391,7 @@ def metric_row(
         cell_keys=rows["depmap_id"].tolist(),
         drug_keys=rows["drug_id"].tolist(),
     )
-    return {
+    row = {
         "model": "mlp",
         "split_name": split_name,
         "subset": subset,
@@ -403,6 +404,16 @@ def metric_row(
         "loss": fit.loss,
         **metrics,
     }
+    frame = prediction_frame(
+        rows,
+        rows[target].to_numpy(),
+        predictions,
+        stage="B3",
+        model="mlp",
+        split_name=split_name,
+        subset=subset,
+    )
+    return row, frame
 
 
 def run_b3_for_split(
@@ -422,7 +433,7 @@ def run_b3_for_split(
     validation_fraction: float,
     random_state: int,
     device: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run the MLP neural baseline for one split configuration."""
 
     subsets = fit_scaler(
@@ -465,9 +476,10 @@ def run_b3_for_split(
     )
 
     results: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
     for subset in ("validation", "test"):
         rows, features = subsets[subset]
-        row = metric_row(
+        row, frame = metric_row(
             fit,
             rows,
             features,
@@ -483,8 +495,9 @@ def run_b3_for_split(
         row["max_iter"] = max_iter
         row["early_stopping"] = early_stopping
         results.append(row)
+        frames.append(frame)
 
-    return results
+    return results, frames
 
 
 def run_b3(
@@ -493,6 +506,7 @@ def run_b3(
     expression_path: str | Path = EXPRESSION_PATH,
     output: str | Path = "results/baselines/b3_metrics.csv",
     summary: str | Path = "data/reports/b3_summary.json",
+    predictions_output: str | Path = "results/predictions/b3.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -517,6 +531,7 @@ def run_b3(
     logger.info("Fingerprint matrix shape: %s", fp_matrix.shape)
 
     all_results: list[dict[str, Any]] = []
+    all_frames: list[pd.DataFrame] = []
 
     for split_name in split_names:
         logger.info("=== Processing split: %s ===", split_name)
@@ -537,7 +552,7 @@ def run_b3(
             pipeline.explained_variance_ratio_sum * 100,
         )
 
-        split_results = run_b3_for_split(
+        split_results, split_frames = run_b3_for_split(
             cohort,
             assignments,
             fp_matrix,
@@ -555,11 +570,14 @@ def run_b3(
             device=device,
         )
         all_results.extend(split_results)
+        all_frames.extend(split_frames)
 
     metrics = pd.DataFrame(all_results)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+
+    write_predictions(all_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -567,6 +585,7 @@ def run_b3(
         "expression_path": str(expression_path),
         "split_dir": str(split_dir),
         "output": str(output),
+        "predictions_output": str(predictions_output),
         "target": target,
         "n_pca_components": n_components,
         "fp_bits": 2048,
@@ -628,6 +647,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--expression", default=EXPRESSION_PATH)
     parser.add_argument("--output", default="results/baselines/b3_metrics.csv")
     parser.add_argument("--summary", default="data/reports/b3_summary.json")
+    parser.add_argument(
+        "--predictions-output",
+        default="results/predictions/b3.csv",
+    )
     parser.add_argument("--target", default="ln_ic50")
     parser.add_argument("--n-components", type=int, default=256)
     parser.add_argument("--hidden-layers", type=int, nargs="+", default=[512, 128])
@@ -672,6 +695,7 @@ def main() -> None:
         expression_path=args.expression,
         output=args.output,
         summary=args.summary,
+        predictions_output=args.predictions_output,
         target=args.target,
         n_components=args.n_components,
         split_names=tuple(args.splits),

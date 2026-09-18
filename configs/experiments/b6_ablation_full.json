@@ -29,10 +29,7 @@
           "cold_both"
         ],
         "device": "cuda",
-        "gene-sets": "builtin_cancer_core",
-        "learning-rate": 0.03,
-        "max-depth": 5,
-        "n-estimators": 600
+        "gene-sets": "builtin_cancer_core"
       }
     },
     {

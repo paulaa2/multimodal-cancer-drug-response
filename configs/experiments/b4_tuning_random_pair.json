@@ -1,0 +1,19 @@
+{
+  "name": "b4_tuning_random_pair",
+  "description": "Tune B4 GNN learning rate and dropout on validation RMSE for the random-pair split.",
+  "steps": [
+    {
+      "name": "tune_b4_random_pair",
+      "module": "mcdrp.models.tune_b4",
+      "args": {
+        "splits": ["random_pair"],
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "compare_models",
+      "module": "mcdrp.results.compare_baselines",
+      "args": {}
+    }
+  ]
+}

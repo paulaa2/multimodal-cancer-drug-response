@@ -64,7 +64,7 @@ def test_run_b3_for_split_returns_validation_and_test_metrics(
 ) -> None:
     fp_matrix = build_fingerprint_matrix(synthetic_cohort["canonical_smiles"])
 
-    results = run_b3_for_split(
+    results, frames = run_b3_for_split(
         synthetic_cohort,
         synthetic_split,
         fp_matrix,
@@ -89,3 +89,5 @@ def test_run_b3_for_split_returns_validation_and_test_metrics(
         assert row["rmse"] >= 0
         assert row["n_iter"] >= 1
         assert "loss" in row
+    assert len(frames) == len(results)
+    assert frames[0]["stage"].unique().tolist() == ["B3"]
