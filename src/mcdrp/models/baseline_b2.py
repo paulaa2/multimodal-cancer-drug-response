@@ -96,7 +96,10 @@ def run_b2_for_split(
         subset_rows, X_subset = subsets[subset_name]
         predictions = predict_xgboost(model, X_subset)
         metrics = regression_metrics(
-            subset_rows[target].to_numpy(), predictions
+            subset_rows[target].to_numpy(),
+            predictions,
+            cell_keys=subset_rows["depmap_id"].tolist(),
+            drug_keys=subset_rows["drug_id"].tolist(),
         )
         results.append(
             {

@@ -530,7 +530,13 @@ def metric_row(
 ) -> dict[str, Any]:
     """Create one metrics row."""
 
-    metrics = regression_metrics(y_true, y_pred)
+    # Validation and test loaders are unshuffled, so these align with ``rows``.
+    metrics = regression_metrics(
+        y_true,
+        y_pred,
+        cell_keys=rows["depmap_id"].tolist(),
+        drug_keys=rows["drug_id"].tolist(),
+    )
     return {
         "model": model_name,
         "split_name": split_name,

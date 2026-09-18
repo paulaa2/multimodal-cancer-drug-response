@@ -65,7 +65,12 @@ def metric_row(
 ) -> dict[str, Any]:
     """Create one metrics row for a tuned MLP candidate."""
 
-    metrics = regression_metrics(rows[target].to_numpy(), predictions)
+    metrics = regression_metrics(
+        rows[target].to_numpy(),
+        predictions,
+        cell_keys=rows["depmap_id"].tolist(),
+        drug_keys=rows["drug_id"].tolist(),
+    )
     row = {
         "model": "mlp",
         "params": json.dumps(serializable_params(params), sort_keys=True),

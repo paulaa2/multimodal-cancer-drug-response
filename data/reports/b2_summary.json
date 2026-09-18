@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-09-14T19:23:05.002206+00:00",
+  "created_at_utc": "2026-09-18T08:46:33.592651+00:00",
   "cohort_path": "data/processed/cohort_pairs.csv",
   "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
   "split_dir": "data\\processed\\splits",
@@ -16,79 +16,62 @@
     "objective": "reg:squarederror",
     "eval_metric": "rmse",
     "tree_method": "hist",
-    "random_state": 42
+    "random_state": 42,
+    "device": "cuda"
   },
+  "xgb_device_requested": "auto",
   "splits": [
     "random_pair",
-    "cold_cell",
     "cold_drug"
   ],
   "best_by_split_subset": [
     {
-      "split_name": "cold_cell",
-      "subset": "test",
-      "best_model": "xgboost",
-      "rmse": 1.30575889569618,
-      "mae": 0.9807620849325394,
-      "pearson": 0.8879117271653195,
-      "spearman": 0.8474019279963521,
-      "r2": 0.787675287642337,
-      "best_iteration": 497
-    },
-    {
-      "split_name": "cold_cell",
-      "subset": "validation",
-      "best_model": "xgboost",
-      "rmse": 1.340422490210433,
-      "mae": 1.0072816341067208,
-      "pearson": 0.8783890904828181,
-      "spearman": 0.8346118912296023,
-      "r2": 0.7712453487320321,
-      "best_iteration": 497
-    },
-    {
       "split_name": "cold_drug",
       "subset": "test",
       "best_model": "xgboost",
-      "rmse": 2.273971865031997,
-      "mae": 1.662896678944996,
-      "pearson": 0.5452559805163755,
-      "spearman": 0.45828054310180705,
-      "r2": 0.28850381378077816,
-      "best_iteration": 454
+      "rmse": 2.2754617079819033,
+      "mae": 1.6702722140905752,
+      "pearson": 0.5506557889746693,
+      "spearman": 0.4589417078560203,
+      "r2": 0.28757120345238574,
+      "best_iteration": 499,
+      "device": "cuda"
     },
     {
       "split_name": "cold_drug",
       "subset": "validation",
       "best_model": "xgboost",
-      "rmse": 2.9713803514883343,
-      "mae": 2.266575900479867,
-      "pearson": 0.46416305517870776,
-      "spearman": 0.40944754416775486,
-      "r2": 0.14738458766104612,
-      "best_iteration": 454
+      "rmse": 2.9274962182649373,
+      "mae": 2.242359966682904,
+      "pearson": 0.4753941191120216,
+      "spearman": 0.42029539151356704,
+      "r2": 0.17238306279527105,
+      "best_iteration": 499,
+      "device": "cuda"
     },
     {
       "split_name": "random_pair",
       "subset": "test",
       "best_model": "xgboost",
-      "rmse": 1.1613848227344061,
-      "mae": 0.8753158393645162,
-      "pearson": 0.9129853017488682,
-      "spearman": 0.8790807052814484,
-      "r2": 0.8323712908548883,
-      "best_iteration": 499
+      "rmse": 1.1631554582668713,
+      "mae": 0.8760371456933445,
+      "pearson": 0.9126932471863516,
+      "spearman": 0.8787384320100894,
+      "r2": 0.8318597711602587,
+      "best_iteration": 499,
+      "device": "cuda"
     },
     {
       "split_name": "random_pair",
       "subset": "validation",
       "best_model": "xgboost",
-      "rmse": 1.1537608523016907,
-      "mae": 0.866787691171161,
-      "pearson": 0.9124076005216851,
-      "spearman": 0.8810747402324332,
-      "r2": 0.831363499214623,
-      "best_iteration": 499
+      "rmse": 1.1550655886786139,
+      "mae": 0.8677547711982335,
+      "pearson": 0.9121922501660581,
+      "spearman": 0.8808079000189479,
+      "r2": 0.8309818766531054,
+      "best_iteration": 499,
+      "device": "cuda"
     }
   ]
 }

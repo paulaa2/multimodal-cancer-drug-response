@@ -76,7 +76,12 @@ def evaluate_model(
 ) -> dict[str, Any]:
     """Predict and compute regression metrics for one model on one subset."""
     predictions = model.predict(X)
-    metrics = regression_metrics(rows[target].to_numpy(), predictions)
+    metrics = regression_metrics(
+        rows[target].to_numpy(),
+        predictions,
+        cell_keys=rows["depmap_id"].tolist(),
+        drug_keys=rows["drug_id"].tolist(),
+    )
     return {
         "model": model_name,
         "split_name": split_name,

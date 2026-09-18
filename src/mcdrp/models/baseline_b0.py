@@ -1,7 +1,13 @@
 """B0 mean baselines for drug-response prediction.
 
-This baseline intentionally uses no transcriptomics and no chemical structure.
-It gives the minimum reference that later models must beat.
+These baselines intentionally use no transcriptomics and no chemical structure.
+They give the reference that later models must beat.
+
+``mean_effects`` is the strongest of them and the one that matters: it predicts
+``mu_cell + mu_drug - mu`` and is the standard reference in drug-response
+benchmarks, where most published models barely improve on it. ``global_mean``,
+``drug_mean``, ``cell_mean``, and ``tissue_mean`` isolate how much of the
+signal comes from each single marginal effect.
 """
 
 from __future__ import annotations
@@ -12,14 +18,34 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
-from mcdrp.metrics import regression_metrics
-from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.metrics import MeanEffectsReference, regression_metrics
+from mcdrp.splits.make_splits import DEFAULT_SPLITS, TISSUE_COLUMN
 
 
 def predict_global_mean(train: pd.DataFrame, target: str, rows: pd.DataFrame) -> pd.Series:
     return pd.Series(train[target].mean(), index=rows.index)
+
+
+def predict_mean_effects(
+    train: pd.DataFrame,
+    target: str,
+    rows: pd.DataFrame,
+) -> pd.Series:
+    """Predict the additive drug plus cell-line mean effect."""
+
+    reference = MeanEffectsReference.fit(
+        train["depmap_id"].tolist(),
+        train["drug_id"].tolist(),
+        train[target].to_numpy(),
+    )
+    predictions = reference.predict(
+        rows["depmap_id"].tolist(),
+        rows["drug_id"].tolist(),
+    )
+    return pd.Series(predictions, index=rows.index)
 
 
 def predict_group_mean(
@@ -42,8 +68,15 @@ def evaluate_predictions(
     model_name: str,
     split_name: str,
     subset: str,
+    reference_pred: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    metrics = regression_metrics(rows[target].to_numpy(), predictions.to_numpy())
+    metrics = regression_metrics(
+        rows[target].to_numpy(),
+        predictions.to_numpy(),
+        reference_pred=reference_pred,
+        cell_keys=rows["depmap_id"].tolist(),
+        drug_keys=rows["drug_id"].tolist(),
+    )
     return {
         "model": model_name,
         "split_name": split_name,
@@ -70,10 +103,20 @@ def run_b0_for_split(
         ("global_mean", lambda rows: predict_global_mean(train, target, rows)),
         ("drug_mean", lambda rows: predict_group_mean(train, target, rows, "drug_id")),
         ("cell_mean", lambda rows: predict_group_mean(train, target, rows, "depmap_id")),
+        ("mean_effects", lambda rows: predict_mean_effects(train, target, rows)),
     ]
+    if TISSUE_COLUMN in data.columns:
+        model_specs.append(
+            (
+                "tissue_mean",
+                lambda rows: predict_group_mean(train, target, rows, TISSUE_COLUMN),
+            )
+        )
 
     for subset in ("validation", "test"):
         rows = data.loc[data["split"].eq(subset)].copy()
+        # The same train-only reference normalizes every model on these rows.
+        reference_pred = predict_mean_effects(train, target, rows).to_numpy()
         for model_name, predict in model_specs:
             predictions = predict(rows)
             results.append(
@@ -84,6 +127,7 @@ def run_b0_for_split(
                     model_name=model_name,
                     split_name=split_name,
                     subset=subset,
+                    reference_pred=reference_pred,
                 )
             )
 

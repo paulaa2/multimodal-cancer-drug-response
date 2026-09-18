@@ -69,7 +69,12 @@ def metric_row(
 ) -> dict[str, Any]:
     """Create one metrics row."""
 
-    metrics = regression_metrics(rows[target].to_numpy(), predictions)
+    metrics = regression_metrics(
+        rows[target].to_numpy(),
+        predictions,
+        cell_keys=rows["depmap_id"].tolist(),
+        drug_keys=rows["drug_id"].tolist(),
+    )
     row = {
         "model": "xgboost",
         "params": json.dumps(params, sort_keys=True),
