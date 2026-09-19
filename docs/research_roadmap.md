@@ -41,6 +41,37 @@ and the units of replication are cell lines and drugs.
 The experiment that counts is `configs/experiments/multiseed_b0_b2_full.json`.
 Until those numbers exist, the README ranking remains provisional.
 
+### 1b. Grouped cross-validation for the cold splits — code done, numbers pending
+
+A single group-level partition cannot support a cold-split claim.
+`cold_drug` holds out 36 of 238 drugs and validates on a different 36, and
+because drug potency dominates ln(IC50), the two subsets measure different
+things: under seed 42 the validation mean is 1.924 and the test mean is 3.463,
+a gap of 1.54 against a target standard deviation of about 2.7.
+`cold_scaffold` shows the same gap with the sign reversed. That single number
+is what tuning was selecting against, which is why tuning B4 made test RMSE
+worse on exactly those two splits and why XGBoost early-stopped at iteration 0
+on `cold_scaffold`.
+
+`python -m mcdrp.splits.grouped_cv` builds K folds over the grouping entity so
+every group is tested exactly once. Each fold is written as its own directory
+mirroring the flat split layout, `splits/cv/cold_drug/fold_0/cold_drug.csv`, so
+models consume a fold unchanged through `--split-dir`. No model or tuner knows
+that cross-validation exists.
+
+`python -m mcdrp.results.grouped_cv_report` computes metrics per fold and then
+averages them. Per fold, not pooled: each fold has its own training rows, so
+`r2_normalized` is only defined against that fold's `mean_effects` reference,
+and pooling first would silently compare every fold against one arbitrary
+reference. As with multi-seed, no p-values: folds share training data and the
+units of replication are still drugs and cell lines.
+
+Five folds over `cold_drug` test all 238 drugs and cut the validation/test mean
+gap from 1.54 to 0.51 on average. The measurement this replaces was worse than
+it looked: B0 `mean_effects` reads 2.653 RMSE on the seed-42 partition, but
+across folds it ranges from 2.200 to 3.204, giving 2.662 +/- 0.424. Any cold
+split comparison decided by a tenth of an RMSE was reading noise.
+
 ### 2. Persist per-row predictions — done
 
 B0–B7 write tidy prediction files (`pair_id`, `stage`, `model`, `variant`,
