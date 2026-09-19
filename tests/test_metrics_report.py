@@ -140,3 +140,66 @@ def test_report_rejects_predictions_with_unknown_pairs(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="absent from the cohort"):
         build_metrics_report(predictions, frame, tmp_path / "splits")
+
+
+def test_tuned_and_standard_predictions_are_not_pooled(tmp_path) -> None:
+    """A tuner reuses the stage and model labels of the model it tunes.
+
+    Without the variant in the grouping key, both runs collapse into one row
+    and every metric is computed over the concatenation of the two.
+    """
+
+    frame = cohort()
+    write_split(tmp_path, frame)
+    test = frame[~frame["pair_id"].str.contains("_d0|_d1")]
+
+    frames = [
+        prediction_frame(
+            test,
+            test["ln_ic50"].to_numpy(),
+            test["ln_ic50"].to_numpy() + offset,
+            stage="B4",
+            model="gnn",
+            split_name="random_pair",
+            subset="test",
+            variant=variant,
+        )
+        for variant, offset in (("standard", 0.1), ("tuned", 2.0))
+    ]
+    predictions = pd.concat(frames, ignore_index=True)
+
+    report = build_metrics_report(predictions, frame, tmp_path / "splits")
+
+    assert len(report) == 2
+    assert set(report["model_id"]) == {"B4_gnn", "B4_gnn_tuned"}
+    assert (report["n_rows"] == len(test)).all()
+    standard = report.loc[report["variant"].eq("standard")].iloc[0]
+    tuned = report.loc[report["variant"].eq("tuned")].iloc[0]
+    assert standard["rmse"] == pytest.approx(0.1)
+    assert tuned["rmse"] == pytest.approx(2.0)
+
+
+def test_best_by_split_keeps_the_winning_row_intact(tmp_path) -> None:
+    """GroupBy.first reduces each column independently and skips NaN.
+
+    Stages report disjoint hyperparameter columns, so the winning row must be
+    taken whole rather than blended with the losers.
+    """
+
+    report = pd.DataFrame(
+        {
+            "model_id": ["B3_mlp", "B6_ablation_morgan"],
+            "split_name": ["cold_cell", "cold_cell"],
+            "subset": ["test", "test"],
+            "rmse": [1.9, 1.3],
+            "hidden_layer_sizes": ["[512, 128]", None],
+            "r2_normalized": [0.0, np.nan],
+        }
+    )
+
+    best = best_by_split(report)
+
+    assert len(best) == 1
+    assert best.iloc[0]["model_id"] == "B6_ablation_morgan"
+    assert best.iloc[0]["hidden_layer_sizes"] is None
+    assert np.isnan(best.iloc[0]["r2_normalized"])

@@ -43,15 +43,45 @@ Until those numbers exist, the README ranking remains provisional.
 
 ### 2. Persist per-row predictions — done
 
-B0–B7 write tidy prediction files (`pair_id`, `split_name`, `subset`, `model`,
-`y_true`, `y_pred`) under `results/predictions/`. `metrics_report` computes all
-metric families from those files, so a new metric no longer requires retraining.
+B0–B7 write tidy prediction files (`pair_id`, `stage`, `model`, `variant`,
+`split_name`, `subset`, `y_true`, `y_pred`) under `results/predictions/`.
+`metrics_report` computes all metric families from those files, so a new metric
+no longer requires retraining.
+
+`variant` separates a model's default-hyperparameter run from its tuner's
+validation-selected run. A tuner reuses the stage and model labels of the model
+it tunes, so without it `b4.csv` and `b4_tuned.csv` grouped together and every
+B4 metric was computed over both runs at once. Files written before the column
+existed keep working: the variant is recovered from the `_tuned` filename stem.
 
 ### 3. Normalized metrics for every model — done
 
 Mean-effect normalized metrics, including `r2_normalized`, are computed in
 reporting from the prediction artifacts and the split-wise `mean_effects`
 reference. They are no longer limited to B0.
+
+Reports must select the winning row whole, via
+`mcdrp.results.selection.lowest_rmse_rows`, and never with
+`sort_values("rmse").groupby(keys).first()`. pandas reduces each column
+independently and skips NaN, so the second spelling took the winner's RMSE but
+filled each hyperparameter column from whichever other stage first had a value
+there. Stages report disjoint hyperparameter columns, so that happened on
+essentially every "best model" row.
+
+### 3b. Guard the expression pipeline against near-constant genes — done
+
+`fit_expression_pipeline` drops genes whose training standard deviation falls
+below `MIN_GENE_STD` and clips scaled values to `MAX_ABS_ZSCORE` on both the
+fit and transform paths. Without this, `StandardScaler` divides by almost zero:
+`SMIM10L3 (122526779)` has standard deviation 6.3e-08 across the 501 training
+cell lines of the seed-13 `cold_cell` split, which gave the held-out line
+ACH-000470 a z-score of 3.05e7, a PCA component of 6.2e5, and a B1 ridge
+prediction of 28269 against a target range of roughly [-9, 12]. Tree models
+hide the problem because they never extrapolate; linear models and MLPs do not.
+
+The guard is a safety net, not a change of representation. On the seed-42
+splits it drops 17 of 19215 genes and moves explained variance from 0.8045 to
+0.8047, leaving the canonical artifacts comparable.
 
 ### 4. Close the `cold_tissue` gap — code done, numbers pending
 

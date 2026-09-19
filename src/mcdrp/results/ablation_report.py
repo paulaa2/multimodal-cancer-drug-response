@@ -10,17 +10,15 @@ from typing import Any
 
 import pandas as pd
 
+from mcdrp.results.selection import lowest_rmse_rows
+
 DEFAULT_REFERENCE = "morgan_expression_pca"
 
 
 def make_best_ablation_table(metrics: pd.DataFrame) -> pd.DataFrame:
     """Pick the best ablation for each split/subset."""
 
-    return (
-        metrics.sort_values(["split_name", "subset", "rmse"])
-        .groupby(["split_name", "subset"], as_index=False)
-        .first()
-    )
+    return lowest_rmse_rows(metrics, ["split_name", "subset"]).reset_index(drop=True)
 
 
 def make_delta_table(

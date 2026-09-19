@@ -24,6 +24,7 @@ from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import assemble_features
 from mcdrp.results.predictions import prediction_frame, write_predictions
+from mcdrp.results.selection import lowest_rmse_rows
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -301,11 +302,8 @@ def load_selected_xgb_params(
         selected = pd.DataFrame()
 
     if selected.empty:
-        selected = (
-            table.loc[table["subset"].eq("validation")]
-            .sort_values("rmse")
-            .groupby("split_name", as_index=False)
-            .first()
+        selected = lowest_rmse_rows(
+            table.loc[table["subset"].eq("validation")], ["split_name"]
         )
 
     by_split: dict[str, dict[str, Any]] = {}

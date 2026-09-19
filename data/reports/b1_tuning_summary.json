@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-09-14T20:13:37.010689+00:00",
+  "created_at_utc": "2026-09-18T12:29:30.746587+00:00",
   "cohort_path": "data/processed/cohort_pairs.csv",
   "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
   "output": "results/baselines/b1_tuning_metrics.csv",
@@ -25,9 +25,26 @@
   "splits": [
     "random_pair",
     "cold_cell",
-    "cold_drug"
+    "cold_tissue",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both"
   ],
   "best_validation": [
+    {
+      "split_name": "cold_both",
+      "model": "elastic_net",
+      "params": "{\"alpha\": 0.05, \"l1_ratio\": 0.3}",
+      "validation_rmse": 1.822332509808287,
+      "validation_mae": 1.414387968239914
+    },
+    {
+      "split_name": "cold_both",
+      "model": "ridge",
+      "params": "{\"alpha\": 100.0}",
+      "validation_rmse": 1.9233125357623757,
+      "validation_mae": 1.5007120107037146
+    },
     {
       "split_name": "cold_cell",
       "model": "elastic_net",
@@ -55,6 +72,34 @@
       "params": "{\"alpha\": 100.0}",
       "validation_rmse": 2.8168544850316017,
       "validation_mae": 2.1983199909289235
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model": "elastic_net",
+      "params": "{\"alpha\": 0.02, \"l1_ratio\": 0.7}",
+      "validation_rmse": 2.3213966865626787,
+      "validation_mae": 1.7583910338099131
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model": "ridge",
+      "params": "{\"alpha\": 1.0}",
+      "validation_rmse": 2.484814888140359,
+      "validation_mae": 1.9221609245043536
+    },
+    {
+      "split_name": "cold_tissue",
+      "model": "elastic_net",
+      "params": "{\"alpha\": 0.005, \"l1_ratio\": 0.3}",
+      "validation_rmse": 1.4803004235235582,
+      "validation_mae": 1.1108244826786546
+    },
+    {
+      "split_name": "cold_tissue",
+      "model": "ridge",
+      "params": "{\"alpha\": 100.0}",
+      "validation_rmse": 1.4656407017359443,
+      "validation_mae": 1.091406023633176
     },
     {
       "split_name": "random_pair",

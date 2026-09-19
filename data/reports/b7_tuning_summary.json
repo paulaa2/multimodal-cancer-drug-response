@@ -1,0 +1,288 @@
+{
+  "created_at_utc": "2026-09-19T16:30:39.647615+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "drug_embeddings": "data\\external\\drug_embeddings.csv",
+  "output": "results/models/b7_tuning_metrics.csv",
+  "target": "ln_ic50",
+  "embedding_key_column": "drug_id",
+  "cohort_key_column": "drug_id",
+  "embedding_dim": 384,
+  "n_embedding_drugs": 238,
+  "missing_embeddings": "error",
+  "n_pca_components": 256,
+  "pca_variance_by_split": {
+    "random_pair": 0.8045476078987122,
+    "cold_cell": 0.8620344400405884,
+    "cold_tissue": 0.8471897840499878,
+    "cold_drug": 0.8045476078987122,
+    "cold_scaffold": 0.8045476078987122,
+    "cold_both": 0.8620344400405884
+  },
+  "gene_sets": "builtin_cancer_core",
+  "min_pathway_genes": 3,
+  "pathways": [
+    "MAPK_SIGNALING",
+    "PI3K_AKT_MTOR",
+    "P53_APOPTOSIS",
+    "DNA_DAMAGE_REPAIR",
+    "CELL_CYCLE",
+    "EMT_INVASION",
+    "HYPOXIA_ANGIOGENESIS",
+    "INFLAMMATION_NFKB"
+  ],
+  "model_variants": [
+    "pretrained_drug",
+    "pretrained_drug_expression_pca",
+    "pretrained_drug_pathways",
+    "pretrained_drug_expression_pca_pathways"
+  ],
+  "grid": {
+    "max_depth": [
+      3,
+      5
+    ],
+    "learning_rate": [
+      0.01,
+      0.025
+    ],
+    "subsample": [
+      0.8,
+      1.0
+    ],
+    "colsample_bytree": [
+      0.8,
+      1.0
+    ]
+  },
+  "n_estimators": 900,
+  "early_stopping_rounds": 60,
+  "device_requested": "cuda",
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_tissue",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both"
+  ],
+  "best_validation": [
+    {
+      "split_name": "cold_both",
+      "model": "pretrained_drug",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.01, \"max_depth\": 3, \"subsample\": 0.8}",
+      "validation_rmse": 1.934967003678021,
+      "validation_mae": 1.4851821683992492,
+      "best_iteration": 318,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_both",
+      "model": "pretrained_drug_expression_pca",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 3, \"subsample\": 0.8}",
+      "validation_rmse": 1.8274841013452805,
+      "validation_mae": 1.4154958856569557,
+      "best_iteration": 308,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_both",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 3, \"subsample\": 0.8}",
+      "validation_rmse": 1.8070188249006076,
+      "validation_mae": 1.4114059834295234,
+      "best_iteration": 874,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_both",
+      "model": "pretrained_drug_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 3, \"subsample\": 0.8}",
+      "validation_rmse": 1.8711546118433953,
+      "validation_mae": 1.424662334608851,
+      "best_iteration": 780,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_cell",
+      "model": "pretrained_drug",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.510957831556805,
+      "validation_mae": 1.1405618980243364,
+      "best_iteration": 531,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_cell",
+      "model": "pretrained_drug_expression_pca",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.3256169881395756,
+      "validation_mae": 0.9971418626285244,
+      "best_iteration": 898,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_cell",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 1.3240666177673597,
+      "validation_mae": 0.9975748558312459,
+      "best_iteration": 899,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_cell",
+      "model": "pretrained_drug_pathways",
+      "params": "{\"colsample_bytree\": 1.0, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.4138968719839062,
+      "validation_mae": 1.0650442978743704,
+      "best_iteration": 644,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_drug",
+      "model": "pretrained_drug",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 3, \"subsample\": 0.8}",
+      "validation_rmse": 3.0215668557672064,
+      "validation_mae": 2.2975895994013364,
+      "best_iteration": 52,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_drug",
+      "model": "pretrained_drug_expression_pca",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.01, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 2.958773746469275,
+      "validation_mae": 2.143289855551619,
+      "best_iteration": 895,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_drug",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.01, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 2.9597295039591125,
+      "validation_mae": 2.138591811682744,
+      "best_iteration": 894,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_drug",
+      "model": "pretrained_drug_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 2.927892362146532,
+      "validation_mae": 2.151858483378637,
+      "best_iteration": 886,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model": "pretrained_drug",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 2.5416017167137994,
+      "validation_mae": 2.0009614890675786,
+      "best_iteration": 2,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model": "pretrained_drug_expression_pca",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 2.5393039131785535,
+      "validation_mae": 1.9914952816805238,
+      "best_iteration": 3,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 2.5406361783886733,
+      "validation_mae": 2.0026835773980465,
+      "best_iteration": 0,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_scaffold",
+      "model": "pretrained_drug_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 2.5372397346651225,
+      "validation_mae": 1.9978765442788007,
+      "best_iteration": 2,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_tissue",
+      "model": "pretrained_drug",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.01, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.736201938705414,
+      "validation_mae": 1.3110474438709145,
+      "best_iteration": 718,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_tissue",
+      "model": "pretrained_drug_expression_pca",
+      "params": "{\"colsample_bytree\": 1.0, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.4832194828131549,
+      "validation_mae": 1.0973966416109473,
+      "best_iteration": 893,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_tissue",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "params": "{\"colsample_bytree\": 1.0, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.4934170259164627,
+      "validation_mae": 1.107413542730304,
+      "best_iteration": 887,
+      "device": "cuda"
+    },
+    {
+      "split_name": "cold_tissue",
+      "model": "pretrained_drug_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 1.0}",
+      "validation_rmse": 1.669013294411873,
+      "validation_mae": 1.257065134919209,
+      "best_iteration": 362,
+      "device": "cuda"
+    },
+    {
+      "split_name": "random_pair",
+      "model": "pretrained_drug",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.5050872945061997,
+      "validation_mae": 1.1370921956879303,
+      "best_iteration": 425,
+      "device": "cuda"
+    },
+    {
+      "split_name": "random_pair",
+      "model": "pretrained_drug_expression_pca",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.142563782008815,
+      "validation_mae": 0.8575577110562435,
+      "best_iteration": 899,
+      "device": "cuda"
+    },
+    {
+      "split_name": "random_pair",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "params": "{\"colsample_bytree\": 0.8, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.1425300053756984,
+      "validation_mae": 0.857499512296521,
+      "best_iteration": 899,
+      "device": "cuda"
+    },
+    {
+      "split_name": "random_pair",
+      "model": "pretrained_drug_pathways",
+      "params": "{\"colsample_bytree\": 1.0, \"learning_rate\": 0.025, \"max_depth\": 5, \"subsample\": 0.8}",
+      "validation_rmse": 1.195872485637712,
+      "validation_mae": 0.8951384739348806,
+      "best_iteration": 899,
+      "device": "cuda"
+    }
+  ]
+}

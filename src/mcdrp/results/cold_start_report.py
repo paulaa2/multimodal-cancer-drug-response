@@ -10,6 +10,8 @@ from typing import Any
 
 import pandas as pd
 
+from mcdrp.results.selection import lowest_rmse_rows
+
 SPLIT_ORDER = ("random_pair", "cold_cell", "cold_drug", "cold_scaffold", "cold_both")
 
 
@@ -95,11 +97,7 @@ def make_best_table(metrics: pd.DataFrame, subset: str) -> pd.DataFrame:
     """Pick the best model by split for a subset."""
 
     selected = metrics.loc[metrics["subset"].eq(subset)].copy()
-    return (
-        selected.sort_values(["split_name", "rmse"])
-        .groupby("split_name", as_index=False)
-        .first()
-    )
+    return lowest_rmse_rows(selected, ["split_name"]).reset_index(drop=True)
 
 
 def cold_start_report(

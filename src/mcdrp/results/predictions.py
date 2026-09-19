@@ -24,11 +24,18 @@ PREDICTION_COLUMNS = (
     "pair_id",
     "stage",
     "model",
+    "variant",
     "split_name",
     "subset",
     "y_true",
     "y_pred",
 )
+
+# A tuner reuses the same stage and model labels as the model it tunes, so
+# without this the default-hyperparameter and validation-selected predictions
+# collapse into one group and every metric is computed over both at once.
+STANDARD_VARIANT = "standard"
+TUNED_VARIANT = "tuned"
 
 
 def prediction_frame(
@@ -41,6 +48,7 @@ def prediction_frame(
     split_name: str,
     subset: str,
     params: str | None = None,
+    variant: str = STANDARD_VARIANT,
 ) -> pd.DataFrame:
     """Build one tidy prediction frame.
 
@@ -67,6 +75,7 @@ def prediction_frame(
             "pair_id": rows["pair_id"].to_numpy(),
             "stage": stage,
             "model": model,
+            "variant": variant,
             "split_name": split_name,
             "subset": subset,
             "y_true": y_true,
@@ -81,14 +90,23 @@ def prediction_frame(
 def write_predictions(
     frames: Iterable[pd.DataFrame],
     path: str | Path,
+    *,
+    variant: str | None = None,
 ) -> pd.DataFrame:
-    """Concatenate prediction frames, validate the schema, and write them."""
+    """Concatenate prediction frames, validate the schema, and write them.
+
+    Tuners obtain their frames from the model's own per-split runner, which
+    stamps the standard variant. Passing ``variant`` relabels every row, so a
+    tuner does not have to thread the label through the runner.
+    """
 
     collected = [frame for frame in frames if not frame.empty]
     if not collected:
         raise ValueError("No predictions to write.")
 
     predictions = pd.concat(collected, ignore_index=True)
+    if variant is not None:
+        predictions["variant"] = variant
     missing = set(PREDICTION_COLUMNS) - set(predictions.columns)
     if missing:
         raise ValueError(f"Predictions are missing columns: {sorted(missing)}")
@@ -97,6 +115,17 @@ def write_predictions(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     predictions.to_csv(output_path, index=False)
     return predictions
+
+
+def variant_from_path(path: str | Path) -> str:
+    """Infer the variant of a prediction file written before the column existed.
+
+    Tuners write to a ``*_tuned.csv`` sibling of the model's own file, so the
+    stem is enough to recover the label and keep older artifacts usable
+    without retraining.
+    """
+
+    return TUNED_VARIANT if Path(path).stem.endswith("_tuned") else STANDARD_VARIANT
 
 
 def load_predictions(paths: str | Path | Iterable[str | Path]) -> pd.DataFrame:
@@ -115,6 +144,8 @@ def load_predictions(paths: str | Path | Iterable[str | Path]) -> pd.DataFrame:
         if not prediction_path.exists():
             continue
         frame = pd.read_csv(prediction_path)
+        if "variant" not in frame.columns:
+            frame["variant"] = variant_from_path(prediction_path)
         missing = set(PREDICTION_COLUMNS) - set(frame.columns)
         if missing:
             raise ValueError(
@@ -138,6 +169,7 @@ def write_prediction_summary(
         "n_rows": int(len(predictions)),
         "stages": sorted(predictions["stage"].unique().tolist()),
         "models": sorted(predictions["model"].unique().tolist()),
+        "variants": sorted(predictions["variant"].unique().tolist()),
         "splits": sorted(predictions["split_name"].unique().tolist()),
         "subsets": sorted(predictions["subset"].unique().tolist()),
         **extra,

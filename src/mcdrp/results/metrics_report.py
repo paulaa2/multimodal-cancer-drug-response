@@ -26,11 +26,12 @@ from typing import Any
 import pandas as pd
 
 from mcdrp.metrics import MeanEffectsReference, regression_metrics
-from mcdrp.results.predictions import load_predictions
+from mcdrp.results.predictions import STANDARD_VARIANT, load_predictions
+from mcdrp.results.selection import lowest_rmse_rows
 from mcdrp.splits.make_splits import DEFAULT_SPLITS, TISSUE_COLUMN
 
 DEFAULT_PREDICTION_DIR = "results/predictions"
-GROUP_COLUMNS = ("stage", "model", "split_name", "subset")
+GROUP_COLUMNS = ("stage", "model", "variant", "split_name", "subset")
 
 
 def build_metrics_report(
@@ -66,7 +67,7 @@ def build_metrics_report(
         )
 
     for keys, group in annotated.groupby(list(GROUP_COLUMNS), dropna=False):
-        stage, model, split_name, subset = keys
+        stage, model, variant, split_name, subset = keys
         reference = references[split_name]
         reference_pred = reference.predict(
             group["depmap_id"].tolist(), group["drug_id"].tolist()
@@ -82,7 +83,8 @@ def build_metrics_report(
             {
                 "stage": stage,
                 "model": model,
-                "model_id": f"{stage}_{model}",
+                "variant": variant,
+                "model_id": model_id(stage, model, variant),
                 "split_name": split_name,
                 "subset": subset,
                 "n_rows": int(len(group)),
@@ -94,6 +96,14 @@ def build_metrics_report(
 
     report = pd.DataFrame(rows)
     return report.sort_values(["split_name", "subset", "rmse"]).reset_index(drop=True)
+
+
+def model_id(stage: str, model: str, variant: str) -> str:
+    """Build a reporting identifier that keeps tuned runs distinguishable."""
+
+    if variant == STANDARD_VARIANT:
+        return f"{stage}_{model}"
+    return f"{stage}_{model}_{variant}"
 
 
 def fit_split_reference(
@@ -128,16 +138,13 @@ def add_baseline_comparison(report: pd.DataFrame) -> pd.DataFrame:
     if baselines.empty:
         return output
 
-    best = (
-        baselines.sort_values("rmse")
-        .groupby(["split_name", "subset"], as_index=False)
-        .first()[["split_name", "subset", "model_id", "rmse"]]
-        .rename(
-            columns={
-                "model_id": "b0_reference_model",
-                "rmse": "b0_reference_rmse",
-            }
-        )
+    best = lowest_rmse_rows(baselines, ["split_name", "subset"])[
+        ["split_name", "subset", "model_id", "rmse"]
+    ].rename(
+        columns={
+            "model_id": "b0_reference_model",
+            "rmse": "b0_reference_rmse",
+        }
     )
     output = output.merge(best, on=["split_name", "subset"], how="left")
     output["rmse_improvement_vs_b0"] = output["b0_reference_rmse"] - output["rmse"]
@@ -150,11 +157,7 @@ def add_baseline_comparison(report: pd.DataFrame) -> pd.DataFrame:
 def best_by_split(report: pd.DataFrame) -> pd.DataFrame:
     """Return the best model per split/subset, ranked by RMSE."""
 
-    return (
-        report.sort_values(["split_name", "subset", "rmse"])
-        .groupby(["split_name", "subset"], as_index=False)
-        .first()
-    )
+    return lowest_rmse_rows(report, ["split_name", "subset"]).reset_index(drop=True)
 
 
 def run_metrics_report(

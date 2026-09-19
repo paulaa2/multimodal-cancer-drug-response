@@ -174,3 +174,75 @@ class TestPathwayFeatures:
         assert pipeline.pathway_names == ["P53_TEST"]
         assert scores.shape == (3, 1)
         assert scores.dtype == np.float32
+
+
+class TestNearConstantGeneHandling:
+    """Regression tests for the StandardScaler divide-by-near-zero failure.
+
+    A gene that is constant across the training cell lines gave a held-out
+    cell line a z-score of 3.05e7, which PCA carried through to a component
+    magnitude of 6.2e5 and made ridge predict 28269 on a target range of
+    roughly [-9, 12].
+    """
+
+    @staticmethod
+    def matrix() -> pd.DataFrame:
+        rng = np.random.default_rng(0)
+        frame = pd.DataFrame(
+            rng.normal(5.0, 1.5, size=(40, 6)),
+            index=[f"ACH-{i:06d}" for i in range(40)],
+            columns=[f"GENE{i} ({100 + i})" for i in range(6)],
+        )
+        # Silent in every training line, expressed in the held-out one.
+        frame["SILENT (999)"] = 0.0
+        return frame
+
+    def test_near_constant_gene_is_dropped(self) -> None:
+        frame = self.matrix()
+        pipeline = fit_expression_pipeline(frame.iloc[:30], n_components=4)
+
+        assert "SILENT (999)" not in pipeline.gene_columns
+        assert pipeline.n_genes_dropped_low_variance == 1
+
+    def test_unseen_expression_stays_in_distribution(self) -> None:
+        frame = self.matrix()
+        held_out = frame.index[-1]
+        frame.loc[held_out, "SILENT (999)"] = 9.0
+
+        pipeline = fit_expression_pipeline(frame.iloc[:30], n_components=4)
+        train_max = np.abs(transform_expression(pipeline, frame.iloc[:30])).max()
+        held_out_max = np.abs(
+            transform_expression(pipeline, frame.loc[[held_out]])
+        ).max()
+
+        assert held_out_max < 10.0 * train_max
+
+    def test_z_scores_are_clipped_on_both_paths(self) -> None:
+        frame = self.matrix()
+        # Clears the std floor but is still nearly constant.
+        frame["FAINT (998)"] = 0.0
+        frame.iloc[0, frame.columns.get_loc("FAINT (998)")] = 0.05
+        frame.iloc[-1, frame.columns.get_loc("FAINT (998)")] = 400.0
+
+        pipeline = fit_expression_pipeline(
+            frame.iloc[:30], n_components=4, max_abs_zscore=8.0
+        )
+
+        assert "FAINT (998)" in pipeline.gene_columns
+        scaled = pipeline.scaler.transform(
+            frame.loc[[frame.index[-1]], pipeline.gene_columns].to_numpy(
+                dtype=np.float32
+            )
+        )
+        assert np.abs(scaled).max() > 8.0
+        assert np.abs(transform_expression(pipeline, frame.iloc[[-1]])).max() < 8.0 * 4
+
+    def test_all_constant_matrix_is_rejected(self) -> None:
+        frame = pd.DataFrame(
+            np.ones((10, 3)),
+            index=[f"ACH-{i:06d}" for i in range(10)],
+            columns=[f"GENE{i} ({i})" for i in range(3)],
+        )
+
+        with pytest.raises(ValueError, match="constant across training"):
+            fit_expression_pipeline(frame, n_components=2)

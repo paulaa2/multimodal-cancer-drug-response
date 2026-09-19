@@ -19,6 +19,7 @@ from typing import Any
 import pandas as pd
 
 from mcdrp.results.compare_baselines import REQUIRED_COLUMNS, is_truthy
+from mcdrp.results.selection import lowest_rmse_rows
 from mcdrp.splits.make_splits import DEFAULT_SPLITS, SPLIT_LABELS
 
 STANDARD_METRICS = {
@@ -448,9 +449,9 @@ def validate_comparison_outputs(
         )
 
     expected_best = (
-        comparison.sort_values(["split_name", "subset", "rmse"])
-        .groupby(["split_name", "subset"], as_index=False)
-        .first()[["split_name", "subset", "model_id", "rmse"]]
+        lowest_rmse_rows(comparison, ["split_name", "subset"])[
+            ["split_name", "subset", "model_id", "rmse"]
+        ]
     )
     observed_best = best[["split_name", "subset", "model_id", "rmse"]]
     merged = expected_best.merge(

@@ -1,0 +1,66 @@
+{
+  "created_at_utc": "2026-09-19T13:52:43.690793+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "output": "results/models/b5_tuning_metrics.csv",
+  "predictions_output": "results/predictions/b5_tuned.csv",
+  "target": "ln_ic50",
+  "grid": {
+    "learning_rate": [
+      0.0003,
+      0.0005
+    ],
+    "dropout": [
+      0.15,
+      0.3
+    ]
+  },
+  "splits": [
+    "random_pair",
+    "cold_cell",
+    "cold_tissue",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both"
+  ],
+  "device_requested": "cuda",
+  "device_used": "cuda",
+  "best_validation": [
+    {
+      "split_name": "cold_both",
+      "params": "{\"dropout\": 0.15, \"learning_rate\": 0.0003}",
+      "validation_rmse": 1.8246742395858053,
+      "best_epoch": 2
+    },
+    {
+      "split_name": "cold_cell",
+      "params": "{\"dropout\": 0.15, \"learning_rate\": 0.0003}",
+      "validation_rmse": 1.3035080264854704,
+      "best_epoch": 9
+    },
+    {
+      "split_name": "cold_drug",
+      "params": "{\"dropout\": 0.15, \"learning_rate\": 0.0003}",
+      "validation_rmse": 2.5236963523193507,
+      "best_epoch": 17
+    },
+    {
+      "split_name": "cold_scaffold",
+      "params": "{\"dropout\": 0.15, \"learning_rate\": 0.0003}",
+      "validation_rmse": 2.2596840766278508,
+      "best_epoch": 15
+    },
+    {
+      "split_name": "cold_tissue",
+      "params": "{\"dropout\": 0.3, \"learning_rate\": 0.0003}",
+      "validation_rmse": 1.448142432304666,
+      "best_epoch": 9
+    },
+    {
+      "split_name": "random_pair",
+      "params": "{\"dropout\": 0.3, \"learning_rate\": 0.0003}",
+      "validation_rmse": 0.9149138109957627,
+      "best_epoch": 84
+    }
+  ]
+}

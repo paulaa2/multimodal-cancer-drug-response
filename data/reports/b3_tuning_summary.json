@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-09-15T12:48:34.368087+00:00",
+  "created_at_utc": "2026-09-18T14:35:07.510007+00:00",
   "cohort_path": "data/processed/cohort_pairs.csv",
   "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
   "output": "results/baselines/b3_tuning_metrics.csv",
@@ -32,9 +32,22 @@
   "splits": [
     "random_pair",
     "cold_cell",
-    "cold_drug"
+    "cold_tissue",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both"
   ],
   "best_validation": [
+    {
+      "split_name": "cold_both",
+      "params": "{\"alpha\": 0.0001, \"hidden_layer_sizes\": [512, 128], \"learning_rate_init\": 0.0005}",
+      "validation_rmse": 2.149950264039351,
+      "validation_mae": 1.72663952928145,
+      "backend": "torch",
+      "device": "cuda",
+      "n_iter": 30,
+      "loss": 0.3285844064084813
+    },
     {
       "split_name": "cold_cell",
       "params": "{\"alpha\": 0.0001, \"hidden_layer_sizes\": [256], \"learning_rate_init\": 0.001}",
@@ -54,6 +67,26 @@
       "device": "cuda",
       "n_iter": 43,
       "loss": 0.5231368616223335
+    },
+    {
+      "split_name": "cold_scaffold",
+      "params": "{\"alpha\": 0.001, \"hidden_layer_sizes\": [512, 128], \"learning_rate_init\": 0.001}",
+      "validation_rmse": 2.496721990131923,
+      "validation_mae": 2.120586461348929,
+      "backend": "torch",
+      "device": "cuda",
+      "n_iter": 45,
+      "loss": 0.678625231815709
+    },
+    {
+      "split_name": "cold_tissue",
+      "params": "{\"alpha\": 0.001, \"hidden_layer_sizes\": [256], \"learning_rate_init\": 0.0005}",
+      "validation_rmse": 1.4869481874219443,
+      "validation_mae": 1.1091163494864242,
+      "backend": "torch",
+      "device": "cuda",
+      "n_iter": 34,
+      "loss": 0.658181631565094
     },
     {
       "split_name": "random_pair",

@@ -1,10 +1,18 @@
 {
-  "created_at_utc": "2026-09-18T09:32:08.162939+00:00",
+  "created_at_utc": "2026-09-19T18:10:54.545307+00:00",
   "prediction_files": [
-    "results\\predictions\\b0.csv"
+    "results\\predictions\\b0.csv",
+    "results\\predictions\\b2.csv",
+    "results\\predictions\\b3.csv",
+    "results\\predictions\\b4.csv",
+    "results\\predictions\\b4_tuned.csv",
+    "results\\predictions\\b5.csv",
+    "results\\predictions\\b5_tuned.csv",
+    "results\\predictions\\b6.csv",
+    "results\\predictions\\b7.csv"
   ],
   "target": "ln_ic50",
-  "n_model_split_rows": 60,
+  "n_model_split_rows": 252,
   "splits": [
     "cold_both",
     "cold_cell",
@@ -17,98 +25,98 @@
     {
       "split_name": "cold_both",
       "subset": "test",
-      "model_id": "B0_tissue_mean",
-      "rmse": 2.660994486854043,
-      "r2_normalized": 0.03241294560027608,
-      "r2_per_drug": -3.5246378209857965
+      "model_id": "B2_xgboost",
+      "rmse": 2.365365055121724,
+      "r2_normalized": 0.23546309774376706,
+      "r2_per_drug": -2.885564985404086
     },
     {
       "split_name": "cold_both",
       "subset": "validation",
-      "model_id": "B0_tissue_mean",
-      "rmse": 2.3935026325391746,
-      "r2_normalized": 0.04725350620578195,
-      "r2_per_drug": -2.0173977552336932
+      "model_id": "B4_gnn_tuned",
+      "rmse": 1.766874262285789,
+      "r2_normalized": 0.48081656337874457,
+      "r2_per_drug": -1.066724879584382
     },
     {
       "split_name": "cold_cell",
       "subset": "test",
-      "model_id": "B0_drug_mean",
-      "rmse": 1.4850831099803845,
-      "r2_normalized": -2.220446049250313e-16,
-      "r2_per_drug": -0.016116792482569853
+      "model_id": "B6_morgan_expression_pca",
+      "rmse": 1.2985675039288436,
+      "r2_normalized": 0.23541188376884636,
+      "r2_per_drug": 0.20528623583315436
     },
     {
       "split_name": "cold_cell",
       "subset": "validation",
-      "model_id": "B0_mean_effects",
-      "rmse": 1.5025219145589266,
-      "r2_normalized": 0.0,
-      "r2_per_drug": -0.014710569375835873
+      "model_id": "B5_hybrid_gnn_tuned",
+      "rmse": 1.3035080264854706,
+      "r2_normalized": 0.2473625913157731,
+      "r2_per_drug": 0.21532380940600893
     },
     {
       "split_name": "cold_drug",
       "subset": "test",
-      "model_id": "B0_cell_mean",
-      "rmse": 2.6525928608509037,
-      "r2_normalized": 0.0,
-      "r2_per_drug": -4.834880866772757
+      "model_id": "B6_morgan_expression_pca_pathways",
+      "rmse": 2.195733314900412,
+      "r2_normalized": 0.31479899749680396,
+      "r2_per_drug": -3.6319075845137885
     },
     {
       "split_name": "cold_drug",
       "subset": "validation",
-      "model_id": "B0_cell_mean",
-      "rmse": 3.1912897847723385,
-      "r2_normalized": 0.0,
-      "r2_per_drug": -3.5912202424629873
+      "model_id": "B4_gnn_tuned",
+      "rmse": 2.461752751022339,
+      "r2_normalized": 0.40494598844796503,
+      "r2_per_drug": -1.6220984487715624
     },
     {
       "split_name": "cold_scaffold",
       "subset": "test",
-      "model_id": "B0_cell_mean",
-      "rmse": 3.3903419572566613,
-      "r2_normalized": 0.0,
-      "r2_per_drug": -4.146520904837874
+      "model_id": "B3_mlp",
+      "rmse": 2.5984126583502145,
+      "r2_normalized": 0.4126063626540024,
+      "r2_per_drug": -2.396769483698445
     },
     {
       "split_name": "cold_scaffold",
       "subset": "validation",
-      "model_id": "B0_cell_mean",
-      "rmse": 2.386166209878088,
-      "r2_normalized": 0.0,
-      "r2_per_drug": -2.1188801625443467
+      "model_id": "B5_hybrid_gnn_tuned",
+      "rmse": 2.2596840766278508,
+      "r2_normalized": 0.10320315340192532,
+      "r2_per_drug": -1.516281206787845
     },
     {
       "split_name": "cold_tissue",
       "subset": "test",
-      "model_id": "B0_mean_effects",
-      "rmse": 1.4169554163146973,
-      "r2_normalized": -2.220446049250313e-16,
-      "r2_per_drug": -0.14421976053254537
+      "model_id": "B6_morgan_expression_pca_pathways",
+      "rmse": 1.3724142006068771,
+      "r2_normalized": 0.061880777433179546,
+      "r2_per_drug": -0.05362525688336593
     },
     {
       "split_name": "cold_tissue",
       "subset": "validation",
-      "model_id": "B0_drug_mean",
-      "rmse": 1.729591607597389,
-      "r2_normalized": 0.0,
-      "r2_per_drug": -0.03707065563420323
+      "model_id": "B5_hybrid_gnn_tuned",
+      "rmse": 1.448142432304666,
+      "r2_normalized": 0.29897191174967086,
+      "r2_per_drug": 0.2735226981541229
     },
     {
       "split_name": "random_pair",
       "subset": "test",
-      "model_id": "B0_mean_effects",
-      "rmse": 1.2032297446270583,
-      "r2_normalized": -2.220446049250313e-16,
-      "r2_per_drug": 0.36317776025802145
+      "model_id": "B5_hybrid_gnn_tuned",
+      "rmse": 0.9253209709530289,
+      "r2_normalized": 0.4085913186427639,
+      "r2_per_drug": 0.5818196824216025
     },
     {
       "split_name": "random_pair",
       "subset": "validation",
-      "model_id": "B0_mean_effects",
-      "rmse": 1.1978990775193294,
-      "r2_normalized": 0.0,
-      "r2_per_drug": 0.34203547426726094
+      "model_id": "B5_hybrid_gnn_tuned",
+      "rmse": 0.9149138109957627,
+      "r2_normalized": 0.41666248145980334,
+      "r2_per_drug": 0.5705932506202764
     }
   ]
 }

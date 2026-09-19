@@ -32,6 +32,22 @@ _METADATA_COLUMNS = frozenset(
 
 _GENE_COLUMN_RE = re.compile(r".+\(\d+\)$")
 
+# Genes that are effectively constant across the training cell lines make
+# StandardScaler divide by almost zero, so a held-out cell line that happens to
+# express one of them produces an astronomically large z-score. Observed in
+# practice: SMIM10L3 (122526779) has std 6.3e-08 across 501 training lines, and
+# cell line ACH-000470 came out at z = 3.05e7, which PCA carried through to
+# |component| = 6.2e5 and made B1 ridge predict 28269 against a target range of
+# roughly [-9, 12]. Tree models hide this because they never extrapolate; linear
+# models and MLPs do not.
+MIN_GENE_STD = 1e-3
+
+# Second line of defence for genes that clear the std floor but are still
+# near-constant. With ~500 training lines a single legitimate outlier reaches
+# |z| of about sqrt(500) = 22, so a cap above that bounds extrapolation without
+# touching real training signal. Applied identically to train and test rows.
+MAX_ABS_ZSCORE = 30.0
+
 
 @dataclass
 class ExpressionPipeline:
@@ -42,6 +58,8 @@ class ExpressionPipeline:
     pca: PCA
     gene_columns: list[str]
     n_components: int
+    max_abs_zscore: float = MAX_ABS_ZSCORE
+    n_genes_dropped_low_variance: int = 0
 
     @property
     def explained_variance_ratio_sum(self) -> float:
@@ -129,6 +147,8 @@ def fit_expression_pipeline(
     *,
     n_components: int = 256,
     random_state: int = 42,
+    min_gene_std: float = MIN_GENE_STD,
+    max_abs_zscore: float = MAX_ABS_ZSCORE,
 ) -> ExpressionPipeline:
     """Fit StandardScaler + PCA on training gene expression rows.
 
@@ -141,18 +161,43 @@ def fit_expression_pipeline(
         Number of PCA components to retain.
     random_state:
         Seed for randomized SVD, so multi-seed runs also vary PCA.
+    min_gene_std:
+        Genes whose standard deviation across the training rows falls below
+        this are dropped. See :data:`MIN_GENE_STD`.
+    max_abs_zscore:
+        Scaled values are clipped to ``[-max_abs_zscore, max_abs_zscore]``.
+        See :data:`MAX_ABS_ZSCORE`.
 
     Returns
     -------
     A fitted :class:`ExpressionPipeline` that can transform new rows.
     """
-    gene_columns = list(expression.columns)
+    # Slice the numpy array rather than the DataFrame: the expression matrix is
+    # wide enough that a second full materialization is worth avoiding.
     values = expression.values.astype(np.float32)
+    keep = values.std(axis=0) >= min_gene_std
+    n_dropped = int((~keep).sum())
+    if n_dropped:
+        logger.info(
+            "Dropping %d of %d genes with training std below %.1e "
+            "(they would make StandardScaler divide by near-zero).",
+            n_dropped,
+            len(keep),
+            min_gene_std,
+        )
+    if not keep.any():
+        raise ValueError(
+            f"No gene has training std above {min_gene_std:.1e}; "
+            "the expression matrix is constant across training cell lines."
+        )
+
+    gene_columns = expression.columns[keep].tolist()
+    values = values[:, keep]
 
     n_components = min(n_components, values.shape[0], values.shape[1])
 
     scaler = StandardScaler()
-    scaled = scaler.fit_transform(values)
+    scaled = np.clip(scaler.fit_transform(values), -max_abs_zscore, max_abs_zscore)
 
     pca = PCA(n_components=n_components, random_state=random_state)
     pca.fit(scaled)
@@ -172,6 +217,8 @@ def fit_expression_pipeline(
         pca=pca,
         gene_columns=gene_columns,
         n_components=n_components,
+        max_abs_zscore=max_abs_zscore,
+        n_genes_dropped_low_variance=n_dropped,
     )
 
 
@@ -192,9 +239,14 @@ def transform_expression(
     -------
     np.ndarray of shape ``(n_rows, n_components)`` with dtype ``float32``.
     """
-    # Ensure column alignment (handles column reordering or subsetting).
+    # Ensure column alignment (handles column reordering, and drops the
+    # low-variance genes the pipeline excluded at fit time).
     values = expression[pipeline.gene_columns].values.astype(np.float32)
-    scaled = pipeline.scaler.transform(values)
+    scaled = np.clip(
+        pipeline.scaler.transform(values),
+        -pipeline.max_abs_zscore,
+        pipeline.max_abs_zscore,
+    )
     return pipeline.pca.transform(scaled).astype(np.float32)
 
 
@@ -205,6 +257,8 @@ def build_cell_features(
     *,
     n_components: int = 256,
     random_state: int = 42,
+    min_gene_std: float = MIN_GENE_STD,
+    max_abs_zscore: float = MAX_ABS_ZSCORE,
 ) -> tuple[ExpressionPipeline, dict[str, np.ndarray]]:
     """End-to-end helper: load expression, fit PCA on train, transform all.
 
@@ -220,6 +274,10 @@ def build_cell_features(
         PCA components.
     random_state:
         Seed forwarded to PCA.
+    min_gene_std:
+        Forwarded to :func:`fit_expression_pipeline`.
+    max_abs_zscore:
+        Forwarded to :func:`fit_expression_pipeline`.
 
     Returns
     -------
@@ -235,6 +293,8 @@ def build_cell_features(
         train_expr,
         n_components=n_components,
         random_state=random_state,
+        min_gene_std=min_gene_std,
+        max_abs_zscore=max_abs_zscore,
     )
 
     # Transform all cell lines that appear in the expression matrix.

@@ -28,7 +28,7 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.graphs import build_graph_map
 from mcdrp.models.baseline_b1 import EXPRESSION_PATH
 from mcdrp.models.baseline_b3 import resolve_torch_device
-from mcdrp.results.predictions import write_predictions
+from mcdrp.results.predictions import TUNED_VARIANT, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 RunSplitFn = Callable[..., tuple[list[dict[str, Any]], list[pd.DataFrame]]]
@@ -221,7 +221,7 @@ def tune_b4(
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
-    write_predictions(all_frames, predictions_output)
+    write_predictions(all_frames, predictions_output, variant=TUNED_VARIANT)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),

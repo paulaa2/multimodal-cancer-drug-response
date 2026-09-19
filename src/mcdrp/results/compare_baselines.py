@@ -23,6 +23,8 @@ from typing import Any
 
 import pandas as pd
 
+from mcdrp.results.selection import lowest_rmse_rows
+
 DEFAULT_INPUTS = {
     "B0": "results/baselines/b0_metrics.csv",
 }
@@ -104,11 +106,8 @@ def load_tuned_metric_table(stage: str, path: str | Path) -> pd.DataFrame:
     if missing:
         raise ValueError(f"{metric_path} is missing columns: {sorted(missing)}")
 
-    validation = (
-        table.loc[table["subset"].eq("validation")]
-        .sort_values("rmse")
-        .groupby(["split_name", "model"], as_index=False)
-        .first()
+    validation = lowest_rmse_rows(
+        table.loc[table["subset"].eq("validation")], ["split_name", "model"]
     )
 
     if "selected_by_validation" in table.columns:
@@ -152,9 +151,7 @@ def add_b0_improvements(metrics: pd.DataFrame) -> pd.DataFrame:
 
     b0 = output.loc[output["stage"].eq("B0")].copy()
     best_b0 = (
-        b0.sort_values("rmse")
-        .groupby(["split_name", "subset"], as_index=False)
-        .first()[
+        lowest_rmse_rows(b0, ["split_name", "subset"])[
             [
                 "split_name",
                 "subset",
@@ -191,11 +188,7 @@ def add_b0_improvements(metrics: pd.DataFrame) -> pd.DataFrame:
 def best_models(metrics: pd.DataFrame) -> pd.DataFrame:
     """Return the best model by RMSE for each split/subset."""
 
-    return (
-        metrics.sort_values(["split_name", "subset", "rmse"])
-        .groupby(["split_name", "subset"], as_index=False)
-        .first()
-    )
+    return lowest_rmse_rows(metrics, ["split_name", "subset"]).reset_index(drop=True)
 
 
 def make_summary(metrics: pd.DataFrame, best: pd.DataFrame) -> dict[str, Any]:

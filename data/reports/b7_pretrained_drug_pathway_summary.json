@@ -1,10 +1,11 @@
 {
-  "created_at_utc": "2026-09-17T10:56:00.200293+00:00",
+  "created_at_utc": "2026-09-19T15:08:58.728846+00:00",
   "cohort_path": "data/processed/cohort_pairs.csv",
   "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
   "split_dir": "data\\processed\\splits",
   "drug_embeddings": "data\\external\\drug_embeddings.csv",
   "output": "results/models/b7_pretrained_drug_pathway_metrics.csv",
+  "predictions_output": "results/predictions/b7.csv",
   "target": "ln_ic50",
   "embedding_key_column": "drug_id",
   "cohort_key_column": "drug_id",
@@ -401,6 +402,7 @@
   "pca_variance_by_split": {
     "random_pair": 0.8045476078987122,
     "cold_cell": 0.8620344400405884,
+    "cold_tissue": 0.8471897840499878,
     "cold_drug": 0.8045476078987122,
     "cold_scaffold": 0.8045476078987122,
     "cold_both": 0.8620344400405884
@@ -438,6 +440,7 @@
   "splits": [
     "random_pair",
     "cold_cell",
+    "cold_tissue",
     "cold_drug",
     "cold_scaffold",
     "cold_both"
@@ -522,6 +525,26 @@
       "pearson": 0.06542175974540392,
       "spearman": 0.05183166070524862,
       "r2": 0.000508092602901633
+    },
+    {
+      "split_name": "cold_tissue",
+      "subset": "test",
+      "best_model": "pretrained_drug_expression_pca",
+      "rmse": 1.3816999367497291,
+      "mae": 1.0151795514361261,
+      "pearson": 0.8631026153265641,
+      "spearman": 0.8043974960178767,
+      "r2": 0.743436601853773
+    },
+    {
+      "split_name": "cold_tissue",
+      "subset": "validation",
+      "best_model": "pretrained_drug_expression_pca",
+      "rmse": 1.4928476476558343,
+      "mae": 1.1043267939421642,
+      "pearson": 0.8582966518944226,
+      "spearman": 0.8159365034017464,
+      "r2": 0.7334748059115325
     },
     {
       "split_name": "random_pair",
