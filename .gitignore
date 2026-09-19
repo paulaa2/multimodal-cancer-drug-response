@@ -27,3 +27,6 @@ figures/*
 # Local machine files
 .DS_Store
 Thumbs.db
+
+# Run logs, never part of the record.
+logs/

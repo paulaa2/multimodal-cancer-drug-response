@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import ElasticNet, RidgeCV
+from sklearn.linear_model import ElasticNet, Ridge
 
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
@@ -28,6 +28,8 @@ from mcdrp.splits.make_splits import DEFAULT_SPLITS
 logger = logging.getLogger(__name__)
 
 EXPRESSION_PATH = "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv"
+
+RIDGE_ALPHAS = (0.01, 0.1, 1.0, 10.0, 100.0)
 
 
 def assemble_features(
@@ -104,6 +106,54 @@ def evaluate_model(
     return row, frame
 
 
+def select_ridge_alpha(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_validation: np.ndarray,
+    y_validation: np.ndarray,
+    *,
+    alphas: tuple[float, ...] = RIDGE_ALPHAS,
+) -> tuple[Ridge, float]:
+    """Fit one Ridge per alpha and keep the lowest validation RMSE.
+
+    `RidgeCV` is avoided deliberately, for two reasons.
+
+    Scientifically, its built-in generalized cross-validation leaves out
+    individual training *pairs*. That is a `random_pair` criterion, so on the
+    cold splits it tunes alpha under a regime that does not match the split's
+    own generalization question. Selecting on the split's validation set
+    respects the group structure and matches how B2, B4 and B5 already choose
+    hyperparameters.
+
+    Practically, the leave-one-out path decomposes the whole design matrix by
+    SVD. On the 104k x 2304 matrix of this cohort that ran for over 72 minutes
+    without finishing a single split, while solving the 2304 x 2304 normal
+    equations once per alpha takes a few seconds.
+    """
+
+    best_model: Ridge | None = None
+    best_rmse = np.inf
+    best_alpha = float("nan")
+
+    for alpha in alphas:
+        # lsqr rather than the default cholesky path: the Gram matrix of the
+        # 2048-bit fingerprint block is close to singular, and at the smallest
+        # alpha the direct solve warns that the result may be inaccurate
+        # (rcond about 2.8e-08). lsqr solves the least-squares problem
+        # iteratively and stays well behaved there.
+        model = Ridge(alpha=alpha, solver="lsqr")
+        model.fit(X_train, y_train)
+        residuals = model.predict(X_validation) - y_validation
+        rmse = float(np.sqrt(np.mean(residuals**2)))
+        logger.info("  ridge alpha %.4g — validation RMSE %.4f", alpha, rmse)
+        if rmse < best_rmse:
+            best_model, best_rmse, best_alpha = model, rmse, float(alpha)
+
+    if best_model is None:
+        raise ValueError("No ridge alpha could be evaluated.")
+    return best_model, best_alpha
+
+
 def run_b1_for_split(
     cohort: pd.DataFrame,
     split_assignments: pd.DataFrame,
@@ -145,14 +195,33 @@ def run_b1_for_split(
         y_train.std(),
     )
 
-    # Fit Ridge.
+    # Alpha is chosen on validation, so those features are needed before fitting.
+    evaluation: dict[str, tuple[pd.DataFrame, np.ndarray]] = {}
+    for subset in ("validation", "test"):
+        subset_rows = data.loc[data["split"].eq(subset)].copy()
+        subset_indices = np.array(
+            [pair_id_to_idx[pid] for pid in subset_rows["pair_id"]]
+        )
+        evaluation[subset] = (
+            subset_rows,
+            assemble_features(
+                subset_rows, fp_matrix, cell_feature_map, row_indices=subset_indices
+            ),
+        )
+
+    validation_rows, X_validation = evaluation["validation"]
+
     t0 = time.time()
-    ridge = RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0, 100.0])
-    ridge.fit(X_train, y_train)
+    ridge, ridge_alpha = select_ridge_alpha(
+        X_train,
+        y_train,
+        X_validation,
+        validation_rows[target].to_numpy(),
+    )
     logger.info(
-        "RidgeCV fitted in %.1fs — best alpha: %.2f",
+        "Ridge fitted in %.1fs — validation-selected alpha: %.4g",
         time.time() - t0,
-        ridge.alpha_,
+        ridge_alpha,
     )
 
     # Fit Elastic Net. We intentionally avoid ElasticNetCV on the full matrix:
@@ -174,19 +243,10 @@ def run_b1_for_split(
         elastic_l1_ratio,
     )
 
-    models = [("ridge", ridge), ("elastic_net", elastic)]
+    models = [("ridge", ridge, ridge_alpha), ("elastic_net", elastic, elastic_alpha)]
 
-    for subset in ("validation", "test"):
-        subset_mask = data["split"].eq(subset)
-        subset_rows = data.loc[subset_mask].copy()
-        subset_indices = np.array(
-            [pair_id_to_idx[pid] for pid in subset_rows["pair_id"]]
-        )
-        X_subset = assemble_features(
-            subset_rows, fp_matrix, cell_feature_map, row_indices=subset_indices
-        )
-
-        for model_name, model in models:
+    for subset, (subset_rows, X_subset) in evaluation.items():
+        for model_name, model, alpha in models:
             row, frame = evaluate_model(
                 model,
                 model_name,
@@ -196,6 +256,8 @@ def run_b1_for_split(
                 split_name=split_name,
                 subset=subset,
             )
+            row["alpha"] = alpha
+            row["selected_by_validation"] = model_name == "ridge"
             results.append(row)
             frames.append(frame)
 
@@ -284,6 +346,8 @@ def run_b1(
         "n_pca_components": n_components,
         "fp_bits": 2048,
         "fp_radius": 2,
+        "ridge_alphas": list(RIDGE_ALPHAS),
+        "ridge_alpha_selection": "validation",
         "elastic_alpha": elastic_alpha,
         "elastic_l1_ratio": elastic_l1_ratio,
         "random_state": random_state,
