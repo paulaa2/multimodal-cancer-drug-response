@@ -226,6 +226,12 @@ def run_b1_for_split(
 
     # Fit Elastic Net. We intentionally avoid ElasticNetCV on the full matrix:
     # cross-validation creates large fold-specific copies and can exhaust RAM.
+    #
+    # precompute is essential rather than an optimization. Without it each
+    # coordinate descent pass walks the full 104k x 2304 matrix, and how often
+    # that happens depends on the split: random_pair converged in 72 seconds
+    # while cold_cell was still running after 68 minutes. The Gram matrix is
+    # 2304 x 2304, about 42 MB, so passes stop scaling with the sample count.
     t0 = time.time()
     elastic = ElasticNet(
         alpha=elastic_alpha,
@@ -234,19 +240,35 @@ def run_b1_for_split(
         random_state=random_state,
         selection="random",
         copy_X=False,
+        precompute=True,
     )
     elastic.fit(X_train, y_train)
+    n_iter = int(np.max(elastic.n_iter_))
     logger.info(
-        "ElasticNet fitted in %.1fs — alpha: %.4f, l1_ratio: %.2f",
+        "ElasticNet fitted in %.1fs — alpha: %.4f, l1_ratio: %.2f, iterations: %d%s",
         time.time() - t0,
         elastic_alpha,
         elastic_l1_ratio,
+        n_iter,
+        " (HIT max_iter, NOT converged)" if n_iter >= 2000 else "",
     )
 
-    models = [("ridge", ridge, ridge_alpha), ("elastic_net", elastic, elastic_alpha)]
+    models = [
+        ("ridge", ridge, {"alpha": ridge_alpha, "selected_by_validation": True}),
+        (
+            "elastic_net",
+            elastic,
+            {
+                "alpha": elastic_alpha,
+                "selected_by_validation": False,
+                "n_iter": n_iter,
+                "converged": n_iter < 2000,
+            },
+        ),
+    ]
 
     for subset, (subset_rows, X_subset) in evaluation.items():
-        for model_name, model, alpha in models:
+        for model_name, model, metadata in models:
             row, frame = evaluate_model(
                 model,
                 model_name,
@@ -256,8 +278,7 @@ def run_b1_for_split(
                 split_name=split_name,
                 subset=subset,
             )
-            row["alpha"] = alpha
-            row["selected_by_validation"] = model_name == "ridge"
+            row.update(metadata)
             results.append(row)
             frames.append(frame)
 
