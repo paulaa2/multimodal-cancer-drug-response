@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-09-19T18:11:47.080210+00:00",
+  "created_at_utc": "2026-09-19T23:16:30.177151+00:00",
   "metrics_path": "results/ablations/b6_modality_ablation_metrics.csv",
   "reference": "morgan_expression_pca",
   "subset": "test",

@@ -1,7 +1,8 @@
 {
-  "created_at_utc": "2026-09-19T18:10:54.545307+00:00",
+  "created_at_utc": "2026-09-19T23:16:24.337997+00:00",
   "prediction_files": [
     "results\\predictions\\b0.csv",
+    "results\\predictions\\b1.csv",
     "results\\predictions\\b2.csv",
     "results\\predictions\\b3.csv",
     "results\\predictions\\b4.csv",
@@ -12,7 +13,7 @@
     "results\\predictions\\b7.csv"
   ],
   "target": "ln_ic50",
-  "n_model_split_rows": 252,
+  "n_model_split_rows": 276,
   "splits": [
     "cold_both",
     "cold_cell",

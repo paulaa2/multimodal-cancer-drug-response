@@ -1,80 +1,153 @@
 {
-  "created_at_utc": "2026-09-14T18:43:48.082088+00:00",
+  "created_at_utc": "2026-09-19T23:13:25.987326+00:00",
   "cohort_path": "data/processed/cohort_pairs.csv",
   "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
   "split_dir": "data\\processed\\splits",
   "output": "results/baselines/b1_metrics.csv",
+  "predictions_output": "results/predictions/b1.csv",
   "target": "ln_ic50",
   "n_pca_components": 256,
   "fp_bits": 2048,
   "fp_radius": 2,
+  "ridge_alphas": [
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0
+  ],
+  "ridge_alpha_selection": "validation",
   "elastic_alpha": 0.02,
   "elastic_l1_ratio": 0.9,
+  "random_state": 42,
   "splits": [
     "random_pair",
     "cold_cell",
-    "cold_drug"
+    "cold_tissue",
+    "cold_drug",
+    "cold_scaffold",
+    "cold_both"
   ],
   "best_by_split_subset": [
+    {
+      "split_name": "cold_both",
+      "subset": "test",
+      "best_model": "elastic_net",
+      "rmse": 2.4962172976032475,
+      "mae": 1.9922875720332927,
+      "pearson": 0.4564287678013414,
+      "spearman": 0.3684751767942053,
+      "r2": 0.1484956000698292
+    },
+    {
+      "split_name": "cold_both",
+      "subset": "validation",
+      "best_model": "ridge",
+      "rmse": 1.9225300576993753,
+      "mae": 1.4995098376474798,
+      "pearson": 0.6281476692892641,
+      "spearman": 0.47250470041309733,
+      "r2": 0.3741367405116175
+    },
     {
       "split_name": "cold_cell",
       "subset": "test",
       "best_model": "ridge",
-      "rmse": 1.353813124202343,
-      "mae": 1.021969068518623,
-      "pearson": 0.8788033759286609,
-      "spearman": 0.8358168252096371,
-      "r2": 0.7717598742924705
+      "rmse": 1.3532497491059017,
+      "mae": 1.0221021383725923,
+      "pearson": 0.8788912581153728,
+      "spearman": 0.8363760132783759,
+      "r2": 0.7719497942244422
     },
     {
       "split_name": "cold_cell",
       "subset": "validation",
       "best_model": "ridge",
-      "rmse": 1.357396056313627,
-      "mae": 1.0217163068253192,
-      "pearson": 0.8757542443941071,
-      "spearman": 0.8309749344382532,
-      "r2": 0.7654152977392898
+      "rmse": 1.3589560286574762,
+      "mae": 1.0214084025192294,
+      "pearson": 0.8753883362746365,
+      "spearman": 0.8310692054382672,
+      "r2": 0.7648758001835105
     },
     {
       "split_name": "cold_drug",
       "subset": "test",
       "best_model": "elastic_net",
-      "rmse": 2.4959168271656598,
-      "mae": 1.836868199626415,
-      "pearson": 0.4626266833758954,
-      "spearman": 0.36073233853804115,
-      "r2": 0.14283857044577153
+      "rmse": 2.4959083238070323,
+      "mae": 1.8368162696625239,
+      "pearson": 0.4626341251093528,
+      "spearman": 0.3607512953034523,
+      "r2": 0.14284441097582568
     },
     {
       "split_name": "cold_drug",
       "subset": "validation",
       "best_model": "ridge",
-      "rmse": 2.8206559737429986,
-      "mae": 2.201631858890299,
-      "pearson": 0.5160483223267194,
-      "spearman": 0.46971380793449447,
-      "r2": 0.2316892243203702
+      "rmse": 2.813750095656942,
+      "mae": 2.1945324104625907,
+      "pearson": 0.5190498586938409,
+      "spearman": 0.4733278611809479,
+      "r2": 0.23544676537964848
+    },
+    {
+      "split_name": "cold_scaffold",
+      "subset": "test",
+      "best_model": "ridge",
+      "rmse": 2.706576890898116,
+      "mae": 2.155268898992544,
+      "pearson": 0.647702260611963,
+      "spearman": 0.5920116769870517,
+      "r2": 0.3246840190253517
+    },
+    {
+      "split_name": "cold_scaffold",
+      "subset": "validation",
+      "best_model": "elastic_net",
+      "rmse": 2.3447927387339678,
+      "mae": 1.7652454905933554,
+      "pearson": 0.41075303872861424,
+      "spearman": 0.39753082139972507,
+      "r2": 0.149962113078686
+    },
+    {
+      "split_name": "cold_tissue",
+      "subset": "test",
+      "best_model": "ridge",
+      "rmse": 1.4147490757379872,
+      "mae": 1.041272530801232,
+      "pearson": 0.8557275205969154,
+      "spearman": 0.7955928217739844,
+      "r2": 0.7310162391484496
+    },
+    {
+      "split_name": "cold_tissue",
+      "subset": "validation",
+      "best_model": "ridge",
+      "rmse": 1.4579419533914268,
+      "mae": 1.0822672607211592,
+      "pearson": 0.8639269852935656,
+      "spearman": 0.8264017110040571,
+      "r2": 0.7457928517743392
     },
     {
       "split_name": "random_pair",
       "subset": "test",
       "best_model": "ridge",
-      "rmse": 1.2860959824734222,
-      "mae": 0.9715437015332548,
-      "pearson": 0.8913332277851094,
-      "spearman": 0.8525626542252178,
-      "r2": 0.7944379825742843
+      "rmse": 1.2885273958817391,
+      "mae": 0.9735366877625091,
+      "pearson": 0.8908987912560288,
+      "spearman": 0.8521052545160331,
+      "r2": 0.7936600022313038
     },
     {
       "split_name": "random_pair",
       "subset": "validation",
       "best_model": "ridge",
-      "rmse": 1.2853981131955834,
-      "mae": 0.9645629428932899,
-      "pearson": 0.8892104683716401,
-      "spearman": 0.8524956447261286,
-      "r2": 0.7906874348353847
+      "rmse": 1.2878371047465071,
+      "mae": 0.9661694903731819,
+      "pearson": 0.8887622767084657,
+      "spearman": 0.8520023697884597,
+      "r2": 0.7898923567808092
     }
   ]
 }

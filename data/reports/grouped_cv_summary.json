@@ -1,0 +1,298 @@
+{
+  "created_at_utc": "2026-09-19T19:42:55.636183+00:00",
+  "input": "data/processed/cohort_pairs.csv",
+  "output_dir": "data/processed/splits/cv",
+  "seed": 42,
+  "n_folds": 5,
+  "splits": {
+    "cold_drug": {
+      "policy": {
+        "cell_overlap_allowed": true,
+        "drug_overlap_allowed": false,
+        "scaffold_overlap_allowed": true,
+        "tissue_overlap_allowed": true
+      },
+      "group_column": "drug_id",
+      "folds": [
+        {
+          "fold": 0,
+          "split_dir": "data/processed/splits/cv/cold_drug/fold_0",
+          "by_split": {
+            "train": {
+              "rows": 90199,
+              "unique_drugs": 142,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.836014129735363
+            },
+            "validation": {
+              "rows": 30214,
+              "unique_drugs": 48,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 3.078277267591183
+            },
+            "test": {
+              "rows": 28951,
+              "unique_drugs": 48,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.1175423267935476
+            }
+          }
+        },
+        {
+          "fold": 1,
+          "split_dir": "data/processed/splits/cv/cold_drug/fold_1",
+          "by_split": {
+            "train": {
+              "rows": 88578,
+              "unique_drugs": 142,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.6248481451714873
+            },
+            "validation": {
+              "rows": 30572,
+              "unique_drugs": 48,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.767460662959571
+            },
+            "test": {
+              "rows": 30214,
+              "unique_drugs": 48,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 3.078277267591183
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "split_dir": "data/processed/splits/cv/cold_drug/fold_2",
+          "by_split": {
+            "train": {
+              "rows": 89198,
+              "unique_drugs": 143,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.6243967526177716
+            },
+            "validation": {
+              "rows": 29594,
+              "unique_drugs": 47,
+              "unique_cell_lines": 716,
+              "ln_ic50_mean": 3.089137217882003
+            },
+            "test": {
+              "rows": 30572,
+              "unique_drugs": 48,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.767460662959571
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "split_dir": "data/processed/splits/cv/cold_drug/fold_3",
+          "by_split": {
+            "train": {
+              "rows": 89737,
+              "unique_drugs": 144,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.6624340534450672
+            },
+            "validation": {
+              "rows": 30033,
+              "unique_drugs": 47,
+              "unique_cell_lines": 716,
+              "ln_ic50_mean": 2.656374796856791
+            },
+            "test": {
+              "rows": 29594,
+              "unique_drugs": 47,
+              "unique_cell_lines": 716,
+              "ln_ic50_mean": 3.089137217882003
+            }
+          }
+        },
+        {
+          "fold": 4,
+          "split_dir": "data/processed/splits/cv/cold_drug/fold_4",
+          "by_split": {
+            "train": {
+              "rows": 90380,
+              "unique_drugs": 143,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.9766962112967468
+            },
+            "validation": {
+              "rows": 28951,
+              "unique_drugs": 48,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.1175423267935476
+            },
+            "test": {
+              "rows": 30033,
+              "unique_drugs": 47,
+              "unique_cell_lines": 716,
+              "ln_ic50_mean": 2.656374796856791
+            }
+          }
+        }
+      ],
+      "test_coverage": {
+        "n_groups": 238,
+        "n_groups_tested": 238,
+        "groups_never_tested": [],
+        "groups_tested_more_than_once": [],
+        "n_folds": 5
+      },
+      "fold_balance": {
+        "validation_test_mean_gap_max": 0.9607349407976353,
+        "validation_test_mean_gap_mean": 0.512964598288027,
+        "test_mean_min": 2.1175423267935476,
+        "test_mean_max": 3.089137217882003
+      }
+    },
+    "cold_scaffold": {
+      "policy": {
+        "cell_overlap_allowed": true,
+        "drug_overlap_allowed": false,
+        "scaffold_overlap_allowed": false,
+        "tissue_overlap_allowed": true
+      },
+      "group_column": "chemical_scaffold",
+      "folds": [
+        {
+          "fold": 0,
+          "split_dir": "data/processed/splits/cv/cold_scaffold/fold_0",
+          "by_split": {
+            "train": {
+              "rows": 89485,
+              "unique_drugs": 142,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.9242466598647816
+            },
+            "validation": {
+              "rows": 27533,
+              "unique_drugs": 46,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.7176227674427054
+            },
+            "test": {
+              "rows": 32346,
+              "unique_drugs": 50,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.275927649168367
+            }
+          }
+        },
+        {
+          "fold": 1,
+          "split_dir": "data/processed/splits/cv/cold_scaffold/fold_1",
+          "by_split": {
+            "train": {
+              "rows": 92259,
+              "unique_drugs": 147,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.6067501188393543
+            },
+            "validation": {
+              "rows": 29572,
+              "unique_drugs": 45,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 3.205640771134857
+            },
+            "test": {
+              "rows": 27533,
+              "unique_drugs": 46,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.7176227674427054
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "split_dir": "data/processed/splits/cv/cold_scaffold/fold_2",
+          "by_split": {
+            "train": {
+              "rows": 87265,
+              "unique_drugs": 142,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.5234876174296685
+            },
+            "validation": {
+              "rows": 32527,
+              "unique_drugs": 51,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.92398069096443
+            },
+            "test": {
+              "rows": 29572,
+              "unique_drugs": 45,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 3.205640771134857
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "split_dir": "data/processed/splits/cv/cold_scaffold/fold_3",
+          "by_split": {
+            "train": {
+              "rows": 89451,
+              "unique_drugs": 141,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.7192392737923554
+            },
+            "validation": {
+              "rows": 27386,
+              "unique_drugs": 46,
+              "unique_cell_lines": 716,
+              "ln_ic50_mean": 2.620707059775068
+            },
+            "test": {
+              "rows": 32527,
+              "unique_drugs": 51,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.92398069096443
+            }
+          }
+        },
+        {
+          "fold": 4,
+          "split_dir": "data/processed/splits/cv/cold_scaffold/fold_4",
+          "by_split": {
+            "train": {
+              "rows": 89632,
+              "unique_drugs": 142,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.9535192395015177
+            },
+            "validation": {
+              "rows": 32346,
+              "unique_drugs": 50,
+              "unique_cell_lines": 717,
+              "ln_ic50_mean": 2.275927649168367
+            },
+            "test": {
+              "rows": 27386,
+              "unique_drugs": 46,
+              "unique_cell_lines": 716,
+              "ln_ic50_mean": 2.620707059775068
+            }
+          }
+        }
+      ],
+      "test_coverage": {
+        "n_groups": 218,
+        "n_groups_tested": 218,
+        "groups_never_tested": [],
+        "groups_tested_more_than_once": [],
+        "n_folds": 5
+      },
+      "fold_balance": {
+        "validation_test_mean_gap_max": 0.48801800369215176,
+        "validation_test_mean_gap_mean": 0.3718852487865961,
+        "test_mean_min": 2.275927649168367,
+        "test_mean_max": 3.205640771134857
+      }
+    }
+  },
+  "note": "Each fold directory mirrors the flat split layout, so models run unchanged via --split-dir. Pool the per-fold test predictions to get one prediction per pair covering every group."
+}
