@@ -204,8 +204,14 @@ similarity is not underperforming, it is actively hurting, which is exactly
 the condition under which the literature reports that predicted protein-target
 profiles generalize to unseen drugs better than stronger structural encoders.
 
-The cohort already carries `putative_target` and `gdsc_pathway_name`, so a
-first version is a multi-hot encoding over targets and needs no new download.
+The first version is implemented: `mcdrp.features.targets` builds a multi-hot
+encoding of `putative_target` with the vocabulary fit on training drugs only,
+and B6 exposes `targets`, `targets_expression_pca`, `targets_pathways`, and
+`targets_expression_pca_pathways`. They are not in the default ablation list,
+so the original six-variant artifacts stay comparable. 18 of 238 drugs have
+no annotation and become the zero vector; held-out targets that never appear
+on a training drug are dropped rather than leaked into the feature space.
+
 The fold directories under `data/processed/splits/cv/cold_drug` are built, so
 the comparison against the 2.662 +/- 0.424 baseline can reuse them directly
 and be paired within folds.

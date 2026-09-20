@@ -12,6 +12,15 @@ Default ablations:
 - morgan_expression_pca
 - morgan_pathways
 - morgan_expression_pca_pathways
+- targets
+- targets_expression_pca
+- targets_pathways
+- targets_expression_pca_pathways
+
+The ``targets_*`` variants swap Morgan fingerprints for a multi-hot encoding
+of GDSC ``putative_target``, with the vocabulary fit on training drugs only.
+They are not in the default list so a rerun of the original six ablations
+stays comparable; pass them explicitly with ``--ablations``.
 """
 
 from __future__ import annotations
@@ -30,6 +39,7 @@ import pandas as pd
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.features.pathways import build_pathway_features
+from mcdrp.features.targets import build_target_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b2 import (
     fit_xgboost,
@@ -51,6 +61,13 @@ DEFAULT_ABLATIONS = (
     "morgan_pathways",
     "morgan_expression_pca_pathways",
 )
+TARGET_ABLATIONS = (
+    "targets",
+    "targets_expression_pca",
+    "targets_pathways",
+    "targets_expression_pca_pathways",
+)
+ALL_ABLATIONS = DEFAULT_ABLATIONS + TARGET_ABLATIONS
 
 
 def feature_matrix_from_cell_map(
@@ -76,6 +93,7 @@ def assemble_ablation_features(
     fp_matrix: np.ndarray,
     pca_feature_map: dict[str, np.ndarray],
     pathway_feature_map: dict[str, np.ndarray],
+    target_matrix: np.ndarray,
 ) -> np.ndarray:
     """Assemble the requested feature blocks."""
 
@@ -85,6 +103,8 @@ def assemble_ablation_features(
     blocks: list[np.ndarray] = []
     if "morgan" in ablation:
         blocks.append(fp_matrix[row_indices].astype(np.float32))
+    if "targets" in ablation:
+        blocks.append(target_matrix[row_indices].astype(np.float32))
     if "expression_pca" in ablation:
         blocks.append(feature_matrix_from_cell_map(rows, pca_feature_map))
     if "pathways" in ablation:
@@ -147,6 +167,7 @@ def run_ablation_for_split(
     fp_matrix: np.ndarray,
     pca_feature_map: dict[str, np.ndarray],
     pathway_feature_map: dict[str, np.ndarray],
+    target_matrix: np.ndarray,
     *,
     split_name: str,
     target: str,
@@ -172,6 +193,7 @@ def run_ablation_for_split(
             fp_matrix=fp_matrix,
             pca_feature_map=pca_feature_map,
             pathway_feature_map=pathway_feature_map,
+            target_matrix=target_matrix,
         )
         x_val = assemble_ablation_features(
             subsets["validation"],
@@ -180,6 +202,7 @@ def run_ablation_for_split(
             fp_matrix=fp_matrix,
             pca_feature_map=pca_feature_map,
             pathway_feature_map=pathway_feature_map,
+            target_matrix=target_matrix,
         )
         y_train = subsets["train"][target].to_numpy()
         y_val = subsets["validation"][target].to_numpy()
@@ -212,6 +235,7 @@ def run_ablation_for_split(
                 fp_matrix=fp_matrix,
                 pca_feature_map=pca_feature_map,
                 pathway_feature_map=pathway_feature_map,
+                target_matrix=target_matrix,
             )
             predictions = predict_xgboost(model, x_subset)
             row, frame = metric_row(
@@ -257,8 +281,16 @@ def run_b6_ablation(
 
     cohort = pd.read_csv(cohort_path)
     split_dir = Path(split_dir)
-    logger.info("Building Morgan fingerprint matrix for %d rows ...", len(cohort))
-    fp_matrix = build_fingerprint_matrix(cohort["canonical_smiles"])
+    needs_morgan = any("morgan" in name for name in ablations)
+    needs_targets = any("targets" in name for name in ablations)
+    needs_pca = any("expression_pca" in name for name in ablations)
+    needs_pathways = any("pathways" in name for name in ablations)
+
+    if needs_morgan:
+        logger.info("Building Morgan fingerprint matrix for %d rows ...", len(cohort))
+        fp_matrix = build_fingerprint_matrix(cohort["canonical_smiles"])
+    else:
+        fp_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
 
     xgb_params: dict[str, Any] = {
         "n_estimators": n_estimators,
@@ -283,27 +315,45 @@ def run_b6_ablation(
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
+        train_drugs = set(
+            merged.loc[merged["split"].eq("train"), "drug_id"].astype(str).unique()
+        )
 
-        pca_pipeline, pca_feature_map = build_cell_features(
-            str(expression_path),
-            cohort,
-            train_ids,
-            n_components=n_components,
-            random_state=random_state,
-        )
-        pathway_pipeline, pathway_feature_map = build_pathway_features(
-            str(expression_path),
-            cohort,
-            train_ids,
-            gene_sets=gene_sets,
-            min_genes=min_pathway_genes,
-        )
-        pathway_names = pathway_pipeline.pathway_names
+        pca_feature_map: dict[str, np.ndarray] = {}
+        pathway_feature_map: dict[str, np.ndarray] = {}
+        pca_variance = float("nan")
+        if needs_pca:
+            pca_pipeline, pca_feature_map = build_cell_features(
+                str(expression_path),
+                cohort,
+                train_ids,
+                n_components=n_components,
+                random_state=random_state,
+            )
+            pca_variance = pca_pipeline.explained_variance_ratio_sum * 100
+        if needs_pathways:
+            pathway_pipeline, pathway_feature_map = build_pathway_features(
+                str(expression_path),
+                cohort,
+                train_ids,
+                gene_sets=gene_sets,
+                min_genes=min_pathway_genes,
+            )
+            pathway_names = pathway_pipeline.pathway_names
+
+        if needs_targets:
+            target_pipeline, target_matrix = build_target_matrix(cohort, train_drugs)
+            n_target_tokens = len(target_pipeline.target_names)
+        else:
+            target_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
+            n_target_tokens = 0
+
         logger.info(
-            "B6 %s — PCA variance %.1f%%, pathways=%d",
+            "B6 %s — PCA variance %s, pathways=%d, target tokens=%d",
             split_name,
-            pca_pipeline.explained_variance_ratio_sum * 100,
+            "n/a" if not needs_pca else f"{pca_variance:.1f}%",
             len(pathway_names),
+            n_target_tokens,
         )
 
         split_params = selected_by_split.get(split_name, xgb_params)
@@ -318,6 +368,7 @@ def run_b6_ablation(
             fp_matrix,
             pca_feature_map,
             pathway_feature_map,
+            target_matrix,
             split_name=split_name,
             target=target,
             ablations=ablations,
@@ -440,7 +491,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--ablations",
         nargs="+",
         default=list(DEFAULT_ABLATIONS),
-        choices=list(DEFAULT_ABLATIONS),
+        choices=list(ALL_ABLATIONS),
     )
     return parser
 
