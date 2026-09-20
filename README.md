@@ -74,13 +74,29 @@ And **adding Morgan fingerprints makes every variant worse**, in both splits:
 structural similarity does not transfer to new molecules on this cohort, it
 adds noise. Reproduce with `python -m mcdrp.results.grouped_cv_report`.
 
+### On unseen cells, expression plus a known drug does transfer
+
+The same protocol on `cold_cell` is the control. Across 5 folds covering all
+717 cell lines, B6 with Morgan fingerprints and expression PCA reaches 1.348
++/- 0.017 RMSE against a 1.512 +/- 0.045 baseline, and **wins every fold**
+(paired delta −0.163). B2 XGBoost is close behind (−0.150, 5 of 5). Expression
+without any drug representation collapses to 2.762: with a known drug the
+potency mean is available, and cell features only help once that is in the
+model. `cold_tissue` repeats it against a 1.530 +/- 0.121 baseline, with B6
+Morgan + expression + pathways at 1.381 +/- 0.025 and 5 folds won, even though
+the 27 lineages are very unequal so the fold spread is larger.
+
+So the failure on unseen chemistry is specific, not a general modelling
+collapse. Drug structure helps when the drug has been seen; it does not help
+when the drug is new.
+
 ### What is not yet settled
 
 | Split | Status |
 | --- | --- |
 | `random_pair` | B5 hybrid GNN 0.931 against a 1.203 baseline, single seed |
-| `cold_cell` | grouped CV in progress; single partition gave 1.299 |
-| `cold_tissue` | grouped CV in progress; single partition gave 1.372 |
+| `cold_cell` | settled above: B6 Morgan + expression beats the baseline in 5/5 folds |
+| `cold_tissue` | settled above: same pattern, 5/5 folds |
 | `cold_drug` | settled above: no model beats the baseline |
 | `cold_scaffold` | settled above: no model beats the baseline |
 | `cold_both` | single partition only, 2.365 with B2 |

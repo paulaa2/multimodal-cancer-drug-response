@@ -41,7 +41,7 @@ and the units of replication are cell lines and drugs.
 The experiment that counts is `configs/experiments/multiseed_b0_b2_full.json`.
 Until those numbers exist, the README ranking remains provisional.
 
-### 1b. Grouped cross-validation for the cold splits — code done, numbers pending
+### 1b. Grouped cross-validation for the cold splits — done
 
 A single group-level partition cannot support a cold-split claim.
 `cold_drug` holds out 36 of 238 drugs and validates on a different 36, and
@@ -98,6 +98,26 @@ to transfer, it is adding noise.
 This is the direct argument for item 7 below. The cohort already ships
 `putative_target` and `gdsc_pathway_name`, so testing whether target biology
 transfers where structure does not needs no new data.
+
+### 1d. What grouped CV found on unseen cells — done
+
+The same protocol on `cold_cell` and `cold_tissue` is the control, and it
+holds. Across 5 folds covering all 717 cell lines, B6 Morgan + expression PCA
+reaches 1.348 +/- 0.017 RMSE against a 1.512 +/- 0.045 `mean_effects`
+baseline and wins every fold (paired delta -0.163). B2 XGBoost is close
+behind (-0.150, 5 of 5). Expression without any drug representation collapses
+to 2.762: when the drug has been seen, potency is available as a mean, and
+cell features only help once that is in the model.
+
+`cold_tissue` repeats it against a 1.530 +/- 0.121 baseline. B6 Morgan +
+expression + pathways reaches 1.381 +/- 0.025 and wins all 5 folds. The 27
+lineages are very unequal, so the fold spread is larger than on `cold_cell`,
+but the sign of the paired delta does not flip.
+
+Together with 1c this splits the project in two. Drug structure helps when
+the drug has been seen and the cell is new. It does not help, and actively
+hurts, when the drug is new. That is the condition under which target
+profiles are the next experiment, not a better structural encoder.
 
 ### 2. Persist per-row predictions — done
 
