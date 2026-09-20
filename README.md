@@ -46,14 +46,13 @@ and the drug before, the modalities clearly help:
 That 22.6% is the easiest setting in the suite, and it does not carry over.
 The result below is the one that constrains what this project can claim.
 
-### On unseen drugs, nothing beats predicting the cell-line mean
+### On unseen drugs, structure fails and annotated targets transfer
 
 A single group-level partition suggested the models transferred to new
-chemistry: on the seed-42 `cold_drug` split the best model reached 2.196 RMSE
-against a 2.662 baseline, which reads as a 17% improvement. It does not
-survive cross-validation. Testing every one of the 238 drugs across 5 folds
-instead of the 36 that one partition happened to hold out, the same model
-reaches 2.748 and **loses to the baseline**.
+chemistry: on the seed-42 `cold_drug` split the best Morgan model reached
+2.196 RMSE against a 2.662 baseline, which reads as a 17% improvement. It
+does not survive cross-validation. Testing every one of the 238 drugs across
+5 folds, that same model reaches 2.748 and **loses to the baseline**.
 
 Because all models share the folds, the comparison that settles this is paired
 within each fold, not overlapping error bars: the fold-to-fold spread of
@@ -61,18 +60,22 @@ within each fold, not overlapping error bars: the fold-to-fold spread of
 
 | Model on `cold_drug` | RMSE vs B0 `mean_effects` | Folds won |
 | --- | --- | --- |
+| B6 targets + expression PCA | **−0.140** | **5 of 5** |
+| B6 targets + expression + pathways | **−0.140** | **5 of 5** |
+| B6 targets + pathways | −0.088 | 5 of 5 |
+| B6 targets only | −0.021 | 3 of 5 |
 | B6 expression PCA | ±0.000 | 2 of 5 |
-| B6 pathways | +0.002 | 0 of 5 |
 | B6 Morgan + expression + pathways | +0.086 | 0 of 5 |
-| B2 XGBoost | +0.091 | 1 of 5 |
+| B2 XGBoost (Morgan + expression) | +0.091 | 1 of 5 |
 | B6 Morgan | +0.131 | 0 of 5 |
 
-`cold_scaffold` repeats the pattern against a 2.665 baseline. Two conclusions
-follow. A model given only expression ties the baseline to three decimals,
-because with an unseen drug the best it can do is predict the cell-line mean.
-And **adding Morgan fingerprints makes every variant worse**, in both splits:
-structural similarity does not transfer to new molecules on this cohort, it
-adds noise. Reproduce with `python -m mcdrp.results.grouped_cv_report`.
+`cold_scaffold` repeats the sign: targets + expression win 4 of 5 folds
+(−0.097) while Morgan + expression loses ( +0.048, 1 of 5). Two conclusions
+follow. **Adding Morgan fingerprints makes every variant worse** than the same
+variant without them. Swapping those fingerprints for a multi-hot encoding of
+GDSC `putative_target`, with the vocabulary fit on training drugs only, is
+the first representation that beats the cell-line mean on unseen chemistry.
+Reproduce with `python -m mcdrp.results.grouped_cv_report`.
 
 ### On unseen cells, expression plus a known drug does transfer
 
@@ -87,8 +90,9 @@ Morgan + expression + pathways at 1.381 +/- 0.025 and 5 folds won, even though
 the 27 lineages are very unequal so the fold spread is larger.
 
 So the failure on unseen chemistry is specific, not a general modelling
-collapse. Drug structure helps when the drug has been seen; it does not help
-when the drug is new.
+collapse. Drug *structure* helps when the drug has been seen; it does not
+help when the drug is new. Annotated *targets* are the representation that
+transfers in that second setting.
 
 ### What is not yet settled
 
@@ -97,8 +101,8 @@ when the drug is new.
 | `random_pair` | B5 hybrid GNN 0.931 against a 1.203 baseline, single seed |
 | `cold_cell` | settled above: B6 Morgan + expression beats the baseline in 5/5 folds |
 | `cold_tissue` | settled above: same pattern, 5/5 folds |
-| `cold_drug` | settled above: no model beats the baseline |
-| `cold_scaffold` | settled above: no model beats the baseline |
+| `cold_drug` | settled above: targets + expression beat the baseline in 5/5 folds; Morgan does not |
+| `cold_scaffold` | settled above: targets + expression win 4/5 folds; Morgan does not |
 | `cold_both` | single partition only, 2.365 with B2 |
 
 The `mean_effects` baseline reaches a global Pearson of 0.906 using no

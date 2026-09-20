@@ -194,27 +194,26 @@ carries nearly all the signal for `random_pair` and `cold_cell`, while drug
 representation only matters for `cold_drug` and `cold_scaffold`. B6 and B7 can
 answer this on this cohort.
 
-### 7. Drug target profiles as a modality
+### 7. Drug target profiles as a modality — done
 
-This is now the highest-value experiment in the roadmap, and it no longer
-rests on the literature alone. Item 1c measured the premise directly on this
-cohort: every B6 variant carrying Morgan fingerprints is worse than the same
-variant without them on both `cold_drug` and `cold_scaffold`. Structural
-similarity is not underperforming, it is actively hurting, which is exactly
-the condition under which the literature reports that predicted protein-target
-profiles generalize to unseen drugs better than stronger structural encoders.
+The first version is implemented and measured. `mcdrp.features.targets` builds
+a multi-hot encoding of `putative_target` with the vocabulary fit on training
+drugs only, and B6 exposes `targets`, `targets_expression_pca`,
+`targets_pathways`, and `targets_expression_pca_pathways`. 18 of 238 drugs
+have no annotation and become the zero vector; held-out targets that never
+appear on a training drug are dropped rather than leaked into the feature
+space.
 
-The first version is implemented: `mcdrp.features.targets` builds a multi-hot
-encoding of `putative_target` with the vocabulary fit on training drugs only,
-and B6 exposes `targets`, `targets_expression_pca`, `targets_pathways`, and
-`targets_expression_pca_pathways`. They are not in the default ablation list,
-so the original six-variant artifacts stay comparable. 18 of 238 drugs have
-no annotation and become the zero vector; held-out targets that never appear
-on a training drug are dropped rather than leaked into the feature space.
+On the five `cold_drug` folds, B6 targets + expression PCA reaches 2.522 RMSE
+against the 2.662 +/- 0.424 `mean_effects` baseline and wins every fold
+(paired delta -0.140). The same model with Morgan instead of targets loses
+every fold (+0.092). `cold_scaffold` repeats the sign: targets + expression
+win 4 of 5 (-0.097), Morgan + expression win 1 of 5 (+0.048).
 
-The fold directories under `data/processed/splits/cv/cold_drug` are built, so
-the comparison against the 2.662 +/- 0.424 baseline can reuse them directly
-and be paired within folds.
+That is the result the literature predicted and this cohort now owns:
+annotated targets transfer to unseen drugs; structural fingerprints do not.
+A richer target resource (predicted profiles rather than GDSC's sparse
+`putative_target`) is the natural extension, not a better structural encoder.
 
 ### 8. Cross-study validation
 
