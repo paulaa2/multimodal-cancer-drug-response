@@ -88,7 +88,45 @@ class TestAssembleTargets:
             pca_feature_map=pca_map,
             pathway_feature_map={},
             target_matrix=target_matrix,
+            predicted_target_matrix=np.zeros((2, 0), dtype=np.float32),
+            product_matrix=np.zeros((2, 0), dtype=np.float32),
         )
         assert assembled.shape == (1, 4)
         np.testing.assert_array_equal(assembled[0, :2], [1.0, 0.0])
         np.testing.assert_array_equal(assembled[0, 2:], [9.0, 8.0])
+
+
+class TestShuffleAndBlocks:
+    def test_shuffle_keeps_rows_of_the_same_drug_identical(self) -> None:
+        from mcdrp.features.targets import shuffle_target_matrix
+
+        matrix = np.array([[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+        shuffled = shuffle_target_matrix(matrix, ["D1", "D1", "D2"], seed=0)
+        np.testing.assert_array_equal(shuffled[0], shuffled[1])
+
+    def test_predicted_targets_is_not_confused_with_annotated_targets(self) -> None:
+        from mcdrp.models.ablation_b6 import ablation_uses
+
+        assert ablation_uses("predicted_targets_expression_pca", "predicted_targets")
+        assert not ablation_uses("predicted_targets_expression_pca", "targets")
+        assert ablation_uses("targets_expression_pca", "targets")
+        assert not ablation_uses("targets_expression_pca", "predicted_targets")
+
+    def test_fingerprint_dti_is_fit_on_training_drugs_only(self) -> None:
+        from mcdrp.features.predicted_targets import predict_targets_from_fingerprints
+
+        cohort = pd.DataFrame(
+            {
+                "pair_id": ["p0", "p1", "p2"],
+                "drug_id": ["D0", "D1", "D2"],
+            }
+        )
+        rng = np.random.default_rng(0)
+        fp = rng.normal(size=(3, 8)).astype(np.float32)
+        targets = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], dtype=np.float32)
+        predicted = predict_targets_from_fingerprints(
+            cohort, {"D0", "D1"}, fp, targets, alpha=0.1
+        )
+        assert predicted.shape == targets.shape
+        assert np.all((predicted >= 0.0) & (predicted <= 1.0))
+

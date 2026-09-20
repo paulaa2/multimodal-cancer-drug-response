@@ -36,6 +36,7 @@ PREDICTION_COLUMNS = (
 # collapse into one group and every metric is computed over both at once.
 STANDARD_VARIANT = "standard"
 TUNED_VARIANT = "tuned"
+SHUFFLED_VARIANT = "shuffled"
 
 
 def prediction_frame(

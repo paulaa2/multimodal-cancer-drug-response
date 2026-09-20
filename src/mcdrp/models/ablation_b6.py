@@ -39,7 +39,9 @@ import pandas as pd
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.features.pathways import build_pathway_features
-from mcdrp.features.targets import build_target_matrix
+from mcdrp.features.predicted_targets import predict_targets_from_fingerprints
+from mcdrp.features.target_expression import build_target_expression_product
+from mcdrp.features.targets import build_target_matrix, shuffle_target_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b2 import (
     fit_xgboost,
@@ -47,7 +49,12 @@ from mcdrp.models.baseline_b2 import (
     predict_xgboost,
     xgb_device_params,
 )
-from mcdrp.results.predictions import prediction_frame, write_predictions
+from mcdrp.results.predictions import (
+    SHUFFLED_VARIANT,
+    STANDARD_VARIANT,
+    prediction_frame,
+    write_predictions,
+)
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
 
 logger = logging.getLogger(__name__)
@@ -66,8 +73,36 @@ TARGET_ABLATIONS = (
     "targets_expression_pca",
     "targets_pathways",
     "targets_expression_pca_pathways",
+    "predicted_targets",
+    "predicted_targets_expression_pca",
+    "targets_expression_product",
 )
 ALL_ABLATIONS = DEFAULT_ABLATIONS + TARGET_ABLATIONS
+
+
+def ablation_uses(ablation: str, block: str) -> bool:
+    """Return whether ``ablation`` includes a named feature block.
+
+    Substring matching is unsafe here: ``predicted_targets`` contains
+    ``targets``, so the two drug representations have to be distinguished by
+    prefix rather than by ``in``.
+    """
+
+    if block == "predicted_targets":
+        return ablation.startswith("predicted_targets")
+    if block == "expression_product":
+        return "expression_product" in ablation
+    if block == "targets":
+        if ablation.startswith("predicted_targets"):
+            return False
+        return ablation == "targets" or ablation.startswith("targets_")
+    if block == "morgan":
+        return "morgan" in ablation
+    if block == "expression_pca":
+        return "expression_pca" in ablation
+    if block == "pathways":
+        return "pathways" in ablation
+    raise ValueError(f"Unknown feature block: {block}")
 
 
 def feature_matrix_from_cell_map(
@@ -94,6 +129,8 @@ def assemble_ablation_features(
     pca_feature_map: dict[str, np.ndarray],
     pathway_feature_map: dict[str, np.ndarray],
     target_matrix: np.ndarray,
+    predicted_target_matrix: np.ndarray,
+    product_matrix: np.ndarray,
 ) -> np.ndarray:
     """Assemble the requested feature blocks."""
 
@@ -101,13 +138,17 @@ def assemble_ablation_features(
     row_indices = np.array([pair_id_to_idx[pid] for pid in rows["pair_id"]])
 
     blocks: list[np.ndarray] = []
-    if "morgan" in ablation:
+    if ablation_uses(ablation, "morgan"):
         blocks.append(fp_matrix[row_indices].astype(np.float32))
-    if "targets" in ablation:
+    if ablation_uses(ablation, "predicted_targets"):
+        blocks.append(predicted_target_matrix[row_indices].astype(np.float32))
+    elif ablation_uses(ablation, "expression_product"):
+        blocks.append(product_matrix[row_indices].astype(np.float32))
+    elif ablation_uses(ablation, "targets"):
         blocks.append(target_matrix[row_indices].astype(np.float32))
-    if "expression_pca" in ablation:
+    if ablation_uses(ablation, "expression_pca"):
         blocks.append(feature_matrix_from_cell_map(rows, pca_feature_map))
-    if "pathways" in ablation:
+    if ablation_uses(ablation, "pathways"):
         blocks.append(feature_matrix_from_cell_map(rows, pathway_feature_map))
 
     if not blocks:
@@ -127,6 +168,7 @@ def metric_row(
     fit_seconds: float,
     best_iteration: int,
     device: str,
+    variant: str = STANDARD_VARIANT,
 ) -> tuple[dict[str, Any], pd.DataFrame]:
     """Create one ablation metrics row and its tidy predictions."""
 
@@ -157,6 +199,7 @@ def metric_row(
         model=model_name,
         split_name=split_name,
         subset=subset,
+        variant=variant,
     )
     return row, frame
 
@@ -168,12 +211,15 @@ def run_ablation_for_split(
     pca_feature_map: dict[str, np.ndarray],
     pathway_feature_map: dict[str, np.ndarray],
     target_matrix: np.ndarray,
+    predicted_target_matrix: np.ndarray,
+    product_matrix: np.ndarray,
     *,
     split_name: str,
     target: str,
     ablations: tuple[str, ...],
     xgb_params: dict[str, Any],
     device: str,
+    variant: str = STANDARD_VARIANT,
 ) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run every ablation for one split."""
 
@@ -185,24 +231,21 @@ def run_ablation_for_split(
 
     results: list[dict[str, Any]] = []
     frames: list[pd.DataFrame] = []
+    feature_kwargs = {
+        "cohort": cohort,
+        "fp_matrix": fp_matrix,
+        "pca_feature_map": pca_feature_map,
+        "pathway_feature_map": pathway_feature_map,
+        "target_matrix": target_matrix,
+        "predicted_target_matrix": predicted_target_matrix,
+        "product_matrix": product_matrix,
+    }
     for ablation in ablations:
         x_train = assemble_ablation_features(
-            subsets["train"],
-            ablation=ablation,
-            cohort=cohort,
-            fp_matrix=fp_matrix,
-            pca_feature_map=pca_feature_map,
-            pathway_feature_map=pathway_feature_map,
-            target_matrix=target_matrix,
+            subsets["train"], ablation=ablation, **feature_kwargs
         )
         x_val = assemble_ablation_features(
-            subsets["validation"],
-            ablation=ablation,
-            cohort=cohort,
-            fp_matrix=fp_matrix,
-            pca_feature_map=pca_feature_map,
-            pathway_feature_map=pathway_feature_map,
-            target_matrix=target_matrix,
+            subsets["validation"], ablation=ablation, **feature_kwargs
         )
         y_train = subsets["train"][target].to_numpy()
         y_val = subsets["validation"][target].to_numpy()
@@ -229,13 +272,7 @@ def run_ablation_for_split(
         for subset in ("validation", "test"):
             rows = subsets[subset]
             x_subset = assemble_ablation_features(
-                rows,
-                ablation=ablation,
-                cohort=cohort,
-                fp_matrix=fp_matrix,
-                pca_feature_map=pca_feature_map,
-                pathway_feature_map=pathway_feature_map,
-                target_matrix=target_matrix,
+                rows, ablation=ablation, **feature_kwargs
             )
             predictions = predict_xgboost(model, x_subset)
             row, frame = metric_row(
@@ -249,6 +286,7 @@ def run_ablation_for_split(
                 fit_seconds=fit_seconds,
                 best_iteration=best_iteration,
                 device=actual_device,
+                variant=variant,
             )
             results.append(row)
             frames.append(frame)
@@ -276,15 +314,26 @@ def run_b6_ablation(
     early_stopping_rounds: int = 40,
     device: str = "auto",
     random_state: int = 42,
+    shuffle_targets: bool = False,
+    shuffle_seed: int = 0,
 ) -> pd.DataFrame:
     """Run the B6 feature ablation study."""
 
     cohort = pd.read_csv(cohort_path)
     split_dir = Path(split_dir)
-    needs_morgan = any("morgan" in name for name in ablations)
-    needs_targets = any("targets" in name for name in ablations)
-    needs_pca = any("expression_pca" in name for name in ablations)
-    needs_pathways = any("pathways" in name for name in ablations)
+    needs_morgan = any(ablation_uses(name, "morgan") for name in ablations) or any(
+        ablation_uses(name, "predicted_targets") for name in ablations
+    )
+    needs_targets = any(
+        ablation_uses(name, block)
+        for name in ablations
+        for block in ("targets", "predicted_targets", "expression_product")
+    )
+    needs_predicted = any(ablation_uses(name, "predicted_targets") for name in ablations)
+    needs_product = any(ablation_uses(name, "expression_product") for name in ablations)
+    needs_pca = any(ablation_uses(name, "expression_pca") for name in ablations)
+    needs_pathways = any(ablation_uses(name, "pathways") for name in ablations)
+    variant = SHUFFLED_VARIANT if shuffle_targets else STANDARD_VARIANT
 
     if needs_morgan:
         logger.info("Building Morgan fingerprint matrix for %d rows ...", len(cohort))
@@ -344,9 +393,41 @@ def run_b6_ablation(
         if needs_targets:
             target_pipeline, target_matrix = build_target_matrix(cohort, train_drugs)
             n_target_tokens = len(target_pipeline.target_names)
+            if shuffle_targets:
+                target_matrix = shuffle_target_matrix(
+                    target_matrix,
+                    cohort["drug_id"].astype(str).tolist(),
+                    seed=shuffle_seed,
+                )
+                logger.info(
+                    "Shuffled target-drug pairing for %s with seed %d",
+                    split_name,
+                    shuffle_seed,
+                )
         else:
+            target_pipeline = None
             target_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
             n_target_tokens = 0
+
+        if needs_predicted:
+            predicted_target_matrix = predict_targets_from_fingerprints(
+                cohort, train_drugs, fp_matrix, target_matrix
+            )
+        else:
+            predicted_target_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
+
+        if needs_product:
+            if target_pipeline is None:
+                raise ValueError("expression_product requires a target vocabulary.")
+            _fusion, product_matrix = build_target_expression_product(
+                str(expression_path),
+                cohort,
+                target_pipeline,
+                target_matrix,
+                train_ids,
+            )
+        else:
+            product_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
 
         logger.info(
             "B6 %s — PCA variance %s, pathways=%d, target tokens=%d",
@@ -369,11 +450,14 @@ def run_b6_ablation(
             pca_feature_map,
             pathway_feature_map,
             target_matrix,
+            predicted_target_matrix,
+            product_matrix,
             split_name=split_name,
             target=target,
             ablations=ablations,
             xgb_params=split_params,
             device=device,
+            variant=variant,
         )
         all_results.extend(split_results)
         all_frames.extend(split_frames)
@@ -382,7 +466,7 @@ def run_b6_ablation(
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
-    write_predictions(all_frames, predictions_output)
+    write_predictions(all_frames, predictions_output, variant=variant)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -398,6 +482,8 @@ def run_b6_ablation(
         "min_pathway_genes": min_pathway_genes,
         "pathways": pathway_names,
         "ablations": list(ablations),
+        "shuffle_targets": shuffle_targets,
+        "shuffle_seed": shuffle_seed,
         "xgb_params_fallback": {k: v for k, v in xgb_params.items() if k != "n_jobs"},
         "xgb_params_by_split": used_params,
         "device_requested": device,
@@ -493,6 +579,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=list(DEFAULT_ABLATIONS),
         choices=list(ALL_ABLATIONS),
     )
+    parser.add_argument(
+        "--shuffle-targets",
+        action="store_true",
+        help=(
+            "Permute whole-drug target vectors before fitting. The null for "
+            "whether target identity, rather than vector geometry, transfers."
+        ),
+    )
+    parser.add_argument(
+        "--shuffle-seed",
+        type=int,
+        default=0,
+        help="Seed for --shuffle-targets.",
+    )
     return parser
 
 
@@ -524,6 +624,8 @@ def main() -> None:
         early_stopping_rounds=args.early_stopping_rounds,
         device=args.device,
         random_state=args.random_state,
+        shuffle_targets=args.shuffle_targets,
+        shuffle_seed=args.shuffle_seed,
     )
     print(f"\nWrote B6 ablation metrics to {args.output}")
     print("=" * 72)

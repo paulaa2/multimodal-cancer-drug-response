@@ -21,6 +21,7 @@ because they are not targets.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -137,3 +138,34 @@ def build_target_matrix(
         if vector is not None:
             matrix[i] = vector
     return pipeline, matrix
+
+
+def shuffle_target_matrix(
+    matrix: np.ndarray,
+    drug_ids: Sequence[str],
+    *,
+    seed: int,
+) -> np.ndarray:
+    """Reassign whole-drug target vectors uniformly at random.
+
+    Rows that share a ``drug_id`` keep a shared vector, so the control breaks
+    the pairing between a molecule and its biology rather than injecting
+    row-wise noise. Training and held-out drugs are permuted together: a test
+    drug then carries some other molecule's annotation, which is the null
+    that "the identity of the targets is what transfers" has to beat.
+    """
+
+    if len(matrix) != len(drug_ids):
+        raise ValueError(
+            f"Target matrix has {len(matrix)} rows but {len(drug_ids)} drug ids."
+        )
+
+    ids = np.asarray([str(drug_id) for drug_id in drug_ids], dtype=object)
+    unique, inverse = np.unique(ids, return_inverse=True)
+    vectors = np.zeros((len(unique), matrix.shape[1]), dtype=matrix.dtype)
+    for i, drug_id in enumerate(unique):
+        vectors[i] = matrix[ids == drug_id][0]
+
+    rng = np.random.default_rng(seed)
+    return vectors[rng.permutation(len(unique))][inverse]
+
