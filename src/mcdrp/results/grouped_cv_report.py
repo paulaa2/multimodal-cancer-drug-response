@@ -77,10 +77,16 @@ def fold_metrics(
 
     tables = []
     for fold in folds:
-        prediction_path = predictions_dir / f"fold_{fold}.csv"
-        if not prediction_path.exists():
-            prediction_path = predictions_dir / f"fold_{fold}" / f"{split_name}.csv"
-        if not prediction_path.exists():
+        # A fold directory holds one prediction file per model, so several
+        # models can be compared on identical held-out groups. A bare
+        # fold_<k>.csv is still accepted for single-model runs.
+        fold_dir = predictions_dir / f"fold_{fold}"
+        if fold_dir.is_dir():
+            prediction_paths = sorted(fold_dir.glob("*.csv"))
+        else:
+            single = predictions_dir / f"fold_{fold}.csv"
+            prediction_paths = [single] if single.exists() else []
+        if not prediction_paths:
             raise FileNotFoundError(
                 f"No predictions for fold {fold} of {split_name} under "
                 f"{predictions_dir}."
@@ -93,7 +99,7 @@ def fold_metrics(
                 "Build the folds with mcdrp.splits.grouped_cv first."
             )
 
-        predictions = load_predictions(prediction_path)
+        predictions = load_predictions(prediction_paths)
         table = build_metrics_report(
             predictions, cohort, fold_split_dir, target=target
         )
