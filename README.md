@@ -62,20 +62,29 @@ within each fold, not overlapping error bars: the fold-to-fold spread of
 | --- | --- | --- |
 | B6 targets + expression PCA | **−0.140** | **5 of 5** |
 | B6 targets + expression + pathways | **−0.140** | **5 of 5** |
+| B5 hybrid GNN | −0.120 | 4 of 5 |
 | B6 targets + pathways | −0.088 | 5 of 5 |
+| B7 pretrained + expression PCA | −0.079 | 4 of 5 |
+| B4 GNN | −0.035 | 3 of 5 |
 | B6 targets only | −0.021 | 3 of 5 |
 | B6 expression PCA | ±0.000 | 2 of 5 |
 | B6 Morgan + expression + pathways | +0.086 | 0 of 5 |
 | B2 XGBoost (Morgan + expression) | +0.091 | 1 of 5 |
+| B6 targets + PCA, shuffled | +0.129 | 0 of 5 |
 | B6 Morgan | +0.131 | 0 of 5 |
+| B6 target × expression product | +0.170 | 0 of 5 |
+| B6 predicted targets + PCA | +0.174 | 0 of 5 |
 
-`cold_scaffold` repeats the sign: targets + expression win 4 of 5 folds
-(−0.097) while Morgan + expression loses ( +0.048, 1 of 5). Two conclusions
-follow. **Adding Morgan fingerprints makes every variant worse** than the same
-variant without them. Swapping those fingerprints for a multi-hot encoding of
-GDSC `putative_target`, with the vocabulary fit on training drugs only, is
-the first representation that beats the cell-line mean on unseen chemistry.
-Reproduce with `python -m mcdrp.results.grouped_cv_report`.
+The controls close the obvious objections. Permuting whole-drug target vectors
+kills the gain, so it is the identity of the annotations that transfers, not
+the geometry of a sparse binary vector. A leakage-safe Ridge from Morgan onto
+the same GDSC vocabulary does not recover it, so the fingerprints did not
+contain that biology. An aligned product \(t_{\mathrm{drug}} \odot e_{\mathrm{cell}}\)
+on matched genes is worse than concatenating the annotations with expression
+PCA. Graph and pretrained encoders beat Morgan and still lose to the
+annotations. `cold_scaffold` repeats the sign for the annotations themselves:
+targets + expression win 4 of 5 folds (−0.097) while Morgan + expression loses
+(+0.048, 1 of 5). Reproduce with `python -m mcdrp.results.grouped_cv_report`.
 
 ### On unseen cells, expression plus a known drug does transfer
 
@@ -101,7 +110,7 @@ transfers in that second setting.
 | `random_pair` | B5 hybrid GNN 0.931 against a 1.203 baseline, single seed |
 | `cold_cell` | settled above: B6 Morgan + expression beats the baseline in 5/5 folds |
 | `cold_tissue` | settled above: same pattern, 5/5 folds |
-| `cold_drug` | settled above: targets + expression beat the baseline in 5/5 folds; Morgan does not |
+| `cold_drug` | settled above: annotated targets transfer; shuffle, Morgan-predicted targets, and the aligned product do not; GNN/embeddings help less than the annotations |
 | `cold_scaffold` | settled above: targets + expression win 4/5 folds; Morgan does not |
 | `cold_both` | single partition only, 2.365 with B2 |
 

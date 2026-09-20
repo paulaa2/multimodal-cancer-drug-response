@@ -1,0 +1,299 @@
+{
+  "created_at_utc": "2026-09-20T13:20:56.005886+00:00",
+  "split_name": "cold_drug",
+  "n_folds": 5,
+  "hypothesis_tests": "none",
+  "b0_mean_effects_rmse_mean": 2.661789148292613,
+  "b0_mean_effects_rmse_std": 0.423737733269788,
+  "note": "Paired deltas are model RMSE minus the fold-matched B0 mean_effects RMSE. Folds won counts strictly lower RMSE. Dispersion is not a significance test. Shuffled rows permute whole-drug target vectors before fitting. Predicted targets are a train-drug-only Ridge from Morgan to the GDSC vocabulary. The product is t_drug \u2299 e_cell on tokens aligned to DepMap genes.",
+  "comparisons": [
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca_pathways",
+      "variant": "standard",
+      "rmse_mean": 2.5213140748606513,
+      "paired_delta_mean": -0.14047507343196175,
+      "folds_won": 5,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.0479145355723376,
+        "1": 2.2670452966969843,
+        "2": 2.8952725821782823,
+        "3": 2.0393715835598925,
+        "4": 2.356966376295759
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca",
+      "variant": "standard",
+      "rmse_mean": 2.522121531639159,
+      "paired_delta_mean": -0.13966761665345367,
+      "folds_won": 5,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.041717402050444,
+        "1": 2.2669540054968,
+        "2": 2.89334732113983,
+        "3": 2.054444123952724,
+        "4": 2.354144805555998
+      }
+    },
+    {
+      "stage": "B5",
+      "model": "hybrid_gnn",
+      "variant": "standard",
+      "rmse_mean": 2.54137327138445,
+      "paired_delta_mean": -0.12041587690816317,
+      "folds_won": 4,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.200517119380601,
+        "1": 2.0983347649622868,
+        "2": 2.562546131554624,
+        "3": 2.4212750496950526,
+        "4": 2.424193291329684
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "targets_pathways",
+      "variant": "standard",
+      "rmse_mean": 2.5741928031710306,
+      "paired_delta_mean": -0.08759634512158217,
+      "folds_won": 5,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.11949301728338,
+        "1": 2.3310562602502207,
+        "2": 2.922818484253288,
+        "3": 2.0788445560299174,
+        "4": 2.4187516980383474
+      }
+    },
+    {
+      "stage": "B7",
+      "model": "pretrained_drug_expression_pca",
+      "variant": "standard",
+      "rmse_mean": 2.583008889178262,
+      "paired_delta_mean": -0.07878025911435031,
+      "folds_won": 4,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.0520659977683846,
+        "1": 2.469346726944148,
+        "2": 2.7467287612468696,
+        "3": 2.1764937696059574,
+        "4": 2.4704091903259533
+      }
+    },
+    {
+      "stage": "B7",
+      "model": "pretrained_drug_expression_pca_pathways",
+      "variant": "standard",
+      "rmse_mean": 2.588169342940672,
+      "paired_delta_mean": -0.07361980535194075,
+      "folds_won": 4,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.0394129550561235,
+        "1": 2.519727401986,
+        "2": 2.746728455875985,
+        "3": 2.1704937870498404,
+        "4": 2.4644841147354115
+      }
+    },
+    {
+      "stage": "B4",
+      "model": "gnn",
+      "variant": "standard",
+      "rmse_mean": 2.6266000042270816,
+      "paired_delta_mean": -0.035189144065530885,
+      "folds_won": 3,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.4848027514318907,
+        "1": 2.202197739812457,
+        "2": 2.647631562682415,
+        "3": 2.599034163457864,
+        "4": 2.199333803750783
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "targets",
+      "variant": "standard",
+      "rmse_mean": 2.640867408069903,
+      "paired_delta_mean": -0.020921740222710296,
+      "folds_won": 3,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.1771068378527416,
+        "1": 2.418373624021759,
+        "2": 2.9505001432769227,
+        "3": 2.099664809601893,
+        "4": 2.5586916255961967
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "expression_pca",
+      "variant": "standard",
+      "rmse_mean": 2.6619690873859927,
+      "paired_delta_mean": 0.00017993909337974401,
+      "folds_won": 2,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.2051297955144054,
+        "1": 2.3989838470218303,
+        "2": 3.003179314629913,
+        "3": 2.199879436220408,
+        "4": 2.5026730435434064
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "morgan_expression_pca_pathways",
+      "variant": "standard",
+      "rmse_mean": 2.748163662639073,
+      "paired_delta_mean": 0.08637451434646,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.324190883840773,
+        "1": 2.4577746334024253,
+        "2": 3.020884407827952,
+        "3": 2.255442211757839,
+        "4": 2.6825261763663746
+      }
+    },
+    {
+      "stage": "B2",
+      "model": "xgboost",
+      "variant": "standard",
+      "rmse_mean": 2.7527948848924857,
+      "paired_delta_mean": 0.09100573659987302,
+      "folds_won": 1,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.289500629161929,
+        "1": 2.446909802904865,
+        "2": 2.993781031435903,
+        "3": 2.364807091753704,
+        "4": 2.668975869206028
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "morgan_expression_pca",
+      "variant": "standard",
+      "rmse_mean": 2.753748527522352,
+      "paired_delta_mean": 0.09195937922973885,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.324190883840773,
+        "1": 2.486194278328805,
+        "2": 3.020884876399396,
+        "3": 2.2549464226764098,
+        "4": 2.6825261763663746
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca",
+      "variant": "shuffled",
+      "rmse_mean": 2.7906972194807267,
+      "paired_delta_mean": 0.12890807118811373,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.3132933070112185,
+        "1": 2.522785895731218,
+        "2": 3.1196895472861583,
+        "3": 2.3623015510910235,
+        "4": 2.635415796284015
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "morgan",
+      "variant": "standard",
+      "rmse_mean": 2.7930173611810267,
+      "paired_delta_mean": 0.13122821288841396,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.32469329433896,
+        "1": 2.5789568929663718,
+        "2": 3.025104154452628,
+        "3": 2.3508554336627903,
+        "4": 2.685477030484384
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "targets_expression_product",
+      "variant": "standard",
+      "rmse_mean": 2.831709436050705,
+      "paired_delta_mean": 0.16992028775809204,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.322471625322049,
+        "1": 2.5718098859339213,
+        "2": 3.12762097712857,
+        "3": 2.4648002936773765,
+        "4": 2.671844398191608
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "predicted_targets_expression_pca",
+      "variant": "standard",
+      "rmse_mean": 2.8361748247485457,
+      "paired_delta_mean": 0.17438567645593314,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.268374951608649,
+        "1": 2.657472666632091,
+        "2": 3.1586825683526807,
+        "3": 2.3364575381172323,
+        "4": 2.759886399032077
+      }
+    },
+    {
+      "stage": "B6",
+      "model": "predicted_targets",
+      "variant": "standard",
+      "rmse_mean": 2.8787046274603925,
+      "paired_delta_mean": 0.2169154791677797,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.2739065445505515,
+        "1": 2.661416044817507,
+        "2": 3.162083107818955,
+        "3": 2.3364575381172323,
+        "4": 2.959659901997717
+      }
+    },
+    {
+      "stage": "B0",
+      "model": "mean_effects",
+      "variant": "standard",
+      "rmse_mean": 2.6617891482926135,
+      "paired_delta_mean": 0.0,
+      "folds_won": 0,
+      "n_folds": 5,
+      "fold_rmse": {
+        "0": 3.2043823909575284,
+        "1": 2.3988989641731138,
+        "2": 3.002797034157724,
+        "3": 2.200158142677675,
+        "4": 2.502709209497023
+      }
+    }
+  ]
+}

@@ -80,7 +80,9 @@ chemical descriptors, molecular graphs, predicted protein target profiles, and
 expression with a pretrained single-cell language model. Its ablations single
 out *predicted target information* as the largest contributor to generalization
 for unseen drugs. This is the strongest available argument for adding a
-target-profile modality.
+target-profile modality. On this cohort the claim splits: GDSC `putative_target`
+annotations transfer under leave-drug-out grouped CV, but a leakage-safe map
+from Morgan fingerprints onto that same vocabulary does not recover the gain.
 
 **BioGDR.** *npj Digital Medicine*, 2026.
 <https://www.nature.com/articles/s41746-026-02735-x> — Finds that differential

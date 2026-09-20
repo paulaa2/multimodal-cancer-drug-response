@@ -194,6 +194,12 @@ carries nearly all the signal for `random_pair` and `cold_cell`, while drug
 representation only matters for `cold_drug` and `cold_scaffold`. B6 and B7 can
 answer this on this cohort.
 
+The drug-target half of that control is measured on `cold_drug`. Permuting
+whole-drug GDSC target vectors, keeping rows of the same drug identical,
+turns the −0.140 gain of targets + expression PCA into a +0.129 loss (0 of 5
+folds). The identity of the annotations is what transferred. Cell-view
+shuffles and the same null on `random_pair` / `cold_cell` are still open.
+
 ### 7. Drug target profiles as a modality — done
 
 The first version is implemented and measured. `mcdrp.features.targets` builds
@@ -210,10 +216,18 @@ against the 2.662 +/- 0.424 `mean_effects` baseline and wins every fold
 every fold (+0.092). `cold_scaffold` repeats the sign: targets + expression
 win 4 of 5 (-0.097), Morgan + expression win 1 of 5 (+0.048).
 
+The controls on those same folds say what that gain is not. Shuffling target
+identity loses every fold (+0.129). A leakage-safe Ridge from Morgan onto the
+GDSC vocabulary loses every fold (+0.174 with expression PCA). An aligned
+product \(t_{\mathrm{drug}} \odot e_{\mathrm{cell}}\) on matched genes loses
+every fold (+0.170). B5's graph encoder (−0.120, 4 of 5) and B7's pretrained
+embeddings (−0.079, 4 of 5) beat Morgan and still lose to the annotations.
+
 That is the result the literature predicted and this cohort now owns:
-annotated targets transfer to unseen drugs; structural fingerprints do not.
-A richer target resource (predicted profiles rather than GDSC's sparse
-`putative_target`) is the natural extension, not a better structural encoder.
+annotated targets transfer to unseen drugs; structural fingerprints, structure-
+predicted profiles, and a richer encoder do not match them. Cross-study
+validation is the next experiment that would stress the claim, not BindingDB
+or another graph.
 
 ### 8. Cross-study validation
 
