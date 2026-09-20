@@ -35,35 +35,61 @@ classification, because sensitive/resistant thresholds add assumptions.
 ## Status
 
 Baselines through B7 are implemented and have been run across the split suite.
-The headline comparison, on the `random_pair` test set:
+On the `random_pair` test set, where a model may have seen both the cell line
+and the drug before, the modalities clearly help:
 
 | Model | Features | RMSE | vs. `mean_effects` |
 | --- | --- | --- | --- |
 | B0 `mean_effects` | none | 1.203 | reference |
 | B5 hybrid GNN | graph + Morgan + expression PCA | **0.931** | −22.6% |
 
-The `mean_effects` baseline reaches a global Pearson correlation of 0.906 using
-no features at all, which is why it is the reference the models are measured
-against. B5 beating it by 22.6% is evidence the modalities genuinely contribute.
+That 22.6% is the easiest setting in the suite, and it does not carry over.
+The result below is the one that constrains what this project can claim.
 
-Per split, best model against the strongest B0 baseline (test sets):
+### On unseen drugs, nothing beats predicting the cell-line mean
 
-| Split | Best model | RMSE | Improvement |
-| --- | --- | --- | --- |
-| `random_pair` | B5 hybrid GNN | 0.931 | 22.6% |
-| `cold_cell` | B2 tuned XGBoost | 1.299 | 12.6% |
-| `cold_tissue` | *not yet run* | — | — |
-| `cold_drug` | B2 tuned XGBoost | 2.218 | 16.4% |
-| `cold_scaffold` | B5 hybrid GNN | 2.736 | 19.3% |
-| `cold_both` | B7 pretrained + pathways | 2.375 | 10.7% |
+A single group-level partition suggested the models transferred to new
+chemistry: on the seed-42 `cold_drug` split the best model reached 2.196 RMSE
+against a 2.662 baseline, which reads as a 17% improvement. It does not
+survive cross-validation. Testing every one of the 238 drugs across 5 folds
+instead of the 36 that one partition happened to hold out, the same model
+reaches 2.748 and **loses to the baseline**.
 
-**These are single-seed runs and carry no dispersion estimate, so small
-differences between models are not yet interpretable.** The runner is
-`python -m mcdrp.experiments.multiseed`; the experiment that counts is
-`configs/experiments/multiseed_b0_b2_full.json`. Until those replications
-exist, the ranking above is provisional. Note also the expected
-pattern: the models hold up best where interpolation is possible and degrade
-sharply on unseen chemistry.
+Because all models share the folds, the comparison that settles this is paired
+within each fold, not overlapping error bars: the fold-to-fold spread of
+±0.42 is mostly fold difficulty, which every model sees alike.
+
+| Model on `cold_drug` | RMSE vs B0 `mean_effects` | Folds won |
+| --- | --- | --- |
+| B6 expression PCA | ±0.000 | 2 of 5 |
+| B6 pathways | +0.002 | 0 of 5 |
+| B6 Morgan + expression + pathways | +0.086 | 0 of 5 |
+| B2 XGBoost | +0.091 | 1 of 5 |
+| B6 Morgan | +0.131 | 0 of 5 |
+
+`cold_scaffold` repeats the pattern against a 2.665 baseline. Two conclusions
+follow. A model given only expression ties the baseline to three decimals,
+because with an unseen drug the best it can do is predict the cell-line mean.
+And **adding Morgan fingerprints makes every variant worse**, in both splits:
+structural similarity does not transfer to new molecules on this cohort, it
+adds noise. Reproduce with `python -m mcdrp.results.grouped_cv_report`.
+
+### What is not yet settled
+
+| Split | Status |
+| --- | --- |
+| `random_pair` | B5 hybrid GNN 0.931 against a 1.203 baseline, single seed |
+| `cold_cell` | grouped CV in progress; single partition gave 1.299 |
+| `cold_tissue` | grouped CV in progress; single partition gave 1.372 |
+| `cold_drug` | settled above: no model beats the baseline |
+| `cold_scaffold` | settled above: no model beats the baseline |
+| `cold_both` | single partition only, 2.365 with B2 |
+
+The `mean_effects` baseline reaches a global Pearson of 0.906 using no
+features, which is why it is the reference rather than a naive mean. Splits
+still marked single-partition carry no dispersion estimate, so differences
+between models on them are not yet interpretable, and the `cold_drug` result
+above is a direct warning about reading them as findings.
 
 ## Quickstart
 

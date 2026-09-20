@@ -72,6 +72,33 @@ it looked: B0 `mean_effects` reads 2.653 RMSE on the seed-42 partition, but
 across folds it ranges from 2.200 to 3.204, giving 2.662 +/- 0.424. Any cold
 split comparison decided by a tenth of an RMSE was reading noise.
 
+`cold_cell` is the control that shows this is specific rather than general.
+Its 717 cell lines give a validation/test target mean gap of 0.062, against
+0.51 for `cold_drug`, because cell identity explains far less of ln(IC50) than
+drug potency does. The single partition was unreliable where the grouping
+entity dominates the target, not everywhere.
+
+### 1c. What grouped CV found on unseen drugs — done
+
+No model beats predicting the cell-line mean. B6 with pathways reads 2.196
+against a 2.662 baseline on the seed-42 `cold_drug` partition; across the five
+folds it reads 2.748 and loses. Paired within folds, which is the right
+comparison because the +/-0.42 spread is fold difficulty common to every
+model, B2 XGBoost is 0.091 worse than the baseline and wins 1 fold of 5, and
+B6 with Morgan, expression and pathways is 0.086 worse and wins none.
+`cold_scaffold` repeats it against a 2.665 baseline.
+
+Two things follow, and both point away from the model and toward the drug
+representation. Expression-only B6 ties the baseline to three decimals, which
+is what a model does when the drug is unseen and the cell mean is all it has.
+And every variant carrying Morgan fingerprints is worse than the same variant
+without them, in both splits, so structural similarity is not merely failing
+to transfer, it is adding noise.
+
+This is the direct argument for item 7 below. The cohort already ships
+`putative_target` and `gdsc_pathway_name`, so testing whether target biology
+transfers where structure does not needs no new data.
+
 ### 2. Persist per-row predictions — done
 
 B0–B7 write tidy prediction files (`pair_id`, `stage`, `model`, `variant`,
@@ -114,11 +141,17 @@ The guard is a safety net, not a change of representation. On the seed-42
 splits it drops 17 of 19215 genes and moves explained variance from 0.8045 to
 0.8047, leaving the canonical artifacts comparable.
 
-### 4. Close the `cold_tissue` gap — code done, numbers pending
+### 4. Close the `cold_tissue` gap — done
 
 `cold_tissue` is in `DEFAULT_SPLITS` and in the full B4–B7 experiment and
-tuning configs. The remaining hole is generating the trained-model numbers on
-that split.
+tuning configs, and the trained-model numbers exist across B0–B7.
+
+One caveat belongs with its grouped CV. The 27 lineages are very unequal, from
+27931 pairs for Lung to 177 for Fibroblast, so folds balanced by group count
+range from 21654 to 44342 test rows. Every tissue is still tested exactly
+once, which is what makes pooling legitimate, but the fold mean weights a
+small fold as heavily as a large one. `n_rows_total` is recorded in the
+aggregate for anyone who wants a row-weighted figure instead.
 
 ## Tier 2 — strengthens the scientific contribution
 
@@ -143,12 +176,19 @@ answer this on this cohort.
 
 ### 7. Drug target profiles as a modality
 
-The clearest architectural signal in the recent literature is that predicted
-protein-target profiles improve generalization to unseen drugs more than better
-structural encoders do, and that removing structural features hurts less than
-removing biological ones. Since `cold_drug` is where every model fails, this is
-the most promising direction for the hardest split. GDSC already ships a
-`putative_target` field, which is a cheap first version.
+This is now the highest-value experiment in the roadmap, and it no longer
+rests on the literature alone. Item 1c measured the premise directly on this
+cohort: every B6 variant carrying Morgan fingerprints is worse than the same
+variant without them on both `cold_drug` and `cold_scaffold`. Structural
+similarity is not underperforming, it is actively hurting, which is exactly
+the condition under which the literature reports that predicted protein-target
+profiles generalize to unseen drugs better than stronger structural encoders.
+
+The cohort already carries `putative_target` and `gdsc_pathway_name`, so a
+first version is a multi-hot encoding over targets and needs no new download.
+The fold directories under `data/processed/splits/cv/cold_drug` are built, so
+the comparison against the 2.662 +/- 0.424 baseline can reuse them directly
+and be paired within folds.
 
 ### 8. Cross-study validation
 
