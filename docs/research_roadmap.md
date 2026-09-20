@@ -197,7 +197,8 @@ answer this on this cohort.
 The drug-target half of that control is measured on `cold_drug`. Permuting
 whole-drug GDSC target vectors, keeping rows of the same drug identical,
 turns the −0.140 gain of targets + expression PCA into a +0.129 loss (0 of 5
-folds). The identity of the annotations is what transferred. Cell-view
+folds). `cold_scaffold` repeats it: the −0.097 gain becomes a +0.181 loss
+(0 of 5). The identity of the annotations is what transferred. Cell-view
 shuffles and the same null on `random_pair` / `cold_cell` are still open.
 
 ### 7. Drug target profiles as a modality — done
@@ -214,7 +215,9 @@ On the five `cold_drug` folds, B6 targets + expression PCA reaches 2.522 RMSE
 against the 2.662 +/- 0.424 `mean_effects` baseline and wins every fold
 (paired delta -0.140). The same model with Morgan instead of targets loses
 every fold (+0.092). `cold_scaffold` repeats the sign: targets + expression
-win 4 of 5 (-0.097), Morgan + expression win 1 of 5 (+0.048).
+win 4 of 5 (-0.097), Morgan + expression win 1 of 5 (+0.048). Shuffle (+0.181),
+predicted targets + PCA (+0.148), and the aligned product (+0.167) lose every
+`cold_scaffold` fold.
 
 The controls on those same folds say what that gain is not. Shuffling target
 identity loses every fold (+0.129). A leakage-safe Ridge from Morgan onto the

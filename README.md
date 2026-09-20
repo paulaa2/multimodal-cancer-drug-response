@@ -82,9 +82,11 @@ the same GDSC vocabulary does not recover it, so the fingerprints did not
 contain that biology. An aligned product \(t_{\mathrm{drug}} \odot e_{\mathrm{cell}}\)
 on matched genes is worse than concatenating the annotations with expression
 PCA. Graph and pretrained encoders beat Morgan and still lose to the
-annotations. `cold_scaffold` repeats the sign for the annotations themselves:
-targets + expression win 4 of 5 folds (−0.097) while Morgan + expression loses
-(+0.048, 1 of 5). Reproduce with `python -m mcdrp.results.grouped_cv_report`.
+annotations. `cold_scaffold` repeats the sign: targets + expression win 4 of 5
+folds (−0.097) while Morgan + expression loses (+0.048, 1 of 5). Shuffle
+(+0.181), Morgan-predicted targets (+0.148), and the aligned product (+0.167)
+lose every fold there too. Reproduce with
+`python -m mcdrp.results.grouped_cv_report`.
 
 ### On unseen cells, expression plus a known drug does transfer
 
@@ -111,7 +113,7 @@ transfers in that second setting.
 | `cold_cell` | settled above: B6 Morgan + expression beats the baseline in 5/5 folds |
 | `cold_tissue` | settled above: same pattern, 5/5 folds |
 | `cold_drug` | settled above: annotated targets transfer; shuffle, Morgan-predicted targets, and the aligned product do not; GNN/embeddings help less than the annotations |
-| `cold_scaffold` | settled above: targets + expression win 4/5 folds; Morgan does not |
+| `cold_scaffold` | settled above: same controls as `cold_drug`; shuffle, predicted targets, and the product lose 5/5 |
 | `cold_both` | single partition only, 2.365 with B2 |
 
 The `mean_effects` baseline reaches a global Pearson of 0.906 using no
