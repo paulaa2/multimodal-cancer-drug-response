@@ -23,12 +23,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from mcdrp.metrics import MeanEffectsReference, regression_metrics
 from mcdrp.results.predictions import STANDARD_VARIANT, load_predictions
 from mcdrp.results.selection import lowest_rmse_rows
 from mcdrp.splits.make_splits import DEFAULT_SPLITS, TISSUE_COLUMN
+from mcdrp.splits.validation import validate_assignments
 
 DEFAULT_PREDICTION_DIR = "results/predictions"
 GROUP_COLUMNS = ("stage", "model", "variant", "split_name", "subset")
@@ -49,22 +51,37 @@ def build_metrics_report(
 
     split_dir = Path(split_dir)
     identity = cohort[["pair_id", "depmap_id", "drug_id", target]].copy()
+    if predictions.empty:
+        raise ValueError("No predictions to score.")
+    if predictions.duplicated([*GROUP_COLUMNS, "pair_id"]).any():
+        raise ValueError("Duplicate predictions for the same model and pair.")
     if TISSUE_COLUMN in cohort.columns:
         identity[TISSUE_COLUMN] = cohort[TISSUE_COLUMN]
 
     references = {
-        split_name: fit_split_reference(
-            cohort, split_dir / f"{split_name}.csv", target=target
-        )
+        split_name: fit_split_reference(cohort, split_dir / f"{split_name}.csv", target=target)
         for split_name in sorted(predictions["split_name"].unique())
     }
 
     rows: list[dict[str, Any]] = []
     annotated = predictions.merge(identity, on="pair_id", how="left", validate="many_to_one")
     if annotated["depmap_id"].isna().any():
-        raise ValueError(
-            "Some predictions reference pair_ids that are absent from the cohort."
-        )
+        raise ValueError("Some predictions reference pair_ids that are absent from the cohort.")
+    if not np.isfinite(annotated[[target, "y_true", "y_pred"]].to_numpy(float)).all():
+        raise ValueError("Targets and predictions must be finite.")
+    if not np.allclose(annotated["y_true"], annotated[target], rtol=1e-7, atol=1e-8):
+        raise ValueError("Stored y_true does not match the cohort target.")
+
+    for split_name, split_predictions in annotated.groupby("split_name"):
+        assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
+        labels = assignments.set_index("pair_id")["split"]
+        if not split_predictions["pair_id"].map(labels).eq(split_predictions["subset"]).all():
+            raise ValueError("Prediction subset does not match split assignments.")
+        for keys, group in split_predictions.groupby(list(GROUP_COLUMNS), dropna=False):
+            expected = set(assignments.loc[assignments["split"].eq(keys[-1]), "pair_id"])
+            if set(group["pair_id"]) != expected:
+                raise ValueError("Predictions must cover the complete evaluation subset.")
 
     for keys, group in annotated.groupby(list(GROUP_COLUMNS), dropna=False):
         stage, model, variant, split_name, subset = keys
@@ -115,6 +132,7 @@ def fit_split_reference(
     """Fit the mean-effects reference on the training rows of one split."""
 
     assignments = pd.read_csv(split_path)
+    validate_assignments(cohort, assignments)
     merged = cohort.merge(assignments, on="pair_id", how="inner", validate="one_to_one")
     train = merged.loc[merged["split"].eq("train")]
     if train.empty:
@@ -137,6 +155,10 @@ def add_baseline_comparison(report: pd.DataFrame) -> pd.DataFrame:
     baselines = output.loc[output["stage"].eq("B0")]
     if baselines.empty:
         return output
+    # The primary reference is declared in advance, never chosen by test RMSE.
+    primary = baselines.loc[baselines["model"].eq("mean_effects")]
+    if not primary.empty:
+        baselines = primary
 
     best = lowest_rmse_rows(baselines, ["split_name", "subset"])[
         ["split_name", "subset", "model_id", "rmse"]
@@ -155,7 +177,7 @@ def add_baseline_comparison(report: pd.DataFrame) -> pd.DataFrame:
 
 
 def best_by_split(report: pd.DataFrame) -> pd.DataFrame:
-    """Return the best model per split/subset, ranked by RMSE."""
+    """Descriptive ranking only; test winners must not be used for model selection."""
 
     return lowest_rmse_rows(report, ["split_name", "subset"]).reset_index(drop=True)
 
@@ -240,9 +262,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cohort", default="data/processed/cohort_pairs.csv")
     parser.add_argument("--split-dir", default="data/processed/splits")
     parser.add_argument("--output", default="results/reports/model_metrics.csv")
-    parser.add_argument(
-        "--best-output", default="results/reports/model_best_by_split.csv"
-    )
+    parser.add_argument("--best-output", default="results/reports/model_best_by_split.csv")
     parser.add_argument("--summary", default="data/reports/model_metrics_summary.json")
     parser.add_argument("--target", default="ln_ic50")
     return parser

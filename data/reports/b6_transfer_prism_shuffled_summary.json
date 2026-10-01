@@ -1,0 +1,69 @@
+{
+  "created_at_utc": "2026-09-20T16:30:36.104944+00:00",
+  "cohort_path": "data/processed/transfer_pairs.csv",
+  "expression_path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/ablations/b6_transfer_prism_shuffled_metrics.csv",
+  "predictions_output": "results/predictions/transfer_prism/b6_shuffled.csv",
+  "b2_tuned": null,
+  "target": "auc",
+  "n_pca_components": 256,
+  "gene_sets": "builtin_cancer_core",
+  "min_pathway_genes": 3,
+  "pathways": [],
+  "ablations": [
+    "targets_expression_pca"
+  ],
+  "shuffle_targets": true,
+  "shuffle_seed": 0,
+  "xgb_params_fallback": {
+    "n_estimators": 700,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "early_stopping_rounds": 40,
+    "objective": "reg:squarederror",
+    "eval_metric": "rmse",
+    "tree_method": "hist",
+    "random_state": 42,
+    "device": "cuda"
+  },
+  "xgb_params_by_split": {
+    "transfer_prism": {
+      "n_estimators": 700,
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "early_stopping_rounds": 40,
+      "objective": "reg:squarederror",
+      "eval_metric": "rmse",
+      "tree_method": "hist",
+      "random_state": 42,
+      "device": "cuda"
+    }
+  },
+  "device_requested": "auto",
+  "splits": [
+    "transfer_prism"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "transfer_prism",
+      "subset": "test",
+      "best_model": "targets_expression_pca",
+      "rmse": 0.14640475772464262,
+      "mae": 0.1135371248470459,
+      "pearson": 0.3187750233019993,
+      "spearman": 0.2842387072238033,
+      "r2": 0.08247062111460723
+    },
+    {
+      "split_name": "transfer_prism",
+      "subset": "validation",
+      "best_model": "targets_expression_pca",
+      "rmse": 0.11415329179048957,
+      "mae": 0.07469232436331451,
+      "pearson": 0.6404440024957686,
+      "spearman": 0.5718751537888449,
+      "r2": 0.40838946010524513
+    }
+  ]
+}

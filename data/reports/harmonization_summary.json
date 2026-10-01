@@ -1,0 +1,141 @@
+{
+  "config": {
+    "cohort": "data/processed/transfer_checked_pairs.csv",
+    "assignments": "data/processed/transfer_checked/transfer_prism.csv",
+    "drug_map": "data/mappings/prism_gdsc_drug_map_strict.csv",
+    "prism_metadata": "data/raw/secondary-screen-dose-response-curve-parameters.csv",
+    "sources": [
+      {
+        "study": "gdsc2",
+        "path": "data/raw/harmonization/GDSCv2_Input.csv",
+        "dose_scale": "linear_um",
+        "exposure_hours": null
+      },
+      {
+        "study": "prism",
+        "path": "data/raw/harmonization/PRISM_Input.csv",
+        "dose_scale": "log10_um",
+        "replicate_prefix": "MTS010",
+        "exposure_hours": null
+      }
+    ],
+    "log10_um_lower": -1.9,
+    "log10_um_upper": 0.9,
+    "workers": 4,
+    "curve_fits": "results/harmonization/curve_fits.csv",
+    "output_cohort": "data/processed/harmonized_transfer_pairs.csv",
+    "output_assignments": "data/processed/harmonized_transfer/transfer_prism.csv",
+    "summary": "data/reports/harmonization_summary.json"
+  },
+  "inputs": [
+    {
+      "study": "gdsc2",
+      "path": "data/raw/harmonization/GDSCv2_Input.csv",
+      "dose_scale": "linear_um",
+      "exposure_hours": null,
+      "raw_rows": 3560083,
+      "selected_screen_rows": 3560083,
+      "mapped_rows": 316981,
+      "invalid_numeric_rows": 0,
+      "sha256": "1dff4c935fcd06a6a8e935fde4690104deadbc2d6801c4498963e7155ea7eec7"
+    },
+    {
+      "study": "prism",
+      "path": "data/raw/harmonization/PRISM_Input.csv",
+      "dose_scale": "log10_um",
+      "replicate_prefix": "MTS010",
+      "exposure_hours": null,
+      "raw_rows": 9499564,
+      "selected_screen_rows": 1016413,
+      "mapped_rows": 198546,
+      "invalid_numeric_rows": 0,
+      "sha256": "0b876e18ddd79129ca5fa10ae792b2e9f74d83660c5aa5cfa32fc8cd4093aef7"
+    }
+  ],
+  "fit_status": [
+    {
+      "study": "gdsc2",
+      "status": "constant_fallback",
+      "n": 1352
+    },
+    {
+      "study": "gdsc2",
+      "status": "fit_failed",
+      "n": 476
+    },
+    {
+      "study": "gdsc2",
+      "status": "flat",
+      "n": 4
+    },
+    {
+      "study": "gdsc2",
+      "status": "insufficient_dose_coverage",
+      "n": 8524
+    },
+    {
+      "study": "gdsc2",
+      "status": "sigmoid_3pl",
+      "n": 9391
+    },
+    {
+      "study": "prism",
+      "status": "constant_fallback",
+      "n": 4375
+    },
+    {
+      "study": "prism",
+      "status": "fit_failed",
+      "n": 661
+    },
+    {
+      "study": "prism",
+      "status": "flat",
+      "n": 1
+    },
+    {
+      "study": "prism",
+      "status": "insufficient_dose_coverage",
+      "n": 2700
+    },
+    {
+      "study": "prism",
+      "status": "sigmoid_3pl",
+      "n": 6409
+    },
+    {
+      "study": "prism",
+      "status": "too_few_doses",
+      "n": 54
+    }
+  ],
+  "counts": [
+    {
+      "study": "gdsc2",
+      "split": "train",
+      "n_pairs": 9197,
+      "n_cells": 616,
+      "n_drugs": 23
+    },
+    {
+      "study": "gdsc2",
+      "split": "validation",
+      "n_pairs": 1550,
+      "n_cells": 569,
+      "n_drugs": 23
+    },
+    {
+      "study": "prism",
+      "split": "test",
+      "n_pairs": 10785,
+      "n_cells": 335,
+      "n_drugs": 38
+    }
+  ],
+  "notes": [
+    "Common endpoint definition; exposure duration remains study-specific/unknown in these inputs.",
+    "No extrapolation outside measured dose support. Fits use all measured doses.",
+    "Eligibility requires strict chemical mapping, existing cohort pairs and dose coverage.",
+    "Exploratory reuse of an already examined external screen, not new confirmatory validation."
+  ]
+}

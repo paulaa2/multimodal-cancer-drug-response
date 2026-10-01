@@ -1,9 +1,8 @@
 """Hadamard fusion of a drug's target profile with the cell's expression of those genes.
 
-Concatenating a target vector with a PCA of the whole transcriptome ignores the
-mechanism: the drug hits protein *j* and the cell responds in proportion to how
-much it expresses *j*. This module builds that aligned product, scaling the
-matched genes on training cell lines only.
+This exploratory fusion multiplies target annotations by scaled mRNA abundance.
+It does not model protein activity, binding affinity, inhibition, or a causal
+relationship between expression and sensitivity. Scaling uses training cells only.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from mcdrp.features.expression import load_expression_matrix
+from mcdrp.features.expression import MAX_ABS_ZSCORE, load_expression_matrix
 from mcdrp.features.pathways import expression_column_to_symbol
 from mcdrp.features.targets import TargetPipeline
 
@@ -120,12 +119,14 @@ def transform_target_expression_product(
     columns = [token_index[name] for name in fusion.target_names]
     drug_block = target_matrix[:, columns]
 
-    scaled = fusion.scaler.transform(
-        expression.loc[:, fusion.gene_columns].to_numpy(dtype=np.float32)
+    scaled = np.clip(
+        fusion.scaler.transform(
+            expression.loc[:, fusion.gene_columns].to_numpy(dtype=np.float32)
+        ),
+        -MAX_ABS_ZSCORE,
+        MAX_ABS_ZSCORE,
     ).astype(np.float32)
-    cell_lookup = {
-        str(cell_id): scaled[i] for i, cell_id in enumerate(expression.index)
-    }
+    cell_lookup = {str(cell_id): scaled[i] for i, cell_id in enumerate(expression.index)}
     product = np.zeros((len(cohort), len(fusion.gene_columns)), dtype=np.float32)
     for i, cell_id in enumerate(cohort["depmap_id"].astype(str)):
         cell_vec = cell_lookup.get(cell_id)

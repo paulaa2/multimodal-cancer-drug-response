@@ -24,7 +24,8 @@ import pandas as pd
 
 from mcdrp.metrics import MeanEffectsReference, regression_metrics
 from mcdrp.results.predictions import prediction_frame, write_predictions
-from mcdrp.splits.make_splits import DEFAULT_SPLITS, TISSUE_COLUMN
+from mcdrp.splits.make_splits import DEFAULT_SPLITS, KNOWN_SPLIT_CHOICES, TISSUE_COLUMN
+from mcdrp.splits.validation import validate_assignments
 
 
 def predict_global_mean(train: pd.DataFrame, target: str, rows: pd.DataFrame) -> pd.Series:
@@ -134,8 +135,12 @@ def run_b0_for_split(
 
     model_specs = b0_model_specs(train, data, target)
 
-    for subset in ("validation", "test"):
+    for subset in ("validation", "calibration", "test"):
         rows = data.loc[data["split"].eq(subset)].copy()
+        if rows.empty:
+            if subset != "calibration":
+                raise ValueError(f"B0 requires a nonempty {subset} subset.")
+            continue
         # The same train-only reference normalizes every model on these rows.
         reference_pred = predict_mean_effects(train, target, rows).to_numpy()
         for model_name, predict in model_specs:
@@ -185,6 +190,7 @@ def run_b0(
     for split_name in split_names:
         split_path = split_dir / f"{split_name}.csv"
         assignments = pd.read_csv(split_path)
+        validate_assignments(cohort, assignments)
         results, frames = run_b0_for_split(
             cohort,
             assignments,
@@ -232,12 +238,8 @@ def summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
                 "best_model": best["model"],
                 "rmse": float(best["rmse"]),
                 "mae": float(best["mae"]),
-                "pearson": float(best["pearson"])
-                if pd.notna(best["pearson"])
-                else None,
-                "spearman": float(best["spearman"])
-                if pd.notna(best["spearman"])
-                else None,
+                "pearson": float(best["pearson"]) if pd.notna(best["pearson"]) else None,
+                "spearman": float(best["spearman"]) if pd.notna(best["spearman"]) else None,
                 "r2": float(best["r2"]) if pd.notna(best["r2"]) else None,
             }
         )
@@ -281,7 +283,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
-        choices=list(DEFAULT_SPLITS),
+        choices=list(KNOWN_SPLIT_CHOICES),
         help="Splits to evaluate.",
     )
     return parser

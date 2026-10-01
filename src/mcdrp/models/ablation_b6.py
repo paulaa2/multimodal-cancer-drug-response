@@ -36,9 +36,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from mcdrp.data.target_annotations import apply_target_view
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.features.pathways import build_pathway_features
+from mcdrp.features.permutations import permute_cell_map, permute_entity_features
 from mcdrp.features.predicted_targets import predict_targets_from_fingerprints
 from mcdrp.features.target_expression import build_target_expression_product
 from mcdrp.features.targets import build_target_matrix, shuffle_target_matrix
@@ -48,6 +50,7 @@ from mcdrp.models.baseline_b2 import (
     load_selected_xgb_params,
     predict_xgboost,
     xgb_device_params,
+    xgb_selection_context,
 )
 from mcdrp.results.predictions import (
     SHUFFLED_VARIANT,
@@ -55,7 +58,8 @@ from mcdrp.results.predictions import (
     prediction_frame,
     write_predictions,
 )
-from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.make_splits import DEFAULT_SPLITS, KNOWN_SPLIT_CHOICES
+from mcdrp.splits.validation import selection_fingerprint, validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -115,8 +119,9 @@ def feature_matrix_from_cell_map(
     features = np.zeros((len(rows), n_features), dtype=np.float32)
     for idx, depmap_id in enumerate(rows["depmap_id"]):
         value = cell_feature_map.get(str(depmap_id))
-        if value is not None:
-            features[idx] = value
+        if value is None:
+            raise ValueError(f"Missing cell features for {depmap_id}.")
+        features[idx] = value
     return features
 
 
@@ -226,7 +231,8 @@ def run_ablation_for_split(
     data = cohort.merge(assignments, on="pair_id", how="inner", validate="one_to_one")
     subsets = {
         subset: data.loc[data["split"].eq(subset)].copy()
-        for subset in ("train", "validation", "test")
+        for subset in ("train", "validation", "calibration", "test")
+        if data["split"].eq(subset).any()
     }
 
     results: list[dict[str, Any]] = []
@@ -269,11 +275,11 @@ def run_ablation_for_split(
         fit_seconds = time.time() - t0
         best_iteration = getattr(model, "best_iteration", xgb_params["n_estimators"] - 1)
 
-        for subset in ("validation", "test"):
+        for subset in (
+            name for name in ("validation", "calibration", "test") if name in subsets
+        ):
             rows = subsets[subset]
-            x_subset = assemble_ablation_features(
-                rows, ablation=ablation, **feature_kwargs
-            )
+            x_subset = assemble_ablation_features(rows, ablation=ablation, **feature_kwargs)
             predictions = predict_xgboost(model, x_subset)
             row, frame = metric_row(
                 ablation,
@@ -316,10 +322,24 @@ def run_b6_ablation(
     random_state: int = 42,
     shuffle_targets: bool = False,
     shuffle_seed: int = 0,
+    permute_cell_features: bool = False,
+    permute_drug_features: bool = False,
+    permutation_seed: int = 42,
+    target_view: str = "raw",
+    target_annotations: str = "data/mappings/target_annotations_normalized.csv",
 ) -> pd.DataFrame:
     """Run the B6 feature ablation study."""
 
-    cohort = pd.read_csv(cohort_path)
+    cohort = pd.read_csv(cohort_path, low_memory=False)
+    cohort = apply_target_view(cohort, target_annotations, target_view)
+    if shuffle_targets and (permute_cell_features or permute_drug_features):
+        raise ValueError("Use one null protocol at a time.")
+    if permute_cell_features and any(ablation_uses(a, "expression_product") for a in ablations):
+        raise ValueError("Cell permutation is not implemented for expression products.")
+    if target_view in {"mechanisms", "typed"} and any(
+        ablation_uses(a, "expression_product") for a in ablations
+    ):
+        raise ValueError("Expression products require unprefixed gene annotations.")
     split_dir = Path(split_dir)
     needs_morgan = any(ablation_uses(name, "morgan") for name in ablations) or any(
         ablation_uses(name, "predicted_targets") for name in ablations
@@ -334,6 +354,15 @@ def run_b6_ablation(
     needs_pca = any(ablation_uses(name, "expression_pca") for name in ablations)
     needs_pathways = any(ablation_uses(name, "pathways") for name in ablations)
     variant = SHUFFLED_VARIANT if shuffle_targets else STANDARD_VARIANT
+    if target_view != "raw":
+        variant = f"targets_{target_view}"
+    if permute_cell_features or permute_drug_features:
+        blocks = (
+            "both"
+            if permute_cell_features and permute_drug_features
+            else ("cell" if permute_cell_features else "drug")
+        )
+        variant = f"{variant}_{blocks}_permuted_{permutation_seed}"
 
     if needs_morgan:
         logger.info("Building Morgan fingerprint matrix for %d rows ...", len(cohort))
@@ -353,7 +382,18 @@ def run_b6_ablation(
         "n_jobs": -1,
     }
     xgb_params.update(xgb_device_params(device))
-    selected_by_split = load_selected_xgb_params(b2_tuned, fallback=xgb_params)
+    expected_fingerprints = None
+    if b2_tuned is not None and Path(b2_tuned).exists():
+        context = xgb_selection_context(expression_path, n_components, random_state)
+        expected_fingerprints = {
+            name: selection_fingerprint(
+                cohort, pd.read_csv(split_dir / f"{name}.csv"), target=target, context=context
+            )
+            for name in split_names
+        }
+    selected_by_split = load_selected_xgb_params(
+        b2_tuned, fallback=xgb_params, expected_fingerprints=expected_fingerprints
+    )
 
     all_results: list[dict[str, Any]] = []
     all_frames: list[pd.DataFrame] = []
@@ -362,6 +402,7 @@ def run_b6_ablation(
     for split_name in split_names:
         logger.info("=== Processing B6 ablations split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
         train_drugs = set(
@@ -409,9 +450,47 @@ def run_b6_ablation(
             target_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
             n_target_tokens = 0
 
+        labels = (
+            cohort[["pair_id"]]
+            .merge(assignments, on="pair_id", validate="one_to_one")["split"]
+            .tolist()
+        )
+        split_fp_matrix = fp_matrix
+        provenance_dir = Path(predictions_output).parent / f"{split_name}_{variant}_donors"
+        if permute_drug_features:
+            provenance_dir.mkdir(parents=True, exist_ok=True)
+            if needs_morgan:
+                split_fp_matrix, donors = permute_entity_features(
+                    fp_matrix,
+                    cohort["drug_id"].astype(str).tolist(),
+                    labels,
+                    seed=permutation_seed,
+                )
+                donors.to_csv(provenance_dir / "morgan.csv", index=False)
+            if needs_targets:
+                target_matrix, donors = permute_entity_features(
+                    target_matrix,
+                    cohort["drug_id"].astype(str).tolist(),
+                    labels,
+                    seed=permutation_seed,
+                )
+                donors.to_csv(provenance_dir / "targets.csv", index=False)
+        if permute_cell_features:
+            provenance_dir.mkdir(parents=True, exist_ok=True)
+            if needs_pca:
+                pca_feature_map, donors = permute_cell_map(
+                    pca_feature_map, cohort, assignments, seed=permutation_seed
+                )
+                donors.to_csv(provenance_dir / "expression_pca.csv", index=False)
+            if needs_pathways:
+                pathway_feature_map, donors = permute_cell_map(
+                    pathway_feature_map, cohort, assignments, seed=permutation_seed
+                )
+                donors.to_csv(provenance_dir / "pathways.csv", index=False)
+
         if needs_predicted:
             predicted_target_matrix = predict_targets_from_fingerprints(
-                cohort, train_drugs, fp_matrix, target_matrix
+                cohort, train_drugs, split_fp_matrix, target_matrix
             )
         else:
             predicted_target_matrix = np.zeros((len(cohort), 0), dtype=np.float32)
@@ -446,7 +525,7 @@ def run_b6_ablation(
         split_results, split_frames = run_ablation_for_split(
             cohort,
             assignments,
-            fp_matrix,
+            split_fp_matrix,
             pca_feature_map,
             pathway_feature_map,
             target_matrix,
@@ -484,6 +563,11 @@ def run_b6_ablation(
         "ablations": list(ablations),
         "shuffle_targets": shuffle_targets,
         "shuffle_seed": shuffle_seed,
+        "target_view": target_view,
+        "target_annotations": target_annotations,
+        "permute_cell_features": permute_cell_features,
+        "permute_drug_features": permute_drug_features,
+        "permutation_seed": permutation_seed,
         "xgb_params_fallback": {k: v for k, v in xgb_params.items() if k != "n_jobs"},
         "xgb_params_by_split": used_params,
         "device_requested": device,
@@ -510,12 +594,8 @@ def summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
                 "best_model": best["model"],
                 "rmse": float(best["rmse"]),
                 "mae": float(best["mae"]),
-                "pearson": float(best["pearson"])
-                if pd.notna(best["pearson"])
-                else None,
-                "spearman": float(best["spearman"])
-                if pd.notna(best["spearman"])
-                else None,
+                "pearson": float(best["pearson"]) if pd.notna(best["pearson"]) else None,
+                "spearman": float(best["spearman"]) if pd.notna(best["spearman"]) else None,
                 "r2": float(best["r2"]) if pd.notna(best["r2"]) else None,
             }
         )
@@ -571,7 +651,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
-        choices=list(DEFAULT_SPLITS),
+        choices=list(KNOWN_SPLIT_CHOICES),
     )
     parser.add_argument(
         "--ablations",
@@ -592,6 +672,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=0,
         help="Seed for --shuffle-targets.",
+    )
+    parser.add_argument("--permute-cell-features", action="store_true")
+    parser.add_argument("--permute-drug-features", action="store_true")
+    parser.add_argument("--permutation-seed", type=int, default=42)
+    parser.add_argument(
+        "--target-view", choices=["raw", "genes", "mechanisms", "typed"], default="raw"
+    )
+    parser.add_argument(
+        "--target-annotations", default="data/mappings/target_annotations_normalized.csv"
     )
     return parser
 
@@ -626,6 +715,11 @@ def main() -> None:
         random_state=args.random_state,
         shuffle_targets=args.shuffle_targets,
         shuffle_seed=args.shuffle_seed,
+        permute_cell_features=args.permute_cell_features,
+        permute_drug_features=args.permute_drug_features,
+        permutation_seed=args.permutation_seed,
+        target_view=args.target_view,
+        target_annotations=args.target_annotations,
     )
     print(f"\nWrote B6 ablation metrics to {args.output}")
     print("=" * 72)

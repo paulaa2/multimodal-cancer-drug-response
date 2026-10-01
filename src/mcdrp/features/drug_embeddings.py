@@ -124,6 +124,8 @@ def load_drug_embeddings(
     for column in embedding_columns:
         values[column] = pd.to_numeric(values[column], errors="coerce")
     values = values.dropna(subset=embedding_columns)
+    if not np.isfinite(values[embedding_columns].to_numpy(float)).all():
+        raise ValueError("Drug embeddings must be finite.")
     if values.empty:
         raise ValueError(f"No complete embedding rows found in {embedding_path}.")
 

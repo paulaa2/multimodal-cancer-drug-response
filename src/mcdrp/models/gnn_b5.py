@@ -45,6 +45,7 @@ from mcdrp.models.baseline_b3 import resolve_torch_device
 from mcdrp.models.gnn_b4 import fit_cell_scaler, fit_target_scaler, split_rows
 from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -633,6 +634,7 @@ def run_b5_for_split(
 
     n_cell_features = next(iter(cell_feature_map.values())).shape[0]
     n_fingerprint_bits = len(next(iter(fingerprint_map.values())))
+    torch.manual_seed(random_state)
     model = HybridGNNRegressor(
         cell_dim=n_cell_features,
         fingerprint_dim=n_fingerprint_bits,
@@ -782,6 +784,7 @@ def run_b5(
     for split_name in split_names:
         logger.info("=== Processing B5 split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
         pipeline, cell_feature_map = build_cell_features(

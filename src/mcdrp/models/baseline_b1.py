@@ -24,6 +24,7 @@ from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +62,9 @@ def assemble_features(
     n_pca = next(iter(cell_feature_map.values())).shape[0]
     cell_feats = np.zeros((len(rows), n_pca), dtype=np.float32)
     for local_idx, depmap_id in enumerate(rows["depmap_id"]):
-        if depmap_id in cell_feature_map:
-            cell_feats[local_idx] = cell_feature_map[depmap_id]
+        if depmap_id not in cell_feature_map:
+            raise ValueError(f"Missing cell features for {depmap_id}.")
+        cell_feats[local_idx] = cell_feature_map[depmap_id]
 
     return np.hstack([fps.astype(np.float32), cell_feats])
 
@@ -317,6 +319,7 @@ def run_b1(
         logger.info("=== Processing split: %s ===", split_name)
         split_path = split_dir / f"{split_name}.csv"
         assignments = pd.read_csv(split_path)
+        validate_assignments(cohort, assignments)
 
         # Determine training cell lines for leakage-safe PCA.
         merged = cohort.merge(assignments, on="pair_id", how="inner")

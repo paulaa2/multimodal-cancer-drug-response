@@ -1,0 +1,20 @@
+{
+  "scope": "Published protocol context; exact exposure for each imported curve is not present in the raw CSVs. No time normalization is performed.",
+  "studies": [
+    {
+      "study": "gdsc2",
+      "nominal_exposure_hours": 72,
+      "per_curve_exposure_hours": null,
+      "readout": "CellTiter-Glo",
+      "source": "https://depmap.sanger.ac.uk/documentation/datasets/drug-sensitivity/"
+    },
+    {
+      "study": "prism",
+      "nominal_exposure_hours": 120,
+      "per_curve_exposure_hours": null,
+      "readout": "Relative mRNA barcode abundance, Luminex",
+      "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7328899/",
+      "note": "Original repurposing protocol; the exact timing of each imported MTS010 curve is not independently verified."
+    }
+  ]
+}

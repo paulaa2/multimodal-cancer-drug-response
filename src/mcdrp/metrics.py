@@ -114,8 +114,7 @@ def regression_metrics(
     that entity are added.
     """
 
-    y_true = np.asarray(y_true, dtype=float)
-    y_pred = np.asarray(y_pred, dtype=float)
+    y_true, y_pred = validate_vectors(y_true, y_pred)
     error = y_true - y_pred
 
     mse = float(np.mean(error**2))
@@ -128,7 +127,7 @@ def regression_metrics(
     }
 
     if reference_pred is not None:
-        reference_pred = np.asarray(reference_pred, dtype=float)
+        _, reference_pred = validate_vectors(y_true, reference_pred)
         residual_true = y_true - reference_pred
         residual_pred = y_pred - reference_pred
         ss_model = float(np.sum((y_true - y_pred) ** 2))
@@ -158,10 +157,25 @@ def regression_metrics(
     for label, keys in (("drug", drug_keys), ("cell", cell_keys)):
         if keys is None:
             continue
+        if len(keys) != len(y_true):
+            raise ValueError(f"{label} keys must align with the response vectors.")
         grouped = grouped_metrics(y_true, y_pred, keys)
         metrics.update({f"{name}_per_{label}": value for name, value in grouped.items()})
 
     return metrics
+
+
+def validate_vectors(
+    y_true: np.ndarray, y_pred: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Reject broadcasting and invalid values that otherwise yield plausible scores."""
+
+    arrays = (np.asarray(y_true, dtype=float), np.asarray(y_pred, dtype=float))
+    if any(array.ndim != 1 for array in arrays) or arrays[0].shape != arrays[1].shape:
+        raise ValueError("Response vectors must be one-dimensional and have equal length.")
+    if not arrays[0].size or any(not np.isfinite(array).all() for array in arrays):
+        raise ValueError("Response vectors must be nonempty and finite.")
+    return arrays
 
 
 def grouped_metrics(

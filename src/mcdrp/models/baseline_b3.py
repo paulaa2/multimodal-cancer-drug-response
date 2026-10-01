@@ -44,6 +44,7 @@ from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import assemble_features
 from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +95,7 @@ def prepare_split_features(
 ) -> dict[str, tuple[pd.DataFrame, np.ndarray]]:
     """Build train/validation/test feature matrices for one split."""
 
-    data = cohort.merge(
-        split_assignments, on="pair_id", how="inner", validate="one_to_one"
-    )
+    data = cohort.merge(split_assignments, on="pair_id", how="inner", validate="one_to_one")
     pair_id_to_idx = {pid: idx for idx, pid in enumerate(cohort["pair_id"])}
 
     subsets: dict[str, tuple[pd.DataFrame, np.ndarray]] = {}
@@ -122,9 +121,7 @@ def fit_scaler(
     train_rows, x_train = subsets["train"]
     scaled_train = scaler.fit_transform(x_train)
 
-    scaled: dict[str, tuple[pd.DataFrame, np.ndarray]] = {
-        "train": (train_rows, scaled_train)
-    }
+    scaled: dict[str, tuple[pd.DataFrame, np.ndarray]] = {"train": (train_rows, scaled_train)}
     for label in ("validation", "test"):
         rows, features = subsets[label]
         scaled[label] = (rows, scaler.transform(features))
@@ -173,6 +170,7 @@ def fit_mlp_regressor(
     validation_fraction: float,
     random_state: int,
     device: str,
+    validation_data: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> MLPFit:
     """Fit the MLP using PyTorch when available, otherwise sklearn on CPU."""
 
@@ -191,6 +189,7 @@ def fit_mlp_regressor(
             early_stopping=early_stopping,
             validation_fraction=validation_fraction,
             random_state=random_state,
+            validation_data=validation_data,
         )
     return fit_torch_mlp(
         x_train,
@@ -204,6 +203,7 @@ def fit_mlp_regressor(
         validation_fraction=validation_fraction,
         random_state=random_state,
         device=torch_device,
+        validation_data=validation_data,
     )
 
 
@@ -219,6 +219,7 @@ def fit_sklearn_mlp(
     early_stopping: bool,
     validation_fraction: float,
     random_state: int,
+    validation_data: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> MLPFit:
     """CPU fallback when PyTorch is not installed."""
 
@@ -230,13 +231,35 @@ def fit_sklearn_mlp(
         batch_size=batch_size,
         learning_rate_init=learning_rate_init,
         max_iter=max_iter,
-        early_stopping=early_stopping,
+        early_stopping=early_stopping and validation_data is None,
         validation_fraction=validation_fraction,
         n_iter_no_change=12,
         random_state=random_state,
         verbose=False,
     )
-    model.fit(x_train, y_train)
+    if early_stopping and validation_data is not None:
+        x_val, y_val = validation_data
+        best_model = None
+        best_score = float("inf")
+        stale_epochs = 0
+        for _epoch in range(max_iter):
+            # partial_fit makes one pass over *all* training rows; the supplied
+            # validation groups are never used for optimizer updates.
+            model.partial_fit(x_train, y_train)
+            score = float(np.mean((model.predict(x_val) - y_val) ** 2))
+            if score < best_score - 1e-6:
+                best_score = score
+                best_model = copy.deepcopy(model)
+                stale_epochs = 0
+            else:
+                stale_epochs += 1
+                if stale_epochs >= 12:
+                    break
+        if best_model is None:
+            raise ValueError("MLP did not produce a finite validation score.")
+        model = best_model
+    else:
+        model.fit(x_train, y_train)
     return MLPFit(
         model=model,
         backend="sklearn",
@@ -259,6 +282,7 @@ def fit_torch_mlp(
     validation_fraction: float,
     random_state: int,
     device: str,
+    validation_data: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> MLPFit:
     """Fit a PyTorch MLP on CPU or CUDA."""
 
@@ -273,7 +297,12 @@ def fit_torch_mlp(
 
     train_idx = np.arange(len(features))
     val_idx: np.ndarray | None = None
-    if early_stopping and len(features) > 1 and validation_fraction > 0:
+    if (
+        early_stopping
+        and validation_data is None
+        and len(features) > 1
+        and validation_fraction > 0
+    ):
         shuffled = rng.permutation(len(features))
         val_size = max(1, int(len(features) * validation_fraction))
         val_idx = shuffled[:val_size]
@@ -302,7 +331,12 @@ def fit_torch_mlp(
 
     x_val: torch.Tensor | None = None
     y_val: torch.Tensor | None = None
-    if val_idx is not None:
+    if early_stopping and validation_data is not None:
+        x_val = torch.from_numpy(np.asarray(validation_data[0], dtype=np.float32)).to(device)
+        y_val = torch.from_numpy(
+            np.asarray(validation_data[1], dtype=np.float32).reshape(-1, 1)
+        ).to(device)
+    elif val_idx is not None:
         x_val = torch.from_numpy(features[val_idx]).to(device)
         y_val = torch.from_numpy(targets[val_idx]).to(device)
 
@@ -464,6 +498,7 @@ def run_b3_for_split(
         validation_fraction=validation_fraction,
         random_state=random_state,
         device=device,
+        validation_data=(subsets["validation"][1], subsets["validation"][0][target].to_numpy()),
     )
     elapsed = time.time() - t0
     logger.info(
@@ -537,6 +572,7 @@ def run_b3(
         logger.info("=== Processing split: %s ===", split_name)
         split_path = split_dir / f"{split_name}.csv"
         assignments = pd.read_csv(split_path)
+        validate_assignments(cohort, assignments)
 
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
@@ -623,12 +659,8 @@ def summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
                 "best_model": best["model"],
                 "rmse": float(best["rmse"]),
                 "mae": float(best["mae"]),
-                "pearson": float(best["pearson"])
-                if pd.notna(best["pearson"])
-                else None,
-                "spearman": float(best["spearman"])
-                if pd.notna(best["spearman"])
-                else None,
+                "pearson": float(best["pearson"]) if pd.notna(best["pearson"]) else None,
+                "spearman": float(best["spearman"]) if pd.notna(best["spearman"]) else None,
                 "r2": float(best["r2"]) if pd.notna(best["r2"]) else None,
                 "backend": best["backend"],
                 "device": best["device"],

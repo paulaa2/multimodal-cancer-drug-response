@@ -25,6 +25,7 @@ from mcdrp.features.drug_embeddings import (
     build_drug_embedding_matrix,
     load_drug_embeddings,
 )
+from mcdrp.features.embedding_audit import audit_embeddings
 from mcdrp.features.expression import build_cell_features
 from mcdrp.features.pathways import build_pathway_features
 from mcdrp.metrics import regression_metrics
@@ -32,6 +33,7 @@ from mcdrp.models.ablation_b6 import feature_matrix_from_cell_map
 from mcdrp.models.baseline_b2 import fit_xgboost, predict_xgboost, xgb_device_params
 from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +238,7 @@ def run_b7_pretrained(
     cohort_key_column: str = "drug_id",
     embedding_prefix: str | None = None,
     missing_embeddings: str = "error",
+    embedding_manifest: str | Path | None = None,
     n_estimators: int = 800,
     learning_rate: float = 0.025,
     max_depth: int = 5,
@@ -246,6 +249,14 @@ def run_b7_pretrained(
     """Run B7 pretrained embedding experiments."""
 
     cohort = pd.read_csv(cohort_path)
+    provenance: dict[str, Any] = {
+        "status": "unverified",
+        "reason": "No frozen embedding manifest supplied.",
+    }
+    if embedding_manifest is not None:
+        provenance = audit_embeddings(
+            str(cohort_path), str(drug_embeddings), str(embedding_manifest)
+        )
     split_dir = Path(split_dir)
     embedding_table = load_drug_embeddings(
         drug_embeddings,
@@ -280,6 +291,7 @@ def run_b7_pretrained(
     for split_name in split_names:
         logger.info("=== Processing B7 split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
 
@@ -298,9 +310,7 @@ def run_b7_pretrained(
             min_genes=min_pathway_genes,
         )
         pathway_names = pathway_pipeline.pathway_names
-        pca_variance_by_split[split_name] = float(
-            pca_pipeline.explained_variance_ratio_sum
-        )
+        pca_variance_by_split[split_name] = float(pca_pipeline.explained_variance_ratio_sum)
         logger.info(
             "B7 %s — PCA variance %.1f%%, pathways=%d",
             split_name,
@@ -337,6 +347,7 @@ def run_b7_pretrained(
         "expression_path": str(expression_path),
         "split_dir": str(split_dir),
         "drug_embeddings": embedding_table.source_path,
+        "embedding_provenance": provenance,
         "output": str(output),
         "predictions_output": str(predictions_output),
         "target": target,
@@ -377,12 +388,8 @@ def summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
                 "best_model": best["model"],
                 "rmse": float(best["rmse"]),
                 "mae": float(best["mae"]),
-                "pearson": float(best["pearson"])
-                if pd.notna(best["pearson"])
-                else None,
-                "spearman": float(best["spearman"])
-                if pd.notna(best["spearman"])
-                else None,
+                "pearson": float(best["pearson"]) if pd.notna(best["pearson"]) else None,
+                "spearman": float(best["spearman"]) if pd.notna(best["spearman"]) else None,
                 "r2": float(best["r2"]) if pd.notna(best["r2"]) else None,
             }
         )
@@ -437,6 +444,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="error",
         help="How to handle cohort drugs missing from the embedding table.",
     )
+    parser.add_argument("--embedding-manifest", default=None)
     parser.add_argument("--n-estimators", type=int, default=800)
     parser.add_argument("--learning-rate", type=float, default=0.025)
     parser.add_argument("--max-depth", type=int, default=5)
@@ -489,6 +497,7 @@ def main() -> None:
         cohort_key_column=args.cohort_key_column,
         embedding_prefix=args.embedding_prefix,
         missing_embeddings=args.missing_embeddings,
+        embedding_manifest=args.embedding_manifest,
         n_estimators=args.n_estimators,
         learning_rate=args.learning_rate,
         max_depth=args.max_depth,

@@ -9,8 +9,10 @@ frozen, inspectable, and easy to compare across experiments.
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +20,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from mcdrp.data.target_annotations import file_sha256
 
 logger = logging.getLogger(__name__)
 
@@ -181,9 +185,15 @@ def encode_smiles(
             )
 
     matrix = np.vstack(embeddings).astype(np.float32)
+    resolved_revision = getattr(model.config, "_commit_hash", None)
+    if resolved_revision is None and revision and re.fullmatch(r"[a-f0-9]{40}", revision):
+        resolved_revision = revision
     metadata = {
         "model_name": model_name,
         "revision": revision,
+        "resolved_revision": resolved_revision,
+        "torch_version": torch.__version__,
+        "transformers_version": importlib.metadata.version("transformers"),
         "device": actual_device,
         "pooling": pooling,
         "max_length": max_length,
@@ -206,14 +216,10 @@ def write_embedding_table(
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    embedding_columns = {
-        f"emb_{idx}": embeddings[:, idx] for idx in range(embeddings.shape[1])
-    }
+    embedding_columns = {f"emb_{idx}": embeddings[:, idx] for idx in range(embeddings.shape[1])}
     table = pd.concat(
         [
-            drugs[["drug_id", "canonical_smiles", "n_response_rows"]].reset_index(
-                drop=True
-            ),
+            drugs[["drug_id", "canonical_smiles", "n_response_rows"]].reset_index(drop=True),
             pd.DataFrame(
                 {
                     "encoder_name": model_name,
@@ -269,7 +275,7 @@ def create_drug_embeddings(
         embeddings,
         output,
         model_name=model_name,
-        revision=revision,
+        revision=metadata.get("resolved_revision") or revision,
         pooling=pooling,
     )
 
@@ -282,6 +288,12 @@ def create_drug_embeddings(
         "embedding_prefix": "emb_",
         "model_name": model_name,
         "revision": revision,
+        "resolved_revision": metadata.get("resolved_revision"),
+        "cohort_sha256": file_sha256(Path(cohort_path)),
+        "output_sha256": file_sha256(output_path),
+        "runtime": {
+            key: metadata.get(key) for key in ("torch_version", "transformers_version")
+        },
         "batch_size": batch_size,
         "max_length": max_length,
         "pooling": pooling,

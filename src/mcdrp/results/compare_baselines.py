@@ -150,6 +150,9 @@ def add_b0_improvements(metrics: pd.DataFrame) -> pd.DataFrame:
     output = metrics.copy()
 
     b0 = output.loc[output["stage"].eq("B0")].copy()
+    primary = b0.loc[b0["model"].eq("mean_effects")]
+    if not primary.empty:
+        b0 = primary
     best_b0 = (
         lowest_rmse_rows(b0, ["split_name", "subset"])[
             [

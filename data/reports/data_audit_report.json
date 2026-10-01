@@ -1,11 +1,11 @@
 {
-  "created_at_utc": "2026-09-14T16:56:24.200254+00:00",
+  "created_at_utc": "2026-09-30T17:24:59.449668+00:00",
   "project": "multimodal-cancer-drug-response",
   "sources": {
     "gdsc_response": {
       "name": "gdsc_response",
       "path": "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
-      "description": "GDSC drug-response table. Primary target should become ln(IC50).",
+      "description": "Local CSV conversion of GDSC2 27Oct23 fitted responses",
       "exists": true,
       "n_rows": 242036,
       "n_columns": 16,
@@ -32,56 +32,46 @@
           "role": "cell_line_id",
           "detected_column": "SANGER_MODEL_ID",
           "candidates": [
-            "COSMIC_ID",
-            "cosmic_id",
-            "SANGER_MODEL_ID",
-            "model_id"
+            "SANGER_MODEL_ID"
           ]
         },
         {
           "role": "cell_line_name",
           "detected_column": "CELL_LINE_NAME",
           "candidates": [
-            "CELL_LINE_NAME",
-            "cell_line_name",
-            "Cell line name"
+            "CELL_LINE_NAME"
           ]
         },
         {
           "role": "drug_id",
           "detected_column": "DRUG_ID",
           "candidates": [
-            "DRUG_ID",
-            "drug_id",
-            "drug_id_gdsc"
+            "DRUG_ID"
           ]
         },
         {
           "role": "drug_name",
           "detected_column": "DRUG_NAME",
           "candidates": [
-            "DRUG_NAME",
-            "drug_name",
-            "Drug name"
+            "DRUG_NAME"
           ]
         },
         {
           "role": "response",
           "detected_column": "LN_IC50",
           "candidates": [
-            "LN_IC50",
-            "ln_ic50",
-            "IC50",
-            "AUC"
+            "LN_IC50"
           ]
         }
       ],
-      "error": null
+      "error": null,
+      "sha256": "b4ebafad8dd98242a1d46e3f7ca6a2e0bf32081ae348e97853109b1147d761f3",
+      "size_bytes": 36343520
     },
     "depmap_metadata": {
       "name": "depmap_metadata",
       "path": "data/raw/Model.csv",
-      "description": "DepMap / CCLE cell-line metadata with stable DepMap identifiers.",
+      "description": "Frozen local DepMap model metadata; release must be recorded at download",
       "exists": true,
       "n_rows": 2154,
       "n_columns": 49,
@@ -141,8 +131,6 @@
           "role": "depmap_id",
           "detected_column": "ModelID",
           "candidates": [
-            "DepMap_ID",
-            "depmap_id",
             "ModelID"
           ]
         },
@@ -150,36 +138,25 @@
           "role": "sanger_model_id",
           "detected_column": "SangerModelID",
           "candidates": [
-            "SangerModelID",
-            "SANGER_MODEL_ID",
-            "sanger_model_id"
+            "SangerModelID"
           ]
         },
         {
           "role": "cell_line_name",
-          "detected_column": "StrippedCellLineName",
+          "detected_column": "CellLineName",
           "candidates": [
-            "cell_line_name",
-            "StrippedCellLineName",
-            "ModelName"
-          ]
-        },
-        {
-          "role": "primary_disease",
-          "detected_column": "OncotreePrimaryDisease",
-          "candidates": [
-            "primary_disease",
-            "OncotreePrimaryDisease",
-            "lineage"
+            "CellLineName"
           ]
         }
       ],
-      "error": null
+      "error": null,
+      "sha256": "ea4e0b2a3bc806f81df62689a5ae75f1a100135727a3d7b8a4c7ccc8815183f8",
+      "size_bytes": 697455
     },
     "depmap_expression": {
       "name": "depmap_expression",
       "path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
-      "description": "DepMap / CCLE gene-expression matrix. Rows should be cell lines.",
+      "description": "Frozen DepMap log(TPM+1) expression; use IsDefaultEntryForModel=Yes",
       "exists": true,
       "n_rows": 1775,
       "n_columns": 19221,
@@ -19411,18 +19388,18 @@
           "role": "depmap_id",
           "detected_column": "ModelID",
           "candidates": [
-            "DepMap_ID",
-            "depmap_id",
             "ModelID"
           ]
         }
       ],
-      "error": null
+      "error": null,
+      "sha256": "78ed2a2255660cc0234dd9a36f3b0519b34396a802b2369d01b21592195435c7",
+      "size_bytes": 303310468
     },
     "drug_structures": {
       "name": "drug_structures",
       "path": "data/raw/drug_structures.csv",
-      "description": "Drug structure table from ChEMBL, PubChem, or a curated GDSC mapping.",
+      "description": "Cached PubChem name mappings, requiring chemical identity review",
       "exists": true,
       "n_rows": 295,
       "n_columns": 10,
@@ -19443,35 +19420,90 @@
           "role": "drug_id",
           "detected_column": "drug_id",
           "candidates": [
-            "DRUG_ID",
-            "drug_id",
-            "compound_id",
-            "chembl_id",
-            "pubchem_cid"
+            "drug_id"
           ]
         },
         {
           "role": "drug_name",
           "detected_column": "drug_name",
           "candidates": [
-            "DRUG_NAME",
-            "drug_name",
-            "compound_name",
-            "pref_name"
+            "drug_name"
           ]
         },
         {
           "role": "smiles",
           "detected_column": "canonical_smiles",
           "candidates": [
-            "smiles",
-            "canonical_smiles",
-            "SMILES",
-            "CanonicalSMILES"
+            "canonical_smiles"
           ]
         }
       ],
-      "error": null
+      "error": null,
+      "sha256": "2511e11a6452af06feb67b378048b39ec4daf8b10821a77d52f17e0974c47a04",
+      "size_bytes": 54029
+    },
+    "prism_response": {
+      "name": "prism_response",
+      "path": "data/raw/secondary-screen-dose-response-curve-parameters.csv",
+      "description": "PRISM Repurposing 19Q4 secondary dose-response fits",
+      "exists": true,
+      "n_rows": 701004,
+      "n_columns": 20,
+      "columns": [
+        "broad_id",
+        "depmap_id",
+        "ccle_name",
+        "screen_id",
+        "upper_limit",
+        "lower_limit",
+        "slope",
+        "r2",
+        "auc",
+        "ec50",
+        "ic50",
+        "name",
+        "moa",
+        "target",
+        "disease.area",
+        "indication",
+        "smiles",
+        "phase",
+        "passed_str_profiling",
+        "row_name"
+      ],
+      "column_roles": [
+        {
+          "role": "depmap_id",
+          "detected_column": "depmap_id",
+          "candidates": [
+            "depmap_id"
+          ]
+        },
+        {
+          "role": "drug_name",
+          "detected_column": "name",
+          "candidates": [
+            "name"
+          ]
+        },
+        {
+          "role": "smiles",
+          "detected_column": "smiles",
+          "candidates": [
+            "smiles"
+          ]
+        },
+        {
+          "role": "response",
+          "detected_column": "auc",
+          "candidates": [
+            "auc"
+          ]
+        }
+      ],
+      "error": null,
+      "sha256": "88d1013506e0cd6f191a51c5f3fdd3fb2be54f8afb4e19a5d1f8538e81fbfec8",
+      "size_bytes": 264340589
     }
   }
 }

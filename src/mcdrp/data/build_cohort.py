@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 DEFAULT_EXPRESSION_PATH = (
@@ -180,6 +181,10 @@ def build_cohort(
         cohort["is_model_ready"] &= cohort["has_smiles"].fillna(False)
 
     model_ready = cohort.loc[cohort["is_model_ready"]].copy()
+    if model_ready.duplicated(["depmap_id", "drug_id"]).any():
+        raise ValueError("Repeated cell-drug responses need an explicit replicate policy.")
+    if not np.isfinite(model_ready["ln_ic50"].to_numpy(float)).all():
+        raise ValueError("Model-ready ln(IC50) responses must be finite.")
     model_ready = model_ready.sort_values(
         ["depmap_id", "drug_id", "ln_ic50"], kind="stable"
     ).reset_index(drop=True)

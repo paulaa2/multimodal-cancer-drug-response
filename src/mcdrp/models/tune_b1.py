@@ -18,6 +18,8 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import DEFAULT_SPLITS, EXPRESSION_PATH, assemble_features
+from mcdrp.results.predictions import TUNED_VARIANT, prediction_frame, write_predictions
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +82,7 @@ def tune_b1_for_split(
     *,
     split_name: str,
     target: str,
+    prediction_frames: list[pd.DataFrame] | None = None,
 ) -> list[dict[str, Any]]:
     """Tune B1 models on validation RMSE and evaluate selected configs on test."""
 
@@ -90,14 +93,12 @@ def tune_b1_for_split(
     val_rows, x_val = build_subset_features(
         cohort, data, fp_matrix, cell_feature_map, "validation"
     )
-    test_rows, x_test = build_subset_features(
-        cohort, data, fp_matrix, cell_feature_map, "test"
-    )
+    test_rows, x_test = build_subset_features(cohort, data, fp_matrix, cell_feature_map, "test")
     y_train = train_rows[target].to_numpy()
 
     candidates: list[tuple[str, dict[str, Any], Any]] = []
     for alpha in RIDGE_ALPHAS:
-        candidates.append(("ridge", {"alpha": alpha}, Ridge(alpha=alpha)))
+        candidates.append(("ridge", {"alpha": alpha}, Ridge(alpha=alpha, solver="lsqr")))
     for alpha in ELASTIC_ALPHAS:
         for l1_ratio in ELASTIC_L1_RATIOS:
             candidates.append(
@@ -110,7 +111,8 @@ def tune_b1_for_split(
                         max_iter=2000,
                         random_state=42,
                         selection="random",
-                        copy_X=False,
+                        copy_X=True,
+                        precompute=True,
                     ),
                 )
             )
@@ -157,6 +159,23 @@ def tune_b1_for_split(
             test_predictions,
             target,
         )
+        if prediction_frames is not None:
+            for subset, eval_rows, values in (
+                ("validation", val_rows, best_model.predict(x_val)),
+                ("test", test_rows, test_predictions),
+            ):
+                prediction_frames.append(
+                    prediction_frame(
+                        eval_rows,
+                        eval_rows[target].to_numpy(),
+                        values,
+                        stage="B1",
+                        model=best_name,
+                        split_name=split_name,
+                        subset=subset,
+                        variant=TUNED_VARIANT,
+                    )
+                )
         test_row["selected_by_validation"] = True
         rows.append(test_row)
 
@@ -169,6 +188,7 @@ def tune_b1(
     expression_path: str | Path = EXPRESSION_PATH,
     output: str | Path = "results/baselines/b1_tuning_metrics.csv",
     summary: str | Path = "data/reports/b1_tuning_summary.json",
+    predictions_output: str | Path = "results/predictions/b1_tuned.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -184,9 +204,11 @@ def tune_b1(
     logger.info("Fingerprint matrix shape: %s", fp_matrix.shape)
 
     all_rows: list[dict[str, Any]] = []
+    prediction_frames: list[pd.DataFrame] = []
     for split_name in split_names:
         logger.info("=== Tuning B1 split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
         pipeline, cell_feature_map = build_cell_features(
@@ -207,6 +229,7 @@ def tune_b1(
                 cell_feature_map,
                 split_name=split_name,
                 target=target,
+                prediction_frames=prediction_frames,
             )
         )
 
@@ -214,6 +237,7 @@ def tune_b1(
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+    write_predictions(prediction_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -258,6 +282,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Create the command-line parser."""
 
     parser = argparse.ArgumentParser(description="Tune B1 Ridge/ElasticNet baselines.")
+    parser.add_argument("--predictions-output", default="results/predictions/b1_tuned.csv")
     parser.add_argument("--cohort", default="data/processed/cohort_pairs.csv")
     parser.add_argument("--split-dir", default="data/processed/splits")
     parser.add_argument("--expression", default=EXPRESSION_PATH)
@@ -287,6 +312,7 @@ def main() -> None:
         split_dir=args.split_dir,
         expression_path=args.expression,
         output=args.output,
+        predictions_output=args.predictions_output,
         summary=args.summary,
         target=args.target,
         n_components=args.n_components,

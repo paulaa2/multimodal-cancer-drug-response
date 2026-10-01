@@ -1,0 +1,66 @@
+{
+  "created_at_utc": "2026-09-30T18:21:41.930184+00:00",
+  "status": "checks_passed_scientific_followup_documented",
+  "source_sha256": "966dc98160d5742a25eaa9255bff815569efac579ad4f30d35a56a218fe3ffe6",
+  "checks": {
+    "full_suite": {
+      "passed": 167,
+      "skipped": 0,
+      "python": "3.11",
+      "torch": "2.9.1+cu128"
+    },
+    "optional_torch_absent_suite": {
+      "passed": 156,
+      "skipped": 11,
+      "python": "3.13"
+    },
+    "ruff": "pass",
+    "mypy": {
+      "status": "pass",
+      "source_files": 52
+    },
+    "experiment_cli": {
+      "configs": 23,
+      "commands": 84,
+      "failures": 0
+    },
+    "cohort_and_six_splits": "pass",
+    "b2_b6_provenance_smoke": {
+      "rows": 180,
+      "matching_tuning": "accepted",
+      "changed_partition": "rejected_before_fit"
+    },
+    "strict_transfer_prediction_integrity": {
+      "seeds": [
+        7,
+        13,
+        42
+      ],
+      "status": "pass",
+      "saved_rmse_max_tolerance": 1e-12
+    },
+    "git_diff_check": "pass"
+  },
+  "refreshed_experiments": {
+    "cold_drug": {
+      "folds": 5,
+      "report": "data/reports/cold_drug_checked_summary.json"
+    },
+    "transfer_prism": {
+      "seeds": [
+        42,
+        7,
+        13
+      ],
+      "report": "data/reports/transfer_prism_replication_summary.json"
+    },
+    "diagnostics": "data/reports/transfer_diagnostics_summary.json"
+  },
+  "remaining_scientific_work": "docs/research_roadmap.md",
+  "audit_scope": "docs/repository_audit.md",
+  "notes": [
+    "Checks do not prove all scientific claims.",
+    "Other architectures and splits require refreshed training.",
+    "CI changes have not yet run on GitHub."
+  ]
+}

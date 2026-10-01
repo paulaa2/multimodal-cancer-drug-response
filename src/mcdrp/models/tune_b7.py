@@ -25,7 +25,9 @@ from mcdrp.models.pretrained_b7 import (
     EXPRESSION_PATH,
     assemble_b7_features,
 )
+from mcdrp.results.predictions import TUNED_VARIANT, prediction_frame, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +126,7 @@ def tune_b7_variant_for_split(
     n_estimators: int,
     early_stopping_rounds: int,
     device: str,
+    prediction_frames: list[pd.DataFrame] | None = None,
 ) -> list[dict[str, Any]]:
     """Tune one B7 feature variant for one split."""
 
@@ -174,9 +177,7 @@ def tune_b7_variant_for_split(
             device=actual_device,
         )
         rows.append(row)
-        fitted.append(
-            (params, model, row["rmse"], int(best_iteration), actual_device, elapsed)
-        )
+        fitted.append((params, model, row["rmse"], int(best_iteration), actual_device, elapsed))
         logger.info(
             "B7 %s / %s params=%s validation RMSE %.3f fitted in %.1fs",
             split_name,
@@ -203,6 +204,23 @@ def tune_b7_variant_for_split(
         best_iteration=best_iteration,
         device=best_device,
     )
+    if prediction_frames is not None:
+        for subset, eval_rows, values in (
+            ("validation", subsets["validation"], predict_xgboost(best_model, x_val)),
+            ("test", subsets["test"], test_predictions),
+        ):
+            prediction_frames.append(
+                prediction_frame(
+                    eval_rows,
+                    eval_rows[target].to_numpy(),
+                    values,
+                    stage="B7",
+                    model=model_name,
+                    split_name=split_name,
+                    subset=subset,
+                    variant=TUNED_VARIANT,
+                )
+            )
     test_row["selected_by_validation"] = True
     rows.append(test_row)
     return rows
@@ -223,6 +241,7 @@ def tune_b7_for_split(
     device: str,
     cohort_key_column: str,
     missing_embeddings: str,
+    prediction_frames: list[pd.DataFrame] | None = None,
 ) -> list[dict[str, Any]]:
     """Tune all requested B7 feature variants for one split."""
 
@@ -260,6 +279,7 @@ def tune_b7_for_split(
                 n_estimators=n_estimators,
                 early_stopping_rounds=early_stopping_rounds,
                 device=device,
+                prediction_frames=prediction_frames,
             )
         )
     return all_rows
@@ -272,6 +292,7 @@ def tune_b7(
     drug_embeddings: str | Path = "data/external/drug_embeddings.csv",
     output: str | Path = "results/models/b7_tuning_metrics.csv",
     summary: str | Path = "data/reports/b7_tuning_summary.json",
+    predictions_output: str | Path = "results/predictions/b7_tuned.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -304,11 +325,13 @@ def tune_b7(
     )
 
     all_rows: list[dict[str, Any]] = []
+    prediction_frames: list[pd.DataFrame] = []
     pathway_names: list[str] = []
     pca_variance_by_split: dict[str, float] = {}
     for split_name in split_names:
         logger.info("=== Tuning B7 split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
 
@@ -326,9 +349,7 @@ def tune_b7(
             min_genes=min_pathway_genes,
         )
         pathway_names = pathway_pipeline.pathway_names
-        pca_variance_by_split[split_name] = float(
-            pca_pipeline.explained_variance_ratio_sum
-        )
+        pca_variance_by_split[split_name] = float(pca_pipeline.explained_variance_ratio_sum)
         all_rows.extend(
             tune_b7_for_split(
                 cohort,
@@ -344,6 +365,7 @@ def tune_b7(
                 device=device,
                 cohort_key_column=cohort_key_column,
                 missing_embeddings=missing_embeddings,
+                prediction_frames=prediction_frames,
             )
         )
 
@@ -351,6 +373,7 @@ def tune_b7(
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+    write_predictions(prediction_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -410,6 +433,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Create the command-line parser."""
 
     parser = argparse.ArgumentParser(description="Tune B7 pretrained models.")
+    parser.add_argument("--predictions-output", default="results/predictions/b7_tuned.csv")
     parser.add_argument("--cohort", default="data/processed/cohort_pairs.csv")
     parser.add_argument("--split-dir", default="data/processed/splits")
     parser.add_argument("--expression", default=EXPRESSION_PATH)
@@ -460,6 +484,7 @@ def main() -> None:
         expression_path=args.expression,
         drug_embeddings=args.drug_embeddings,
         output=args.output,
+        predictions_output=args.predictions_output,
         summary=args.summary,
         target=args.target,
         n_components=args.n_components,

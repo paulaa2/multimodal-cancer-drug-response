@@ -299,14 +299,15 @@ def summarize_multiseed(metrics: pd.DataFrame) -> pd.DataFrame:
 
     present = [column for column in METRIC_COLUMNS if column in metrics.columns]
     rows: list[dict[str, Any]] = []
-    grouped = metrics.groupby(list(GROUP_COLUMNS), dropna=False)
+    group_columns = list(GROUP_COLUMNS)
+    if "variant" in metrics:
+        group_columns.insert(2, "variant")
+    if metrics.duplicated([*group_columns, "seed"]).any():
+        raise ValueError("Duplicate metric rows for the same model and seed.")
+    grouped = metrics.groupby(group_columns, dropna=False)
     for keys, group in grouped:
-        stage, model, split_name, subset = keys
         row: dict[str, Any] = {
-            "stage": stage,
-            "model": model,
-            "split_name": split_name,
-            "subset": subset,
+            **dict(zip(group_columns, keys, strict=True)),
             "n_seeds": int(group["seed"].nunique()),
             "seeds": ",".join(str(seed) for seed in sorted(group["seed"].unique())),
         }

@@ -31,9 +31,20 @@ conventional names in the literature.
 | `cold_drug` [LDO] | whole drugs | Can it generalize to an unseen compound? | drug design |
 | `cold_scaffold` | whole Bemis-Murcko scaffolds | Can it generalize to novel chemistry? | drug design, stricter |
 | `cold_both` | drugs and cell lines | Can it generalize when both are novel? | hardest setting |
+| `transfer_prism` | assay | Do GDSC-fitted models transfer to PRISM AUC? | cross-study |
 
 `random_pair` is a debugging and imputation setting, not evidence of
 generalization. Report it, but never lead with it.
+
+`transfer_prism` is not a cold split. Train and validation stay inside GDSC2
+(validation is the existing `random_pair` validation fold, so early stopping
+cannot see PRISM). Test is PRISM secondary-screen AUC for compounds matched to
+GDSC drugs by InChIKey and cell lines that already appear in the GDSC cohort.
+Overlapping drugs and cells are allowed: the question is assay shift, not
+unseen chemistry. The target is `auc`, not `ln_ic50`, because the two screens
+do not share a concentration grid. PRISM SMILES cells can list isomers
+comma-separated; each candidate is parsed and the first InChIKey that matches
+a GDSC drug is kept. Build with `python -m mcdrp.data.build_transfer_cohort`.
 
 `cold_tissue` is stricter than `cold_cell` because held-out cell lines share no
 lineage with training cell lines. `cold_scaffold` is stricter than `cold_drug`
@@ -71,9 +82,14 @@ numbers.
   The selection rule must be fixed before looking at test.
 - Keep every row of a held-out entity out of training, not just some rows.
 
-The tuning scripts encode this: candidates are ranked on validation, the
-selected candidate is marked `selected_by_validation`, and only that row is
-carried into the test comparison.
+Candidates are ranked on validation, the selected candidate is marked
+`selected_by_validation`, and only that candidate enters the test comparison.
+The B4/B5 runners currently compute candidate test predictions internally;
+the tuners do not use those scores to choose parameters. Test-ranked "best"
+tables are descriptive diagnostics and must never determine the selected model.
+Same-named splits from different folds/seeds are different partitions: do not
+import tuning decisions from another partition. Refreshed CV uses fixed settings
+and `--no-b2-tuned` to make this explicit.
 
 ## 3. Baselines
 
@@ -107,11 +123,12 @@ first is the single most common way to overstate a model.
 **Global.** `rmse`, `mae`, `pearson`, `spearman`, `r2`. Useful, but inflated by
 between-drug variance in potency.
 
-**Mean-effect normalized.** `r2_normalized`, `pearson_normalized`,
-`spearman_normalized`. Computed after subtracting the `mean_effects` prediction
-from both the true and the predicted response. What remains is the differential
-response, driven by interaction between cell-line state and drug properties.
-This is the biologically interesting part and the honest headline number.
+**Mean-effect normalized.** `r2_normalized = 1 - SSE_model / SSE_reference`.
+The denominator is the squared error of the train-fitted `mean_effects`
+reference, not the centered variance of residuals. Normalized Pearson/Spearman
+correlate `y - reference` with `prediction - reference`. Residuals can reflect
+interactions, omitted main effects, measurement noise and calibration bias;
+they are not a purified causal biological signal.
 
 **Stratified.** `pearson_per_drug`, `r2_per_drug`, `pearson_per_cell`,
 `r2_per_cell`, computed within each entity and averaged over entities. Groups
@@ -120,6 +137,16 @@ contributed.
 
 The reference is always fit on training rows only, so normalization introduces
 no leakage.
+
+Within-drug R² measures absolute prediction accuracy. Negative R² means more
+squared error than that evaluation group's response mean; it does not imply
+zero ranking skill. Report within-drug Spearman separately. Each metric can
+have a different number of eligible groups when a target or prediction is
+constant. Published GDSC/PRISM AUC values are not automatically comparable:
+dose windows, units, viability readouts and curve fits require harmonization.
+The separate shared-window cohort implements this endpoint comparison on
+identical retained observations; its exposure duration remains study-specific.
+See [roadmap 2–6](roadmap_2_6.md) for the fitting and eligibility protocol.
 
 ### Why this matters, measured in this cohort
 
@@ -158,15 +185,18 @@ A result table is complete when it has all of:
 Known gaps in the current results, which should be closed before any of this is
 written up as a finding:
 
-- **Single seed.** The comparison tables in the README are one run. The
-  multi-seed runner exists (`mcdrp.experiments.multiseed`); it reports mean and
-  spread and does not compute p-values. Until those replications are generated,
-  differences of a few percent are not interpretable.
+- **Uneven replication.** The corrected primary LDO comparison has five outer
+  folds; strict PRISM has three fitting seeds on one fixed partition. Other
+  architectures/splits still have historical results that require refreshed
+  training. Dispersion over folds or seeds does not establish significance.
 - **Pseudoreplication.** Pairs are not independent; the units of replication are
   cell lines and drugs. Significance claims must account for the grouping, so no
   significance is claimed.
-- **`cold_tissue` has baselines only.** No trained model has been run on it yet.
-- **Single source.** GDSC2 only, so nothing here speaks to cross-study transfer.
+- **Cross-study is one screen.** `transfer_prism` uses published `auc`, with
+  GDSC-only training/validation and overlapping drugs/cells in PRISM. Corrected
+  targets reduce absolute error but retain negative within-drug R² and modest
+  ranking. Seeds on that screen do not estimate independent-study uncertainty;
+  measured assay concordance is a diagnostic, not an accuracy upper bound.
 
 ## 6. Claim discipline
 
@@ -174,3 +204,27 @@ This is a preclinical cell-line modelling project. Cell-line drug response is an
 experimental proxy for clinical response, model attributions are not causal
 biomarkers, and cross-study transfer in this field is known to be poor. Claims
 should be phrased as representation-learning and generalization findings.
+
+## 7. Reserved calibration and negative controls
+
+Calibration is an optional fourth role, carved out of training entities without
+using outcomes. Its entities are excluded from training and validation, and
+`unused` records validation rows removed for that purpose. Test stays fixed.
+The scoring contract requires complete predictions and matching outcomes for
+each requested role; calibration labels never select a model or early stop.
+B0, B6 and RF can predict this role. Named cold splits also require calibration
+groups to obey their entity separation policy.
+
+Validation-fitted affine postprocessing and group-maximum conformal residuals
+use distinct datasets. Report row coverage, whole-entity coverage, width and
+bias together; apparent row coverage does not imply coverage of an entire
+cell/drug response profile. Assay-shift coverage is empirical. Paired entity
+bootstrap compares frozen predictions, conditional on fitted models, and does
+not represent uncertainty over a new independent study.
+
+Entity nulls permute features within complete partition-membership signatures,
+with consistent donors across repeated pairs and drug modalities. Save donor
+maps and fixed-point counts. Graph-only has no expression/cell encoder; its
+within-drug ranking is undefined by construction. Chemical matching and
+descriptor expressiveness are distinct: strict InChIKey matching does not make
+canonical-SMILES descriptors or the current graph encoder stereochemistry-aware.

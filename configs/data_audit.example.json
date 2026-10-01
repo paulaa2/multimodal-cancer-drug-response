@@ -1,0 +1,46 @@
+{
+  "project": "multimodal-cancer-drug-response",
+  "sources": {
+    "gdsc_response": {
+      "path": "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
+      "description": "Local CSV conversion of GDSC2 27Oct23 fitted responses",
+      "column_roles": {
+        "cell_line_id": ["SANGER_MODEL_ID"],
+        "cell_line_name": ["CELL_LINE_NAME"],
+        "drug_id": ["DRUG_ID"],
+        "drug_name": ["DRUG_NAME"],
+        "response": ["LN_IC50"]
+      }
+    },
+    "depmap_metadata": {
+      "path": "data/raw/Model.csv",
+      "description": "Frozen local DepMap model metadata; release must be recorded at download",
+      "column_roles": {
+        "depmap_id": ["ModelID"],
+        "sanger_model_id": ["SangerModelID"],
+        "cell_line_name": ["CellLineName"]
+      }
+    },
+    "depmap_expression": {
+      "path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+      "description": "Frozen DepMap log(TPM+1) expression; use IsDefaultEntryForModel=Yes",
+      "column_roles": {"depmap_id": ["ModelID"]}
+    },
+    "drug_structures": {
+      "path": "data/raw/drug_structures.csv",
+      "description": "Cached PubChem name mappings, requiring chemical identity review",
+      "column_roles": {
+        "drug_id": ["drug_id"], "drug_name": ["drug_name"],
+        "smiles": ["canonical_smiles"]
+      }
+    },
+    "prism_response": {
+      "path": "data/raw/secondary-screen-dose-response-curve-parameters.csv",
+      "description": "PRISM Repurposing 19Q4 secondary dose-response fits",
+      "column_roles": {
+        "depmap_id": ["depmap_id"], "drug_name": ["name"],
+        "smiles": ["smiles"], "response": ["auc"]
+      }
+    }
+  }
+}

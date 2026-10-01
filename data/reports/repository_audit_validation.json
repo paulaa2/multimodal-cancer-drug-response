@@ -1,0 +1,414 @@
+{
+  "created_at_utc": "2026-09-30T17:25:09.635274+00:00",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "cohort_schema",
+      "status": "pass",
+      "message": "Cohort schema and required values look valid.",
+      "details": {
+        "rows": 149364,
+        "cell_lines": 717,
+        "drugs": 238
+      }
+    },
+    {
+      "name": "split_random_pair",
+      "status": "pass",
+      "message": "Split file is complete and respects leakage policy.",
+      "details": {
+        "path": "data\\processed\\splits\\random_pair.csv",
+        "rows": 149364,
+        "by_split": {
+          "train": 104554,
+          "validation": 22405,
+          "test": 22405
+        },
+        "cell_overlap_train_validation": 716,
+        "cell_overlap_train_test": 715,
+        "drug_overlap_train_validation": 238,
+        "drug_overlap_train_test": 238
+      }
+    },
+    {
+      "name": "split_cold_cell",
+      "status": "pass",
+      "message": "Split file is complete and respects leakage policy.",
+      "details": {
+        "path": "data\\processed\\splits\\cold_cell.csv",
+        "rows": 149364,
+        "by_split": {
+          "train": 104294,
+          "validation": 22538,
+          "test": 22532
+        },
+        "cell_overlap_train_validation": 0,
+        "cell_overlap_train_test": 0,
+        "drug_overlap_train_validation": 238,
+        "drug_overlap_train_test": 238
+      }
+    },
+    {
+      "name": "split_cold_tissue",
+      "status": "pass",
+      "message": "Split file is complete and respects leakage policy.",
+      "details": {
+        "path": "data\\processed\\splits\\cold_tissue.csv",
+        "rows": 149364,
+        "by_split": {
+          "train": 113383,
+          "validation": 22425,
+          "test": 13556
+        },
+        "cell_overlap_train_validation": 0,
+        "cell_overlap_train_test": 0,
+        "drug_overlap_train_validation": 238,
+        "drug_overlap_train_test": 238
+      }
+    },
+    {
+      "name": "split_cold_drug",
+      "status": "pass",
+      "message": "Split file is complete and respects leakage policy.",
+      "details": {
+        "path": "data\\processed\\splits\\cold_drug.csv",
+        "rows": 149364,
+        "by_split": {
+          "train": 104631,
+          "validation": 23245,
+          "test": 21488
+        },
+        "cell_overlap_train_validation": 717,
+        "cell_overlap_train_test": 717,
+        "drug_overlap_train_validation": 0,
+        "drug_overlap_train_test": 0
+      }
+    },
+    {
+      "name": "split_cold_scaffold",
+      "status": "pass",
+      "message": "Split file is complete and respects leakage policy.",
+      "details": {
+        "path": "data\\processed\\splits\\cold_scaffold.csv",
+        "rows": 149364,
+        "by_split": {
+          "train": 102301,
+          "validation": 20970,
+          "test": 26093
+        },
+        "cell_overlap_train_validation": 716,
+        "cell_overlap_train_test": 717,
+        "drug_overlap_train_validation": 0,
+        "drug_overlap_train_test": 0
+      }
+    },
+    {
+      "name": "split_cold_both",
+      "status": "pass",
+      "message": "Split file is complete and respects leakage policy.",
+      "details": {
+        "path": "data\\processed\\splits\\cold_both.csv",
+        "rows": 149364,
+        "by_split": {
+          "train": 72629,
+          "validation": 3464,
+          "test": 3392
+        },
+        "cell_overlap_train_validation": 0,
+        "cell_overlap_train_test": 0,
+        "drug_overlap_train_validation": 0,
+        "drug_overlap_train_test": 0
+      }
+    },
+    {
+      "name": "standard_metric_files",
+      "status": "pass",
+      "message": "Required files are present.",
+      "details": {
+        "present": [
+          "B0",
+          "B1",
+          "B2",
+          "B3",
+          "B4_GNN",
+          "B5_hybrid_GNN"
+        ],
+        "optional_missing": []
+      }
+    },
+    {
+      "name": "tuning_metric_files",
+      "status": "pass",
+      "message": "Required files are present.",
+      "details": {
+        "present": [
+          "B1_tuned",
+          "B2_tuned",
+          "B3_tuned",
+          "B4_tuned",
+          "B5_tuned",
+          "B7_tuned"
+        ],
+        "optional_missing": []
+      }
+    },
+    {
+      "name": "metrics_B0",
+      "status": "pass",
+      "message": "B0 metric file has valid schema and values.",
+      "details": {
+        "path": "results\\baselines\\b0_metrics.csv",
+        "rows": 60,
+        "splits": [
+          "cold_both",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_tissue",
+          "random_pair"
+        ],
+        "subsets": [
+          "test",
+          "validation"
+        ],
+        "models": [
+          "cell_mean",
+          "drug_mean",
+          "global_mean",
+          "mean_effects",
+          "tissue_mean"
+        ],
+        "optional_null_metrics": {
+          "pearson": 28,
+          "spearman": 28
+        }
+      }
+    },
+    {
+      "name": "metrics_B1",
+      "status": "pass",
+      "message": "B1 metric file has valid schema and values.",
+      "details": {
+        "path": "results\\baselines\\b1_metrics.csv",
+        "rows": 24,
+        "splits": [
+          "cold_both",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_tissue",
+          "random_pair"
+        ],
+        "subsets": [
+          "test",
+          "validation"
+        ],
+        "models": [
+          "elastic_net",
+          "ridge"
+        ],
+        "optional_null_metrics": {}
+      }
+    },
+    {
+      "name": "metrics_B2",
+      "status": "pass",
+      "message": "B2 metric file has valid schema and values.",
+      "details": {
+        "path": "results\\baselines\\b2_metrics.csv",
+        "rows": 12,
+        "splits": [
+          "cold_both",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_tissue",
+          "random_pair"
+        ],
+        "subsets": [
+          "test",
+          "validation"
+        ],
+        "models": [
+          "xgboost"
+        ],
+        "optional_null_metrics": {}
+      }
+    },
+    {
+      "name": "metrics_B3",
+      "status": "pass",
+      "message": "B3 metric file has valid schema and values.",
+      "details": {
+        "path": "results\\baselines\\b3_metrics.csv",
+        "rows": 12,
+        "splits": [
+          "cold_both",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_tissue",
+          "random_pair"
+        ],
+        "subsets": [
+          "test",
+          "validation"
+        ],
+        "models": [
+          "mlp"
+        ],
+        "optional_null_metrics": {}
+      }
+    },
+    {
+      "name": "metrics_B4_GNN",
+      "status": "pass",
+      "message": "B4_GNN metric file has valid schema and values.",
+      "details": {
+        "path": "results\\baselines\\b4_gnn_metrics.csv",
+        "rows": 12,
+        "splits": [
+          "cold_both",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_tissue",
+          "random_pair"
+        ],
+        "subsets": [
+          "test",
+          "validation"
+        ],
+        "models": [
+          "gnn"
+        ],
+        "optional_null_metrics": {}
+      }
+    },
+    {
+      "name": "metrics_B5_hybrid_GNN",
+      "status": "pass",
+      "message": "B5_hybrid_GNN metric file has valid schema and values.",
+      "details": {
+        "path": "results\\models\\b5_hybrid_gnn_metrics.csv",
+        "rows": 12,
+        "splits": [
+          "cold_both",
+          "cold_cell",
+          "cold_drug",
+          "cold_scaffold",
+          "cold_tissue",
+          "random_pair"
+        ],
+        "subsets": [
+          "test",
+          "validation"
+        ],
+        "models": [
+          "hybrid_gnn"
+        ],
+        "optional_null_metrics": {}
+      }
+    },
+    {
+      "name": "tuning_B1_tuned",
+      "status": "pass",
+      "message": "Tuning file has validation candidates and selected test rows.",
+      "details": {
+        "path": "results\\baselines\\b1_tuning_metrics.csv",
+        "rows": 108,
+        "selected_test_rows": 12
+      }
+    },
+    {
+      "name": "tuning_B2_tuned",
+      "status": "pass",
+      "message": "Tuning file has validation candidates and selected test rows.",
+      "details": {
+        "path": "results\\baselines\\b2_tuning_metrics.csv",
+        "rows": 102,
+        "selected_test_rows": 6
+      }
+    },
+    {
+      "name": "tuning_B3_tuned",
+      "status": "pass",
+      "message": "Tuning file has validation candidates and selected test rows.",
+      "details": {
+        "path": "results\\baselines\\b3_tuning_metrics.csv",
+        "rows": 54,
+        "selected_test_rows": 6
+      }
+    },
+    {
+      "name": "tuning_B4_tuned",
+      "status": "pass",
+      "message": "Tuning file has validation candidates and selected test rows.",
+      "details": {
+        "path": "results\\baselines\\b4_tuning_metrics.csv",
+        "rows": 30,
+        "selected_test_rows": 6
+      }
+    },
+    {
+      "name": "tuning_B5_tuned",
+      "status": "pass",
+      "message": "Tuning file has validation candidates and selected test rows.",
+      "details": {
+        "path": "results\\models\\b5_tuning_metrics.csv",
+        "rows": 30,
+        "selected_test_rows": 6
+      }
+    },
+    {
+      "name": "tuning_B7_tuned",
+      "status": "pass",
+      "message": "Tuning file has validation candidates and selected test rows.",
+      "details": {
+        "path": "results\\models\\b7_tuning_metrics.csv",
+        "rows": 408,
+        "selected_test_rows": 24
+      }
+    },
+    {
+      "name": "comparison_schema",
+      "status": "pass",
+      "message": "Comparison table schema is valid.",
+      "details": {
+        "rows": 372,
+        "stages": [
+          "B0",
+          "B1",
+          "B1_tuned",
+          "B2",
+          "B2_tuned",
+          "B3",
+          "B3_tuned",
+          "B4_GNN",
+          "B4_tuned",
+          "B5_hybrid_GNN",
+          "B5_tuned",
+          "B6_ablation",
+          "B7_pretrained",
+          "B7_tuned"
+        ]
+      }
+    },
+    {
+      "name": "comparison_best_rows",
+      "status": "pass",
+      "message": "Best-by-split table matches comparison table.",
+      "details": {
+        "rows": 12
+      }
+    },
+    {
+      "name": "comparison_summary",
+      "status": "pass",
+      "message": "Comparison summary matches best table size.",
+      "details": {
+        "best_rows": 12
+      }
+    }
+  ]
+}

@@ -26,6 +26,7 @@ from mcdrp.models.baseline_b1 import assemble_features
 from mcdrp.results.predictions import prediction_frame, write_predictions
 from mcdrp.results.selection import lowest_rmse_rows
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +46,7 @@ def run_b2_for_split(
 ) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run XGBoost for one split configuration."""
 
-    data = cohort.merge(
-        split_assignments, on="pair_id", how="inner", validate="one_to_one"
-    )
+    data = cohort.merge(split_assignments, on="pair_id", how="inner", validate="one_to_one")
     pair_id_to_idx = {pid: idx for idx, pid in enumerate(cohort["pair_id"])}
 
     results: list[dict[str, Any]] = []
@@ -59,9 +58,7 @@ def run_b2_for_split(
         mask = data["split"].eq(label)
         rows = data.loc[mask].copy()
         indices = np.array([pair_id_to_idx[pid] for pid in rows["pair_id"]])
-        X = assemble_features(
-            rows, fp_matrix, cell_feature_map, row_indices=indices
-        )
+        X = assemble_features(rows, fp_matrix, cell_feature_map, row_indices=indices)
         subsets[label] = (rows, X)
 
     train_rows, X_train = subsets["train"]
@@ -180,6 +177,7 @@ def run_b2(
         logger.info("=== Processing split: %s ===", split_name)
         split_path = split_dir / f"{split_name}.csv"
         assignments = pd.read_csv(split_path)
+        validate_assignments(cohort, assignments)
 
         # Determine training cell lines for leakage-safe PCA.
         merged = cohort.merge(assignments, on="pair_id", how="inner")
@@ -254,12 +252,8 @@ def _summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
                 "best_model": best["model"],
                 "rmse": float(best["rmse"]),
                 "mae": float(best["mae"]),
-                "pearson": float(best["pearson"])
-                if pd.notna(best["pearson"])
-                else None,
-                "spearman": float(best["spearman"])
-                if pd.notna(best["spearman"])
-                else None,
+                "pearson": float(best["pearson"]) if pd.notna(best["pearson"]) else None,
+                "spearman": float(best["spearman"]) if pd.notna(best["spearman"]) else None,
                 "r2": float(best["r2"]) if pd.notna(best["r2"]) else None,
                 "best_iteration": int(best["best_iteration"]),
                 "device": best["device"],
@@ -268,10 +262,28 @@ def _summarize_best(metrics: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
+def xgb_selection_context(
+    expression_path: str | Path,
+    n_components: int,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    """Shared feature provenance for B2 tuning and B6 parameter reuse."""
+
+    from mcdrp.data.audit import file_sha256
+
+    return {
+        "expression_sha256": file_sha256(Path(expression_path)),
+        "n_components": n_components,
+        "pca_random_state": random_state,
+        "expression_profiles": "default_unique_v1",
+    }
+
+
 def load_selected_xgb_params(
     path: str | Path | None,
     *,
     fallback: dict[str, Any],
+    expected_fingerprints: dict[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Load per-split XGBoost params chosen on validation by ``tune_b2``.
 
@@ -279,6 +291,7 @@ def load_selected_xgb_params(
     still run before B2 has been tuned. Selected test rows are preferred; if a
     table has no ``selected_by_validation`` column, the lowest validation RMSE
     per split is used instead.
+    B6 supplies expected fingerprints and rejects unverifiable legacy tables.
     """
 
     if path is None:
@@ -302,15 +315,22 @@ def load_selected_xgb_params(
         selected = pd.DataFrame()
 
     if selected.empty:
-        selected = lowest_rmse_rows(
-            table.loc[table["subset"].eq("validation")], ["split_name"]
-        )
+        selected = lowest_rmse_rows(table.loc[table["subset"].eq("validation")], ["split_name"])
 
     by_split: dict[str, dict[str, Any]] = {}
     for row in selected.to_dict("records"):
+        split_name = str(row["split_name"])
+        if expected_fingerprints is not None:
+            if split_name not in expected_fingerprints:
+                continue
+            if row.get("selection_fingerprint") != expected_fingerprints[split_name]:
+                raise ValueError(
+                    f"B2 tuning provenance does not match {split_name}. Rerun tuning "
+                    "on the current partition/data or use --no-b2-tuned."
+                )
         raw_params = row.get("params", "{}")
         parsed = json.loads(raw_params) if isinstance(raw_params, str) else {}
-        by_split[str(row["split_name"])] = {**fallback, **parsed}
+        by_split[split_name] = {**fallback, **parsed}
     return by_split
 
 

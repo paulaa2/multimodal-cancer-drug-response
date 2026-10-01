@@ -1,0 +1,17 @@
+{
+  "cohort": "data/processed/transfer_checked_pairs.csv",
+  "assignments": "data/processed/transfer_checked/transfer_prism.csv",
+  "drug_map": "data/mappings/prism_gdsc_drug_map_strict.csv",
+  "prism_metadata": "data/raw/secondary-screen-dose-response-curve-parameters.csv",
+  "sources": [
+    {"study": "gdsc2", "path": "data/raw/harmonization/GDSCv2_Input.csv", "dose_scale": "linear_um", "exposure_hours": null, "sha256": "1dff4c935fcd06a6a8e935fde4690104deadbc2d6801c4498963e7155ea7eec7"},
+    {"study": "prism", "path": "data/raw/harmonization/PRISM_Input.csv", "dose_scale": "log10_um", "replicate_prefix": "MTS010", "exposure_hours": null, "sha256": "0b876e18ddd79129ca5fa10ae792b2e9f74d83660c5aa5cfa32fc8cd4093aef7"}
+  ],
+  "log10_um_lower": -1.9,
+  "log10_um_upper": 0.9,
+  "workers": 4,
+  "curve_fits": "results/harmonization/curve_fits.csv",
+  "output_cohort": "data/processed/harmonized_transfer_pairs.csv",
+  "output_assignments": "data/processed/harmonized_transfer/transfer_prism.csv",
+  "summary": "data/reports/harmonization_summary.json"
+}

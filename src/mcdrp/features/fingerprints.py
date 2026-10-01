@@ -38,14 +38,16 @@ def smiles_to_morgan(
     A zero vector is returned when the SMILES cannot be parsed.
     """
     from rdkit import Chem
-    from rdkit.Chem import AllChem
+    from rdkit.Chem import rdFingerprintGenerator
 
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(smiles) if isinstance(smiles, str) else None
     if mol is None:
         logger.warning("Could not parse SMILES: %s — returning zero vector.", smiles)
         return np.zeros(n_bits, dtype=np.uint8)
 
-    fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius, nBits=n_bits)
+    fp = rdFingerprintGenerator.GetMorganGenerator(radius=radius, fpSize=n_bits).GetFingerprint(
+        mol
+    )
     arr = np.zeros(n_bits, dtype=np.uint8)
     fp_on_bits = fp.GetOnBits()
     arr[list(fp_on_bits)] = 1
@@ -83,12 +85,15 @@ def build_fingerprint_matrix(
     n_rows = len(smiles_series)
     matrix = np.zeros((n_rows, n_bits), dtype=np.uint8)
     n_failed = 0
+    cache: dict[str, np.ndarray] = {}
 
     for idx, smiles in enumerate(smiles_series):
         if not isinstance(smiles, str) or not smiles.strip():
             n_failed += 1
             continue
-        vec = smiles_to_morgan(smiles, radius=radius, n_bits=n_bits)
+        if smiles not in cache:
+            cache[smiles] = smiles_to_morgan(smiles, radius=radius, n_bits=n_bits)
+        vec = cache[smiles]
         matrix[idx] = vec
         if vec.sum() == 0:
             n_failed += 1

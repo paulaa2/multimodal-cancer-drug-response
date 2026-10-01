@@ -21,6 +21,10 @@ DEFAULT_SPLITS = (
     "cold_scaffold",
     "cold_both",
 )
+TRANSFER_SPLIT = "transfer_prism"
+# CLI choices include the cross-study split; builders for DEFAULT_SPLITS do not
+# create it. python -m mcdrp.data.build_transfer_cohort writes it separately.
+KNOWN_SPLIT_CHOICES = (*DEFAULT_SPLITS, TRANSFER_SPLIT)
 
 # DepMap Oncotree lineage, used as the tissue-of-origin grouping for cold_tissue.
 TISSUE_COLUMN = "oncotree_lineage"
@@ -252,6 +256,10 @@ def summarize_split(cohort: pd.DataFrame, assignments: pd.DataFrame) -> dict[str
             set(train["drug_id"]) & set(validation["drug_id"])
         ),
         "drug_overlap_train_test": sorted(set(train["drug_id"]) & set(test["drug_id"])),
+        "cell_overlap_validation_test": column_overlap(validation, test, "depmap_id"),
+        "drug_overlap_validation_test": column_overlap(validation, test, "drug_id"),
+        "scaffold_overlap_validation_test": scaffold_overlap(validation, test),
+        "tissue_overlap_validation_test": column_overlap(validation, test, TISSUE_COLUMN),
         "scaffold_overlap_train_validation": scaffold_overlap(
             train,
             validation,
@@ -315,6 +323,7 @@ def validate_no_leakage(split_name: str, summary: dict[str, Any]) -> None:
         leaked = (
             summary[f"{entity}_overlap_train_validation"]
             or summary[f"{entity}_overlap_train_test"]
+            or summary.get(f"{entity}_overlap_validation_test", [])
         )
         if leaked:
             raise ValueError(f"{label} leakage detected in {split_name}.")

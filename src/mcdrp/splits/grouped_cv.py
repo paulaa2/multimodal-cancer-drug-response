@@ -24,6 +24,10 @@ Each fold is written as its own directory mirroring the flat split layout::
 so every model consumes a fold unchanged, by pointing ``--split-dir`` at it.
 No model or tuner needs to know that cross-validation exists.
 
+The generic default cold-drug grouping is the record's drug ID. Stable v1
+explicitly overrides it with complete chemical identities to keep alias IDs
+in the same subset. Historical ID-based folds are a separate protocol.
+
 Usage:
 
     python -m mcdrp.splits.grouped_cv --splits cold_drug cold_scaffold
@@ -112,8 +116,8 @@ def assign_group_folds(
     estimate can be trusted.
     """
 
-    if n_folds < 2:
-        raise ValueError("Cross-validation needs at least two folds.")
+    if n_folds < 3:
+        raise ValueError("Train/validation/test cross-validation needs at least three folds.")
     if n_groups < n_folds:
         raise ValueError(
             f"Cannot build {n_folds} folds from {n_groups} groups: "
@@ -132,6 +136,7 @@ def fold_assignments(
     fold: int,
     n_folds: int,
     seed: int,
+    group_column: str | None = None,
 ) -> pd.DataFrame:
     """Build one fold's train/validation/test assignment table.
 
@@ -142,7 +147,11 @@ def fold_assignments(
     """
 
     annotated = annotate_group_column(cohort, split_name)
-    column = GROUP_COLUMN_BY_SPLIT[split_name]
+    if not 0 <= fold < n_folds:
+        raise ValueError("fold must be between zero and n_folds - 1.")
+    column = group_column or GROUP_COLUMN_BY_SPLIT[split_name]
+    if column not in annotated or annotated[column].isna().any():
+        raise ValueError(f"The grouping column {column} must exist and be non-null.")
 
     groups = pd.Series(annotated[column].dropna().unique()).sort_values().to_numpy()
     # Fold membership must not depend on which fold is being built, so the
@@ -175,6 +184,7 @@ def build_grouped_cv(
     seed: int = 42,
     n_folds: int = DEFAULT_N_FOLDS,
     split_names: tuple[str, ...] = ("cold_drug", "cold_scaffold"),
+    group_columns: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Write one split-dir per fold and a summary describing fold balance."""
 
@@ -196,11 +206,19 @@ def build_grouped_cv(
     }
 
     for split_name in split_names:
+        group_column = (group_columns or {}).get(split_name)
         fold_entries = []
         for fold in range(n_folds):
             assignments = fold_assignments(
-                cohort, split_name, fold=fold, n_folds=n_folds, seed=seed
+                cohort, split_name, fold=fold, n_folds=n_folds, seed=seed,
+                group_column=group_column,
             )
+            if group_column:
+                grouped = cohort[["pair_id", group_column]].merge(
+                    assignments, on="pair_id", validate="one_to_one"
+                )
+                if grouped.groupby(group_column)["split"].nunique().gt(1).any():
+                    raise ValueError("A grouping entity crosses fold subsets.")
             summary = summarize_split(cohort, assignments)
             validate_no_leakage(split_name, summary)
 
@@ -226,9 +244,11 @@ def build_grouped_cv(
 
         report["splits"][split_name] = {
             "policy": expected_overlap_policy(split_name),
-            "group_column": GROUP_COLUMN_BY_SPLIT[split_name],
+            "group_column": group_column or GROUP_COLUMN_BY_SPLIT[split_name],
             "folds": fold_entries,
-            "test_coverage": test_coverage(cohort, split_name, fold_entries, n_folds),
+            "test_coverage": test_coverage(
+                cohort, split_name, fold_entries, n_folds, group_column=group_column
+            ),
             "fold_balance": fold_balance(fold_entries),
         }
 
@@ -245,6 +265,8 @@ def test_coverage(
     split_name: str,
     fold_entries: list[dict[str, Any]],
     n_folds: int,
+    *,
+    group_column: str | None = None,
 ) -> dict[str, Any]:
     """Confirm the folds jointly test every group exactly once.
 
@@ -253,7 +275,7 @@ def test_coverage(
     """
 
     annotated = annotate_group_column(cohort, split_name)
-    column = GROUP_COLUMN_BY_SPLIT[split_name]
+    column = group_column or GROUP_COLUMN_BY_SPLIT[split_name]
     all_groups = set(annotated[column].dropna().unique())
 
     tested: list[Any] = []

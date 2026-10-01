@@ -46,7 +46,7 @@ def atom_features(atom: Any) -> np.ndarray:
     offset += 6
     features[offset + min(atom.GetTotalNumHs(), 4)] = 1.0
     offset += 5
-    features[offset + min(atom.GetFormalCharge() + 2, 4)] = 1.0
+    features[offset + max(0, min(atom.GetFormalCharge() + 2, 4))] = 1.0
     offset += 5
     features[offset] = float(atom.GetIsAromatic())
     features[offset + 1] = float(atom.IsInRing())

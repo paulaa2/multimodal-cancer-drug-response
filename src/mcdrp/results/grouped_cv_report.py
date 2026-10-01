@@ -6,9 +6,8 @@ its own training rows, so `r2_normalized` is only defined relative to that
 fold's reference. Pooling first would compare every fold against one arbitrary
 reference and quietly change what the normalized metrics mean.
 
-Averaging per-fold metrics also produces the thing a single partition could
-never give: the spread across folds. That spread is the honest error bar on a
-cold-split claim, and it is reported alongside the mean.
+Averaging per-fold metrics also reports dispersion across held-out groups.
+This spread is not a confidence interval or an independent-study error bar.
 
 As in `mcdrp.experiments.multiseed`, no p-values are produced. Folds share
 training data and the units of replication are drugs and cell lines, so a
@@ -88,8 +87,7 @@ def fold_metrics(
             prediction_paths = [single] if single.exists() else []
         if not prediction_paths:
             raise FileNotFoundError(
-                f"No predictions for fold {fold} of {split_name} under "
-                f"{predictions_dir}."
+                f"No predictions for fold {fold} of {split_name} under {predictions_dir}."
             )
 
         fold_split_dir = cv_dir / f"fold_{fold}"
@@ -100,9 +98,7 @@ def fold_metrics(
             )
 
         predictions = load_predictions(prediction_paths)
-        table = build_metrics_report(
-            predictions, cohort, fold_split_dir, target=target
-        )
+        table = build_metrics_report(predictions, cohort, fold_split_dir, target=target)
         table.insert(0, "fold", fold)
         tables.append(table)
 
@@ -116,6 +112,12 @@ def aggregate_folds(metrics: pd.DataFrame) -> pd.DataFrame:
     held-out groups change. It is not a significance test.
     """
 
+    if metrics.duplicated([*AGGREGATE_KEYS, "fold"]).any():
+        raise ValueError("Duplicate metric rows for the same model and fold.")
+    expected = set(metrics["fold"])
+    for _keys, group in metrics.groupby(list(AGGREGATE_KEYS), dropna=False):
+        if set(group["fold"]) != expected:
+            raise ValueError("All compared models must cover the same CV folds.")
     present = [column for column in AGGREGATED_METRICS if column in metrics.columns]
     grouped = metrics.groupby(list(AGGREGATE_KEYS), as_index=False, dropna=False)
 
@@ -141,6 +143,7 @@ def run_grouped_cv_report(
     cohort_path: str | Path = "data/processed/cohort_pairs.csv",
     output: str | Path | None = None,
     summary: str | Path | None = None,
+    report: str | Path | None = None,
     *,
     target: str = "ln_ic50",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -170,10 +173,45 @@ def run_grouped_cv_report(
     aggregated = aggregate_folds(per_fold)
 
     output.parent.mkdir(parents=True, exist_ok=True)
+    summary.parent.mkdir(parents=True, exist_ok=True)
     per_fold.to_csv(output, index=False)
     aggregated.to_csv(summary, index=False)
 
-    report_path = summary.with_suffix(".json")
+    test_metrics = per_fold.loc[per_fold["subset"].eq("test")]
+    references = test_metrics.loc[
+        test_metrics["stage"].eq("B0")
+        & test_metrics["model"].eq("mean_effects")
+        & test_metrics["variant"].eq("standard")
+    ].set_index("fold")["rmse"]
+    paired_rows = []
+    if not references.empty:
+        for keys, group in test_metrics.groupby(["stage", "model", "variant"]):
+            deltas = group["rmse"] - group["fold"].map(references)
+            paired_rows.append(
+                {
+                    "stage": keys[0],
+                    "model": keys[1],
+                    "variant": keys[2],
+                    "n_folds": len(group),
+                    "paired_rmse_delta_mean": float(deltas.mean()),
+                    "paired_rmse_delta_std": float(deltas.std()) if len(deltas) > 1 else None,
+                    "folds_won": int(deltas.lt(0).sum()),
+                }
+            )
+    selected = [
+        *AGGREGATE_KEYS,
+        "n_folds",
+        "n_rows_total",
+        "rmse_mean",
+        "rmse_std",
+        "r2_normalized_mean",
+        "spearman_per_drug_mean",
+        "r2_per_drug_mean",
+    ]
+    selected = [column for column in selected if column in aggregated]
+    test_summary = aggregated.loc[aggregated["subset"].eq("test"), selected]
+    report_path = Path(report) if report is not None else summary.with_suffix(".json")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     with report_path.open("w", encoding="utf-8") as handle:
         json.dump(
             {
@@ -185,6 +223,8 @@ def run_grouped_cv_report(
                 "fold_metrics_path": str(output).replace("\\", "/"),
                 "aggregated_path": str(summary).replace("\\", "/"),
                 "hypothesis_tests": "none",
+                "test_summary": json.loads(test_summary.to_json(orient="records")),
+                "paired_deltas_vs_mean_effects": paired_rows,
                 "note": (
                     "Metrics are computed per fold against that fold's own "
                     "mean-effects reference, then averaged. The standard "
@@ -227,6 +267,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--output", default=None, help="Per-fold metrics CSV.")
     parser.add_argument("--summary", default=None, help="Aggregated metrics CSV.")
+    parser.add_argument("--report", default=None, help="Compact JSON report path.")
     parser.add_argument("--target", default="ln_ic50", help="Regression target column.")
     return parser
 
@@ -242,6 +283,7 @@ def main() -> None:
         cohort_path=args.cohort,
         output=args.output,
         summary=args.summary,
+        report=args.report,
         target=args.target,
     )
 
