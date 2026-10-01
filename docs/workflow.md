@@ -7,8 +7,13 @@ process that nobody needs.
 
 ## Environment
 
-The package uses a `src/` layout, so it must be installed to be importable as
-`mcdrp`. Do this once per environment:
+For the frozen release use [stable v1](stable_v1.md), with its complete Windows
+lock and new output directory. The generic setup below supports development
+and experimental architectures, not certification of stable numerical results.
+
+For general development, install the package's `src/` layout to make `mcdrp`
+importable. The frozen runner configures its source path explicitly. For a
+development environment:
 
 ```powershell
 conda create -n mcdrp python=3.12
@@ -62,8 +67,11 @@ pre-commit install
 Notes:
 
 - Tests that need PyTorch skip themselves when it is absent, so the suite is
-  runnable without the `gpu` extra. CI does not install torch, which means the
-  B4/B5 collate tests are skipped there and must be run locally.
+  runnable without the `gpu` extra. CI's Python 3.12 entry installs CPU torch
+  and executes graph/gradient checks. Actual CUDA experiments remain local.
+- `test_configs.py` parses the real CLI arguments in every versioned config
+  without training. Dry runs alone check command construction, not argparse
+  compatibility.
 - `mypy` sets `no_site_packages`. The stubs shipped inside the RDKit wheel
   contain a syntax error that aborts the whole run, and a syntax error in a stub
   cannot be suppressed per-module. The cost is that third-party signatures are
@@ -96,11 +104,9 @@ Branch naming, by intent:
 
 Rules that matter for this project:
 
-- **One concern per branch.** The current `gnn_test` branch accumulated scaffold
-  splits, experiment configs, and pathway ablations in a single commit. That is
-  three reviewable changes and a name that describes none of them.
-- **Delete the branch after merging.** Long-lived feature branches are what
-  produced the drift this repository is recovering from.
+- **One concern per branch.** Keep implementation and its verification
+  reviewable, with a name describing the final scope.
+- **Delete the branch after merging.** Keep completed work on the main branch.
 - **Do not branch per experiment run.** An experiment that only changes
   hyperparameters or splits is a config in `configs/experiments/` plus a run
   manifest, not a branch. Branch only when code changes.

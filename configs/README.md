@@ -1,5 +1,11 @@
 # Experiment configs
 
+`stable_v1.json` is the frozen release contract. Its dedicated runner rebuilds
+raw preprocessing, train-fitted features, models, test reports and notebook in
+a new output directory. See [stable v1](../docs/stable_v1.md). Configurations
+under `experiments/` also include historical/experimental architectures and
+are not all part of this release.
+
 JSON files in this directory define reproducible experiment pipelines. Run them
 with:
 
@@ -49,3 +55,42 @@ are left in place.
 The B7 configs require an external embedding table at
 `data/external/drug_embeddings.csv`; see `docs/external_embeddings.md` for the
 expected format.
+
+## Corrected audit checkpoint
+
+`transfer_prism_multiseed.json` builds the strict transfer cohort and evaluates
+three fitting seeds in `results/transfer_strict/`. Run it before
+`cold_drug_checked.json`, whose final diagnostics read that strict cohort.
+The cold-drug config refreshes five existing folds in `results/cv_checked/`
+with default expression profiles and fixed model settings. It needs folds built
+by `mcdrp.splits.grouped_cv`, and explicitly uses `--no-b2-tuned`.
+
+These configs and small JSON reports preserve the exploratory audit checkpoint. Other configs
+remain executable reference pipelines; their old output numbers have not all
+been refreshed. Reusing a tuning file requires identical training/validation
+pair identities, not just a matching split name. The selected prediction files
+from B1/B2/B3/B7 tuning now support the normalized metrics report.
+
+B6 enforces this using B2's `selection_fingerprint`, including selection
+targets, expression-file hash, PCA settings and default-profile policy. Old
+tuning CSVs without that provenance are rejected; rerun B2 tuning or explicitly
+use `--no-b2-tuned` with prespecified settings.
+
+`configs/data_audit.example.json` is the default raw-data audit config.
+Use `python -m mcdrp.data.audit --no-write-templates` when retaining curated
+mapping files. Experiment manifests include the actual config snapshot and
+source hashes, including per-step hashes; dry runs have a separate manifest.
+
+## Roadmap 2–6
+
+`public_sources.json` freezes raw GDSCv2/PRISM inputs and the local HGNC snapshot
+by checksum. `harmonization.json` declares units, MTS010 eligibility, the shared
+log-dose integration window and output paths. See
+[`docs/roadmap_2_6.md`](../docs/roadmap_2_6.md) for assumptions and ordered commands.
+
+`roadmap_graph_only.json` evaluates the graph-only control on cold-drug folds;
+`roadmap_b7_pinned.json` requires the verified pinned embedding manifest. The
+`mcdrp.experiments.roadmap` phases execute five-fold RF selection, three seeds
+per entity modality null, target-view comparisons and independent calibration.
+Each phase has isolated outputs and input/code hashes. Changed inputs/code need
+a new output root rather than a mixed resumed ranking.

@@ -7,6 +7,13 @@ compound.
 
 ## Research question
 
+The current reproducible release is [stable v1](docs/stable_v1.md): preprocessing,
+training, test and results for B0/RF/B6/B7, five chemically disjoint cold-drug folds
+and GDSC→PRISM. Chemical aliases stay together (238 IDs, 229 identities).
+Start with the [stable notebook](notebooks/stable_v1_results.ipynb). Other
+architectures and older runs remain experimental. The stable guide contains
+the isolated reproduction command and local release manifests.
+
 > Can a multimodal model combining transcriptomic state and molecular structure
 > predict cancer drug response robustly under realistic distribution shifts, and
 > do biologically informed pathway representations improve generalization and
@@ -28,99 +35,53 @@ Each example is one measured response for a (cell line, drug) pair:
 y_hat = f(x_cell, G_drug)     target: ln(IC50)
 ```
 
-`x_cell` is a transcriptomic vector or pathway activity profile, `G_drug` is a
+`x_cell` is a transcriptomic vector or pathway expression profile, `G_drug` is a
 molecular graph, Morgan fingerprint, or pretrained embedding. Regression, not
 classification, because sensitive/resistant thresholds add assumptions.
 
 ## Status
 
-Baselines through B7 are implemented and have been run across the split suite.
-On the `random_pair` test set, where a model may have seen both the cell line
-and the drug before, the modalities clearly help:
+The model ladder B0–B7 and the six GDSC splits are implemented. The
+2026-09-30 audit found issues that affect reproducibility and interpretation:
+expression contained 21 alternative profiles alongside the 717 default cell
+profiles; GNN initialization was seeded after constructing the model; B3 used
+pair-based internal early stopping in cold settings; and PRISM matching chose
+arbitrarily among duplicate chemical identities. These are corrected. Historical
+model numbers using the old preprocessing require reruns before confirmation.
+See [`docs/repository_audit.md`](docs/repository_audit.md) for scope and evidence.
 
-| Model | Features | RMSE | vs. `mean_effects` |
-| --- | --- | --- | --- |
-| B0 `mean_effects` | none | 1.203 | reference |
-| B5 hybrid GNN | graph + Morgan + expression PCA | **0.931** | −22.6% |
+The earlier exploratory audit checkpoint preserves these controls:
 
-That 22.6% is the easiest setting in the suite, and it does not carry over.
-The result below is the one that constrains what this project can claim.
+- `configs/experiments/cold_drug_checked.json`: five existing cold-drug folds,
+  default expression profiles, target + PCA and Morgan + PCA against fold-fitted
+  mean effects, with fixed hyperparameters and no cross-partition tuning file.
+- `configs/experiments/transfer_prism_multiseed.json`: strict chemical matching,
+  default expression profiles, and three fitting/permutation seeds (42, 7, 13).
+  Test has **46 drugs, 335 cells, and 14,200 pairs**; GDSC remains the sole
+  training/validation study. This is assay transfer, with known cells and drugs.
+- `mcdrp.results.transfer_diagnostics`: within-drug assay concordance and
+  leave-drug-out error stratified by each fold's training annotation vocabulary.
 
-### On unseen drugs, structure fails and annotated targets transfer
+Global scores, ranking, and calibration answer different questions. Negative
+within-drug R² does **not** imply absent ranking: refreshed PRISM target + PCA
+predictions have mean within-drug Spearman 0.2115 despite R² −0.2026.
+The original transfer stress test uses published GDSC/PRISM AUC. A separate
+cohort now recomputes viable-fraction AUC over one shared concentration window;
+published and harmonized endpoints are compared on identical retained pairs.
+These are exploratory preclinical results, with `mean_effects` the prespecified
+reference. Findings and next actions belong in
+[`docs/research_roadmap.md`](docs/research_roadmap.md).
 
-A single group-level partition suggested the models transferred to new
-chemistry: on the seed-42 `cold_drug` split the best Morgan model reached
-2.196 RMSE against a 2.662 baseline, which reads as a 17% improvement. It
-does not survive cross-validation. Testing every one of the 238 drugs across
-5 folds, that same model reaches 2.748 and **loses to the baseline**.
+The roadmap 2–6 protocols, frozen data sources, Random Forest, modality controls,
+annotation/embedding provenance and independent calibration are documented in
+[`docs/roadmap_2_6.md`](docs/roadmap_2_6.md). Keep these refreshed outputs separate
+from historical architecture comparisons.
 
-Because all models share the folds, the comparison that settles this is paired
-within each fold, not overlapping error bars: the fold-to-fold spread of
-±0.42 is mostly fold difficulty, which every model sees alike.
-
-| Model on `cold_drug` | RMSE vs B0 `mean_effects` | Folds won |
-| --- | --- | --- |
-| B6 targets + expression PCA | **−0.140** | **5 of 5** |
-| B6 targets + expression + pathways | **−0.140** | **5 of 5** |
-| B5 hybrid GNN | −0.120 | 4 of 5 |
-| B6 targets + pathways | −0.088 | 5 of 5 |
-| B7 pretrained + expression PCA | −0.079 | 4 of 5 |
-| B4 GNN | −0.035 | 3 of 5 |
-| B6 targets only | −0.021 | 3 of 5 |
-| B6 expression PCA | ±0.000 | 2 of 5 |
-| B6 Morgan + expression + pathways | +0.086 | 0 of 5 |
-| B2 XGBoost (Morgan + expression) | +0.091 | 1 of 5 |
-| B6 targets + PCA, shuffled | +0.129 | 0 of 5 |
-| B6 Morgan | +0.131 | 0 of 5 |
-| B6 target × expression product | +0.170 | 0 of 5 |
-| B6 predicted targets + PCA | +0.174 | 0 of 5 |
-
-The controls close the obvious objections. Permuting whole-drug target vectors
-kills the gain, so it is the identity of the annotations that transfers, not
-the geometry of a sparse binary vector. A leakage-safe Ridge from Morgan onto
-the same GDSC vocabulary does not recover it, so the fingerprints did not
-contain that biology. An aligned product \(t_{\mathrm{drug}} \odot e_{\mathrm{cell}}\)
-on matched genes is worse than concatenating the annotations with expression
-PCA. Graph and pretrained encoders beat Morgan and still lose to the
-annotations. `cold_scaffold` repeats the sign: targets + expression win 4 of 5
-folds (−0.097) while Morgan + expression loses (+0.048, 1 of 5). Shuffle
-(+0.181), Morgan-predicted targets (+0.148), and the aligned product (+0.167)
-lose every fold there too. Reproduce with
-`python -m mcdrp.results.grouped_cv_report`.
-
-### On unseen cells, expression plus a known drug does transfer
-
-The same protocol on `cold_cell` is the control. Across 5 folds covering all
-717 cell lines, B6 with Morgan fingerprints and expression PCA reaches 1.348
-+/- 0.017 RMSE against a 1.512 +/- 0.045 baseline, and **wins every fold**
-(paired delta −0.163). B2 XGBoost is close behind (−0.150, 5 of 5). Expression
-without any drug representation collapses to 2.762: with a known drug the
-potency mean is available, and cell features only help once that is in the
-model. `cold_tissue` repeats it against a 1.530 +/- 0.121 baseline, with B6
-Morgan + expression + pathways at 1.381 +/- 0.025 and 5 folds won, even though
-the 27 lineages are very unequal so the fold spread is larger.
-
-So the failure on unseen chemistry is specific, not a general modelling
-collapse. Drug *structure* helps when the drug has been seen; it does not
-help when the drug is new. Annotated *targets* are the representation that
-transfers in that second setting.
-
-### What is not yet settled
-
-| Split | Status |
-| --- | --- |
-| `random_pair` | B5 hybrid GNN 0.931 against a 1.203 baseline, single seed |
-| `cold_cell` | settled above: B6 Morgan + expression beats the baseline in 5/5 folds |
-| `cold_tissue` | settled above: same pattern, 5/5 folds |
-| `cold_drug` | settled above: annotated targets transfer; shuffle, Morgan-predicted targets, and the aligned product do not; GNN/embeddings help less than the annotations |
-| `cold_scaffold` | settled above: same controls as `cold_drug`; shuffle, predicted targets, and the product lose 5/5 |
-| `cold_both` | single partition only, 2.365 with B2 |
-
-The `mean_effects` baseline reaches a global Pearson of 0.906 using no
-features, which is why it is the reference rather than a naive mean. Splits
-still marked single-partition carry no dispersion estimate, so differences
-between models on them are not yet interpretable, and the `cold_drug` result
-above is a direct warning about reading them as findings.
+The earlier exploratory [roadmap-results notebook](notebooks/final_results.ipynb) presents
+16 publication-quality figures covering all refreshed variants, B0, modality
+controls, assay transfer and calibration. It runs from compact versioned
+reports without raw data or a GPU. See [notebook instructions](notebooks/README.md)
+for reproduction and PNG/SVG/PDF/HTML exports.
 
 ## Quickstart
 
@@ -144,6 +105,7 @@ python -m mcdrp.data.audit             # identifier mappings and audit report
 python -m mcdrp.data.drug_structures   # canonical SMILES
 python -m mcdrp.data.build_cohort      # model-ready pair table
 python -m mcdrp.splits.make_splits     # the six leakage-checked splits
+python -m mcdrp.data.build_transfer_cohort  # GDSC2-train / PRISM-test, target auc
 python -m mcdrp.models.baseline_b0     # feature-free reference
 python -m mcdrp.results.compare_baselines
 ```
@@ -161,8 +123,8 @@ manifest to `results/experiments/<name>/manifest.json`.
 
 ## Evaluation design
 
-Six splits, each answering one question. Bracketed names are the conventional
-ones in the literature.
+Six grouped splits plus one cross-study transfer split, each answering one
+question. Bracketed names are the conventional ones in the literature.
 
 | Split | Held out | Question |
 | --- | --- | --- |
@@ -172,6 +134,7 @@ ones in the literature.
 | `cold_drug` [LDO] | whole drugs | an unseen compound? |
 | `cold_scaffold` | Bemis-Murcko scaffolds | structurally novel chemistry? |
 | `cold_both` | drugs and cell lines | both novel at once? |
+| `transfer_prism` | assay (GDSC2 → PRISM AUC) | do GDSC-fitted models transfer across screens? |
 
 Metrics come in three families, because global RMSE and Pearson are dominated by
 differences in mean potency between drugs: global, mean-effect **normalized**,
@@ -192,7 +155,7 @@ Each rung isolates one question, and a simple model winning is a valid result.
 | B3 | MLP | genes, PCA, or pathways | Morgan |
 | B4 | lightweight GNN | expression PCA | graph |
 | B5 | hybrid GNN | expression PCA | graph + Morgan |
-| B6 | modality ablation | PCA / pathways | Morgan |
+| B6 | modality ablation and controls | PCA / pathways / matched genes | Morgan / annotated or Ridge-predicted targets |
 | B7 | pretrained-drug benchmark | PCA / pathways | frozen embedding |
 
 ## Repository layout
@@ -224,6 +187,7 @@ Generated data and result tables are written to gitignored folders
 | [`evaluation_protocol.md`](docs/evaluation_protocol.md) | splits, metrics, leakage rules, reporting bar |
 | [`related_work.md`](docs/related_work.md) | literature and the reasoning behind the design |
 | [`research_roadmap.md`](docs/research_roadmap.md) | prioritized next steps |
+| [`repository_audit.md`](docs/repository_audit.md) | corrections, refreshed results, verification and remaining limits |
 | [`workflow.md`](docs/workflow.md) | environment, quality gates, git conventions |
 | [`project_plan.md`](docs/project_plan.md) | phases F0-F7 with commands |
 | [`experiment_design.md`](docs/experiment_design.md) | model ladder and ablation rationale |
@@ -236,4 +200,6 @@ A preclinical cell-line modelling and research-engineering project, not a
 clinically validated precision-medicine system. Cell-line drug response is an
 experimental proxy, model attributions are not causal biomarkers, and the
 literature shows transfer from cell lines to patient data is currently poor.
-Results here are single-seed and single-source (GDSC2).
+Grouped folds share training data; their spread is descriptive. Transfer fitting
+seeds reuse one partition and external cohort, so they do not estimate uncertainty
+over independent screens. Historical B3/B4/B5 comparisons need refreshed training.
