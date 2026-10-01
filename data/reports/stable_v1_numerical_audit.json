@@ -1,0 +1,143 @@
+{
+  "status": "expression_precision_and_execution_profile_corrected",
+  "failed_run": "results/stable_v1_failed_float32",
+  "original_location": "results/stable_v1",
+  "failed_gate_absolute_tolerance": 0.005,
+  "failed_legacy_comparison": [
+    {
+      "model": "B0_mean_effects",
+      "reference": 2.6617891482926135,
+      "fresh": 2.661789148292613,
+      "abs_delta": 4.440892098500626e-16,
+      "accepted": true
+    },
+    {
+      "model": "B6_morgan_expression_pca",
+      "reference": 2.7396828099,
+      "fresh": 2.740596869078127,
+      "abs_delta": 0.0009140591781267027,
+      "accepted": true
+    },
+    {
+      "model": "B6_targets_expression_pca",
+      "reference": 2.5148919041,
+      "fresh": 2.519496992323717,
+      "abs_delta": 0.004605088223716969,
+      "accepted": true
+    },
+    {
+      "model": "B7_pretrained_drug_expression_pca",
+      "reference": 2.6323848379,
+      "fresh": 2.632206749065895,
+      "abs_delta": 0.00017808883410497245,
+      "accepted": true
+    },
+    {
+      "model": "RF_morgan_expression_pca",
+      "reference": 2.4690584398,
+      "fresh": 2.458250114545108,
+      "abs_delta": 0.010808325254891837,
+      "accepted": false
+    },
+    {
+      "model": "RF_targets_expression_pca",
+      "reference": 2.4338342802,
+      "fresh": 2.434298433769318,
+      "abs_delta": 0.0004641535693177268,
+      "accepted": true
+    }
+  ],
+  "same_profile_cuda_repeat": {
+    "purpose": "Unchanged same-profile repeat; no selection or tuning on test",
+    "case": "cold_drug_fold_0",
+    "model": "B6_targets_expression_pca",
+    "original_best_iteration": 325,
+    "repeat_best_iteration": 325,
+    "max_prediction_delta": 0.0,
+    "original_test_rmse": 3.045279879589427,
+    "repeat_test_rmse": 3.045279879589427
+  },
+  "float32_thread_profile_probe": {
+    "purpose": "Unchanged legacy forest settings; BLAS profile restored to 16 threads",
+    "blas_threads": 16,
+    "case": "cold_drug_fold_0",
+    "model": "RF_morgan_expression_pca",
+    "pca_max_difference_profile8": 0.01890432834625244,
+    "pca_relative_norm_difference_profile8": 8.776115282671526e-05,
+    "legacy_prediction_max_delta": 0.6828872487293189,
+    "legacy_rmse": 2.9988839387981505,
+    "reproduced_rmse": 2.976269613970276
+  },
+  "float64_thread_profile_probe": {
+    "purpose": "Precision stability diagnostic on raw expression, independent of response/test labels",
+    "comparison": "8 vs 16 BLAS threads, float64 StandardScaler/PCA -> float32 features",
+    "cells": 717,
+    "components": 256,
+    "maximum_projection_delta": 1.4901161193847656e-08,
+    "declared_projection_tolerance": 1e-07,
+    "passed": true
+  },
+  "decision": "Use float64 preprocessing and internally fixed 8-thread BLAS, based on raw-expression stability without response-based tuning. Establish a separate frozen reference only after full validation.",
+  "note": "The initial 0.005 historical check failed and was not relaxed. Legacy float32 scores are migration diagnostics, not release golden scores. Absolute paths in the failed run reflect its original execution location.",
+  "failed_comparison_sha256": "a147f7c6783d393a44ff7b17e91b668e4b94fa6f8c6db6e60c1f6b5168aee0ea",
+  "float64_unfixed_blas_failure": {
+    "run": "results/stable_v1_failed_float64_unfixed_blas",
+    "original_location": "results/stable_v1",
+    "training_started": false,
+    "failure": {
+      "status": "failed",
+      "error": "Expression preprocessing failed BLAS-profile stability.",
+      "type": "ValueError"
+    },
+    "diagnostic": {
+      "case": "harmonized_transfer",
+      "train_cells": 616,
+      "transformed_cells": 717,
+      "float64_max_delta": 4.703082367996103e-11,
+      "final_float32_max_delta": 2.384185791015625e-07,
+      "threshold": 1e-07,
+      "purpose": "Raw-expression thread diagnostic, no response values used in PCA or its comparison"
+    }
+  },
+  "fixed_blas_raw_expression_checks": [
+    {
+      "case": "all_cells",
+      "train_cells": 717,
+      "transformed_cells": 717,
+      "external_threads": [
+        8,
+        16
+      ],
+      "internal_blas_threads": 8,
+      "max_abs_delta": 0.0,
+      "threshold": 1e-07,
+      "passed": true
+    },
+    {
+      "case": "harmonized",
+      "train_cells": 616,
+      "transformed_cells": 717,
+      "external_threads": [
+        8,
+        16
+      ],
+      "internal_blas_threads": 8,
+      "max_abs_delta": 0.0,
+      "threshold": 1e-07,
+      "passed": true
+    },
+    {
+      "case": "harmonized_calibration",
+      "train_cells": 523,
+      "transformed_cells": 717,
+      "external_threads": [
+        8,
+        16
+      ],
+      "internal_blas_threads": 8,
+      "max_abs_delta": 0.0,
+      "threshold": 1e-07,
+      "passed": true
+    }
+  ]
+}

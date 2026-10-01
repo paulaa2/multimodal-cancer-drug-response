@@ -1,0 +1,28 @@
+{
+  "status": "verified",
+  "protocol": "stable_v1",
+  "code_tag": "v0.2.0-stable",
+  "run": "results\\stable_v1",
+  "run_verification": {
+    "status": "verified",
+    "files": 366,
+    "config_sha256": "801a5b04d7228a65bbfa805a23b48756f3361ee77079d63fe6a5572686560991"
+  },
+  "inputs_archive": {
+    "path": "results\\releases\\stable_v1\\stable_v1_inputs.zip",
+    "bytes": 434138284,
+    "sha256": "b3f1a48f5527c97dbea5682b6974af423eba2944c0d36a398e2ad5c92a956912",
+    "members": 11,
+    "round_trip": "verified"
+  },
+  "artifacts_archive": {
+    "path": "results\\releases\\stable_v1\\stable_v1_artifacts.zip",
+    "bytes": 1596455487,
+    "sha256": "f2453e72aa555d56aaf14c877ec0055bd679071a66de678960e2c671ab0f6d27",
+    "members": 367,
+    "round_trip": "verified"
+  },
+  "config_sha256": "801a5b04d7228a65bbfa805a23b48756f3361ee77079d63fe6a5572686560991",
+  "run_manifest_sha256": "f58502b24b8ee8938fe1cf6457c871e466fdfd5076a2e10182ab7a02151287b0",
+  "note": "Local archives; no remote backup or publication of datasets is implied."
+}
