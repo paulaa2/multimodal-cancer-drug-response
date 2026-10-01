@@ -1,0 +1,30 @@
+{
+  "baseline_root": "results/stable_v1",
+  "output_root": "results/improvement_v1",
+  "cases": ["cold_drug_fold_0", "cold_drug_fold_1", "cold_drug_fold_2", "cold_drug_fold_3", "cold_drug_fold_4", "published_transfer", "harmonized_transfer", "matched_published_transfer"],
+  "ensemble_members": ["RF_targets_expression_pca", "RF_morgan_expression_pca", "B7_pretrained_drug_expression_pca"],
+  "ensemble_grid_step": 0.25,
+  "neural": {
+    "seeds": [42, 43],
+    "candidates": [
+      {"blocks": ["targets", "embeddings"], "width": 64},
+      {"blocks": ["morgan", "targets", "embeddings"], "width": 64}
+    ],
+    "epochs": 120,
+    "patience": 15,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 0.01,
+    "dropout": 0.2,
+    "device": "cuda"
+  },
+  "adaptation": {
+    "case": "harmonized_transfer",
+    "seed": 20261001,
+    "fractions": [0.2, 0.1, 0.2, 0.5],
+    "roles": ["train", "validation", "calibration", "test"],
+    "shrinkage": [0, 10, 50, 200],
+    "alpha": 0.1
+  },
+  "scope": "Exploratory follow-up to previously examined GDSC/PRISM data; no new confirmatory external study. No candidate changes after test inspection."
+}
