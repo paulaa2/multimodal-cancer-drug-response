@@ -1,0 +1,37 @@
+{
+  "checked_at_utc": "2026-09-30T22:38:26.700227+00:00",
+  "notebook": "notebooks/final_results.ipynb",
+  "executed_code_cells": 17,
+  "embedded_png_outputs": 16,
+  "execution_errors": 0,
+  "stderr_outputs": 0,
+  "visual_review": "All 16 figures inspected; source captions, axis units, legends and no clipped data verified. Matching legend repositioned to avoid overlap.",
+  "figure_exports": {
+    "png_300_dpi": 16,
+    "svg": 16,
+    "pdf": 16
+  },
+  "zip_members": 54,
+  "zip_integrity": "passed",
+  "compact_snapshot": {
+    "metric_rows": 290,
+    "final_variants": 23,
+    "b0_references": 5,
+    "rf_validation_candidates": 40,
+    "prediction_densities": 3,
+    "test_pairs_per_density": 149364
+  },
+  "portable_setup": "Passed using only seven versioned report files, without raw data, GPU or model artifacts.",
+  "checks": {
+    "ruff_export_script": "passed",
+    "git_diff_check": "passed",
+    "notebook_format": "nbformat validation passed"
+  },
+  "sha256": {
+    "notebooks/final_results.ipynb": "5f169feb87b6e39b2253fe1db720bc3c74191774fd1c8b7a9f8b1f4b99cbbba9",
+    "data/reports/final_results_plot_data.json": "bf96c224dec3346ca4b16a93729b8a0264f5572e4da41952b51d7b833394a3dd",
+    "results/reports/final_results/final_results.html": "9ec108d30bfe8f48bcb4d76a250ec98bcd3e8d4de8f18359d9dc8778649be72c",
+    "figures/final_results/figuras_finales.zip": "10bd3bf311d91af55b41389592cc810106cbcf2449daff4302ea33b0038365ea"
+  },
+  "scope": "Exploratory final roadmap 2-6 checkpoint; historical comparisons excluded."
+}

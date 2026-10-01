@@ -1,0 +1,175 @@
+{
+  "created_at_utc": "2026-09-30T17:49:49.403508+00:00",
+  "split_name": "cold_drug",
+  "folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "cv_dir": "data/processed/splits/cv/cold_drug",
+  "predictions_dir": "results/predictions/cv_checked/cold_drug",
+  "fold_metrics_path": "results/reports/cv_checked/cold_drug_fold_metrics.csv",
+  "aggregated_path": "results/reports/cv_checked/cold_drug_aggregated.csv",
+  "hypothesis_tests": "none",
+  "test_summary": [
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.5198974328,
+      "rmse_std": 0.4223731954,
+      "r2_normalized_mean": 0.1056346012,
+      "spearman_per_drug_mean": 0.6085715428,
+      "r2_per_drug_mean": -2.520375587
+    },
+    {
+      "stage": "B0",
+      "model": "cell_mean",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.6617891483,
+      "rmse_std": 0.4237377333,
+      "r2_normalized_mean": 0.0,
+      "spearman_per_drug_mean": 0.6228433757,
+      "r2_per_drug_mean": -3.1336257585
+    },
+    {
+      "stage": "B0",
+      "model": "mean_effects",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.6617891483,
+      "rmse_std": 0.4237377333,
+      "r2_normalized_mean": -4.440892099e-17,
+      "spearman_per_drug_mean": 0.6228433757,
+      "r2_per_drug_mean": -3.1336257585
+    },
+    {
+      "stage": "B6",
+      "model": "morgan_expression_pca",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.7354746274,
+      "rmse_std": 0.3749207921,
+      "r2_normalized_mean": -0.0647952533,
+      "spearman_per_drug_mean": 0.43501472,
+      "r2_per_drug_mean": -3.3552523037
+    },
+    {
+      "stage": "B0",
+      "model": "tissue_mean",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.7519568244,
+      "rmse_std": 0.4135892077,
+      "r2_normalized_mean": -0.0713440841,
+      "spearman_per_drug_mean": 0.3398864256,
+      "r2_per_drug_mean": -3.3457242978
+    },
+    {
+      "stage": "B0",
+      "model": "drug_mean",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.8163936597,
+      "rmse_std": 0.4017215755,
+      "r2_normalized_mean": -0.1244024226,
+      "spearman_per_drug_mean": null,
+      "r2_per_drug_mean": -3.50678786
+    },
+    {
+      "stage": "B0",
+      "model": "global_mean",
+      "variant": "standard",
+      "subset": "test",
+      "n_folds": 5,
+      "n_rows_total": 149364,
+      "rmse_mean": 2.8163936597,
+      "rmse_std": 0.4017215755,
+      "r2_normalized_mean": -0.1244024226,
+      "spearman_per_drug_mean": null,
+      "r2_per_drug_mean": -3.50678786
+    }
+  ],
+  "paired_deltas_vs_mean_effects": [
+    {
+      "stage": "B0",
+      "model": "cell_mean",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": -8.881784197001253e-17,
+      "paired_rmse_delta_std": 1.9860273225978188e-16,
+      "folds_won": 1
+    },
+    {
+      "stage": "B0",
+      "model": "drug_mean",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": 0.15460451144769838,
+      "paired_rmse_delta_std": 0.023868558738485594,
+      "folds_won": 0
+    },
+    {
+      "stage": "B0",
+      "model": "global_mean",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": 0.15460451144769838,
+      "paired_rmse_delta_std": 0.023868558738485594,
+      "folds_won": 0
+    },
+    {
+      "stage": "B0",
+      "model": "mean_effects",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": 0.0,
+      "paired_rmse_delta_std": 0.0,
+      "folds_won": 0
+    },
+    {
+      "stage": "B0",
+      "model": "tissue_mean",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": 0.09016767609731594,
+      "paired_rmse_delta_std": 0.010546645527735732,
+      "folds_won": 0
+    },
+    {
+      "stage": "B6",
+      "model": "morgan_expression_pca",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": 0.07368547905967526,
+      "paired_rmse_delta_std": 0.10732336067536849,
+      "folds_won": 1
+    },
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca",
+      "variant": "standard",
+      "n_folds": 5,
+      "paired_rmse_delta_mean": -0.14189171550275229,
+      "paired_rmse_delta_std": 0.018899479431569062,
+      "folds_won": 5
+    }
+  ],
+  "note": "Metrics are computed per fold against that fold's own mean-effects reference, then averaged. The standard deviation is dispersion across held-out group sets, not a significance test."
+}

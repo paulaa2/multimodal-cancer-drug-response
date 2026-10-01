@@ -2,10 +2,9 @@
 
 This is the leakage-safe stand-in for a BindingDB DTI: a linear map from
 structure to the same multi-hot vocabulary used by the annotated profiles.
-If predicted profiles recover the leave-drug-out gain of the true annotations,
-Morgan contained the target information and TransCDR's pretraining claim is
-in play. If they fail while the annotations succeed, structure cannot recover
-the biology that transfers.
+This tests one Ridge map on this small annotation vocabulary. Failure does not
+establish that molecular structure contains no target information, or reproduce
+the pretraining and datasets of published target-prediction architectures.
 """
 
 from __future__ import annotations

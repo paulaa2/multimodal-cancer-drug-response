@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -34,6 +35,8 @@ class TableAudit:
     columns: list[str]
     column_roles: list[ColumnRoleAudit]
     error: str | None = None
+    sha256: str | None = None
+    size_bytes: int | None = None
 
 
 @dataclass(frozen=True)
@@ -237,7 +240,19 @@ def audit_source(name: str, source: dict[str, Any], root: Path) -> TableAudit:
         n_columns=preview.n_columns,
         columns=columns,
         column_roles=roles,
+        sha256=file_sha256(path),
+        size_bytes=path.stat().st_size,
     )
+
+
+def file_sha256(path: Path) -> str:
+    """Hash a frozen source without loading it into memory."""
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def role_map(audit: TableAudit) -> dict[str, str]:
@@ -399,7 +414,9 @@ def write_csv(
         writer.writerows(rows)
 
 
-def run_audit(config_path: str | Path, root: str | Path = ".") -> dict[str, Any]:
+def run_audit(
+    config_path: str | Path, root: str | Path = ".", *, write_templates: bool = True
+) -> dict[str, Any]:
     """Run the configured data audit and write report files."""
 
     root_path = Path(root).resolve()
@@ -416,14 +433,15 @@ def run_audit(config_path: str | Path, root: str | Path = ".") -> dict[str, Any]
         "sources": {name: asdict(audit) for name, audit in audits.items()},
     }
 
-    manifest_dir = root_path / "data/manifests"
+    manifest_dir = root_path / "data/reports"
     manifest_dir.mkdir(parents=True, exist_ok=True)
     report_path = manifest_dir / "data_audit_report.json"
     with report_path.open("w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
 
-    write_cell_line_mapping_template(audits, config, root_path)
-    write_drug_mapping_template(audits, config, root_path)
+    if write_templates:
+        write_cell_line_mapping_template(audits, config, root_path)
+        write_drug_mapping_template(audits, config, root_path)
 
     return report
 
@@ -432,6 +450,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Create the command-line parser."""
 
     parser = argparse.ArgumentParser(description="Run the F0 data audit.")
+    parser.add_argument("--no-write-templates", action="store_true")
     parser.add_argument(
         "--config",
         default="configs/data_audit.example.json",
@@ -449,7 +468,7 @@ def main() -> None:
     """Command-line entry point."""
 
     args = build_parser().parse_args()
-    report = run_audit(args.config, args.root)
+    report = run_audit(args.config, args.root, write_templates=not args.no_write_templates)
 
     print("Data audit complete")
     for name, source in report["sources"].items():

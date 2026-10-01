@@ -1,0 +1,240 @@
+{
+  "name": "transfer_prism_multiseed",
+  "description": "Strict unique InChIKey mappings, default DepMap expression profiles, fixed GDSC partition, and fitting seeds 42/7/13. Published AUC remains unharmonized.",
+  "steps": [
+    {
+      "name": "strict_cohort",
+      "module": "mcdrp.data.build_transfer_cohort",
+      "args": {
+        "output-cohort": "data/processed/transfer_checked_pairs.csv",
+        "output-split": "data/processed/transfer_checked/transfer_prism.csv",
+        "drug-map": "data/mappings/prism_gdsc_drug_map_strict.csv",
+        "summary": "data/reports/transfer_prism_strict_summary.json"
+      }
+    },
+    {
+      "name": "reference_42",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "output": "results/transfer_strict/seed_42/b0_metrics.csv",
+        "summary": "results/transfer_strict/seed_42/b0_summary.json",
+        "predictions-output": "results/transfer_strict/seed_42/predictions/b0.csv",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "modalities_42",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/transfer_strict/seed_42/b6_modalities_metrics.csv",
+        "summary": "results/transfer_strict/seed_42/b6_modalities_summary.json",
+        "predictions-output": "results/transfer_strict/seed_42/predictions/b6_modalities.csv",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "shuffle_42",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca"
+        ],
+        "output": "results/transfer_strict/seed_42/b6_shuffle_metrics.csv",
+        "summary": "results/transfer_strict/seed_42/b6_shuffle_summary.json",
+        "predictions-output": "results/transfer_strict/seed_42/predictions/b6_shuffle.csv",
+        "shuffle-targets": true,
+        "shuffle-seed": 42,
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "score_42",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/transfer_strict/seed_42/predictions",
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "target": "auc",
+        "output": "results/transfer_strict/seed_42/model_metrics.csv",
+        "best-output": "results/transfer_strict/seed_42/best.csv",
+        "summary": "results/transfer_strict/seed_42/metrics_summary.json",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "reference_7",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "output": "results/transfer_strict/seed_7/b0_metrics.csv",
+        "summary": "results/transfer_strict/seed_7/b0_summary.json",
+        "predictions-output": "results/transfer_strict/seed_7/predictions/b0.csv",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "modalities_7",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "random-state": 7,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/transfer_strict/seed_7/b6_modalities_metrics.csv",
+        "summary": "results/transfer_strict/seed_7/b6_modalities_summary.json",
+        "predictions-output": "results/transfer_strict/seed_7/predictions/b6_modalities.csv",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "shuffle_7",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "random-state": 7,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca"
+        ],
+        "output": "results/transfer_strict/seed_7/b6_shuffle_metrics.csv",
+        "summary": "results/transfer_strict/seed_7/b6_shuffle_summary.json",
+        "predictions-output": "results/transfer_strict/seed_7/predictions/b6_shuffle.csv",
+        "shuffle-targets": true,
+        "shuffle-seed": 7,
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "score_7",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/transfer_strict/seed_7/predictions",
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "target": "auc",
+        "output": "results/transfer_strict/seed_7/model_metrics.csv",
+        "best-output": "results/transfer_strict/seed_7/best.csv",
+        "summary": "results/transfer_strict/seed_7/metrics_summary.json",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "reference_13",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "output": "results/transfer_strict/seed_13/b0_metrics.csv",
+        "summary": "results/transfer_strict/seed_13/b0_summary.json",
+        "predictions-output": "results/transfer_strict/seed_13/predictions/b0.csv",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "modalities_13",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "random-state": 13,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/transfer_strict/seed_13/b6_modalities_metrics.csv",
+        "summary": "results/transfer_strict/seed_13/b6_modalities_summary.json",
+        "predictions-output": "results/transfer_strict/seed_13/predictions/b6_modalities.csv",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "shuffle_13",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "splits": [
+          "transfer_prism"
+        ],
+        "target": "auc",
+        "random-state": 13,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca"
+        ],
+        "output": "results/transfer_strict/seed_13/b6_shuffle_metrics.csv",
+        "summary": "results/transfer_strict/seed_13/b6_shuffle_summary.json",
+        "predictions-output": "results/transfer_strict/seed_13/predictions/b6_shuffle.csv",
+        "shuffle-targets": true,
+        "shuffle-seed": 13,
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "score_13",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/transfer_strict/seed_13/predictions",
+        "cohort": "data/processed/transfer_checked_pairs.csv",
+        "target": "auc",
+        "output": "results/transfer_strict/seed_13/model_metrics.csv",
+        "best-output": "results/transfer_strict/seed_13/best.csv",
+        "summary": "results/transfer_strict/seed_13/metrics_summary.json",
+        "split-dir": "data/processed/transfer_checked"
+      }
+    },
+    {
+      "name": "replication_summary",
+      "module": "mcdrp.results.replication_report",
+      "args": {}
+    }
+  ]
+}

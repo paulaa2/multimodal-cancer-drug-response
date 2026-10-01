@@ -1,0 +1,48 @@
+{
+  "checked_at_utc": "2026-09-30T22:05:47.937788+00:00",
+  "tests": {
+    "passed": 182,
+    "failed": 0,
+    "log": "logs/roadmap_2_6/pytest_role.log",
+    "runtime": "APRNS_env with base-environment pytest; plugin autoload disabled"
+  },
+  "static_checks": {
+    "ruff": "passed",
+    "mypy": "passed",
+    "mypy_source_files": 66,
+    "git_diff_check": "passed"
+  },
+  "artifact_checks": {
+    "ablation_completed_cases": 55,
+    "corrected_target_view_cases": 15,
+    "random_forest_folds": 5,
+    "graph_only_folds": 5,
+    "pinned_b7_folds": 5,
+    "fold_metric_rows": 240,
+    "five_fold_aggregates": 23,
+    "donor_maps": 30,
+    "paired_bootstrap_comparisons": 105,
+    "cold_drug_calibration_diagnostics": 20,
+    "transfer_calibration_diagnostics": 4
+  },
+  "verified_sha256": {
+    "data/mappings/target_annotations_normalized.csv": "43e2c1198e9b00b6f80c8b59041ebb52a72ef9133d1f0997cace9e0f441a86a9",
+    "data/external/references/hgnc_complete_set_2026-09-30.tsv": "91d0ad20c34f26fb12c8cce3f80a65a6fc694f3a508040b19f6bfa29ae0d889e",
+    "data/external/drug_embeddings_pinned.csv": "3a9fb4540460136d321e147e17566a02806aaacafa2931f56d00ebab355731a9"
+  },
+  "dreval": {
+    "version": "1.5.1",
+    "checks": 450,
+    "numerical_agreements": 410,
+    "documented_constant_correlation_conventions": 40,
+    "unexplained_mismatches": 0,
+    "scope": "Official metric/dataset interoperability and group separation; no independent benchmark retraining"
+  },
+  "scientific_limits": [
+    "Exploratory ranking on five overlapping folds, not independent studies.",
+    "PRISM has previously been examined; external results are not fresh confirmation.",
+    "Exact per-curve exposure time unavailable; common dose integration does not correct time or assay shift.",
+    "HGNC normalization is nomenclature, not verified isoform-selective binding.",
+    "Source-domain calibration fails the nominal simultaneous cell coverage target in PRISM."
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "name": "cold_drug_checked",
+  "description": "Refresh five existing cold-drug folds using default expression profiles and predeclared XGBoost settings; compare targets and Morgan to fold-fitted mean effects. No tuning artifacts from other partitions.",
+  "steps": [
+    {
+      "name": "reference_0",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_0",
+        "splits": [
+          "cold_drug"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_0/b0_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_0/b0_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_0/b0.csv"
+      }
+    },
+    {
+      "name": "modalities_0",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_0",
+        "splits": [
+          "cold_drug"
+        ],
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_0/b6_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_0/b6_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_0/b6_targets.csv"
+      }
+    },
+    {
+      "name": "score_0",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/predictions/cv_checked/cold_drug/fold_0",
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_0",
+        "output": "results/cv_checked/cold_drug/fold_0/model_metrics.csv",
+        "best-output": "results/cv_checked/cold_drug/fold_0/best.csv",
+        "summary": "results/cv_checked/cold_drug/fold_0/metrics_summary.json"
+      }
+    },
+    {
+      "name": "reference_1",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_1",
+        "splits": [
+          "cold_drug"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_1/b0_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_1/b0_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_1/b0.csv"
+      }
+    },
+    {
+      "name": "modalities_1",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_1",
+        "splits": [
+          "cold_drug"
+        ],
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_1/b6_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_1/b6_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_1/b6_targets.csv"
+      }
+    },
+    {
+      "name": "score_1",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/predictions/cv_checked/cold_drug/fold_1",
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_1",
+        "output": "results/cv_checked/cold_drug/fold_1/model_metrics.csv",
+        "best-output": "results/cv_checked/cold_drug/fold_1/best.csv",
+        "summary": "results/cv_checked/cold_drug/fold_1/metrics_summary.json"
+      }
+    },
+    {
+      "name": "reference_2",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_2",
+        "splits": [
+          "cold_drug"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_2/b0_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_2/b0_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_2/b0.csv"
+      }
+    },
+    {
+      "name": "modalities_2",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_2",
+        "splits": [
+          "cold_drug"
+        ],
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_2/b6_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_2/b6_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_2/b6_targets.csv"
+      }
+    },
+    {
+      "name": "score_2",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/predictions/cv_checked/cold_drug/fold_2",
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_2",
+        "output": "results/cv_checked/cold_drug/fold_2/model_metrics.csv",
+        "best-output": "results/cv_checked/cold_drug/fold_2/best.csv",
+        "summary": "results/cv_checked/cold_drug/fold_2/metrics_summary.json"
+      }
+    },
+    {
+      "name": "reference_3",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_3",
+        "splits": [
+          "cold_drug"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_3/b0_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_3/b0_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_3/b0.csv"
+      }
+    },
+    {
+      "name": "modalities_3",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_3",
+        "splits": [
+          "cold_drug"
+        ],
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_3/b6_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_3/b6_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_3/b6_targets.csv"
+      }
+    },
+    {
+      "name": "score_3",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/predictions/cv_checked/cold_drug/fold_3",
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_3",
+        "output": "results/cv_checked/cold_drug/fold_3/model_metrics.csv",
+        "best-output": "results/cv_checked/cold_drug/fold_3/best.csv",
+        "summary": "results/cv_checked/cold_drug/fold_3/metrics_summary.json"
+      }
+    },
+    {
+      "name": "reference_4",
+      "module": "mcdrp.models.baseline_b0",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_4",
+        "splits": [
+          "cold_drug"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_4/b0_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_4/b0_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_4/b0.csv"
+      }
+    },
+    {
+      "name": "modalities_4",
+      "module": "mcdrp.models.ablation_b6",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_4",
+        "splits": [
+          "cold_drug"
+        ],
+        "random-state": 42,
+        "device": "cuda",
+        "no-b2-tuned": true,
+        "ablations": [
+          "targets_expression_pca",
+          "morgan_expression_pca"
+        ],
+        "output": "results/cv_checked/cold_drug/fold_4/b6_metrics.csv",
+        "summary": "results/cv_checked/cold_drug/fold_4/b6_summary.json",
+        "predictions-output": "results/predictions/cv_checked/cold_drug/fold_4/b6_targets.csv"
+      }
+    },
+    {
+      "name": "score_4",
+      "module": "mcdrp.results.metrics_report",
+      "args": {
+        "prediction-dir": "results/predictions/cv_checked/cold_drug/fold_4",
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_4",
+        "output": "results/cv_checked/cold_drug/fold_4/model_metrics.csv",
+        "best-output": "results/cv_checked/cold_drug/fold_4/best.csv",
+        "summary": "results/cv_checked/cold_drug/fold_4/metrics_summary.json"
+      }
+    },
+    {
+      "name": "aggregate",
+      "module": "mcdrp.results.grouped_cv_report",
+      "args": {
+        "split-name": "cold_drug",
+        "predictions-dir": "results/predictions/cv_checked/cold_drug",
+        "output": "results/reports/cv_checked/cold_drug_fold_metrics.csv",
+        "summary": "results/reports/cv_checked/cold_drug_aggregated.csv",
+        "report": "data/reports/cold_drug_checked_summary.json"
+      }
+    },
+    {
+      "name": "diagnostics",
+      "module": "mcdrp.results.transfer_diagnostics",
+      "args": {}
+    }
+  ]
+}

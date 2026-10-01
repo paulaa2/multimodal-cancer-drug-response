@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcdrp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Multimodal cancer drug-response prediction"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,9 +14,22 @@ dependencies = [
     "numpy",
     "pandas",
     "scikit-learn",
+    "scipy",
+    "joblib",
+    "threadpoolctl",
 ]
 
 [project.optional-dependencies]
+notebooks = [
+    "matplotlib>=3.7",
+    "nbformat>=5.9",
+    "nbclient>=0.9",
+    "nbconvert>=7",
+    "ipykernel>=6",
+]
+validation = [
+    "drevalpy==1.5.1",
+]
 baselines = [
     "xgboost",
     "rdkit",

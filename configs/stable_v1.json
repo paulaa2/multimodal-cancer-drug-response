@@ -1,0 +1,171 @@
+{
+  "protocol": "stable_v1",
+  "python": "3.13.5",
+  "environment": {
+    "ast_serialize": "0.11.2",
+    "asttokens": "3.0.2",
+    "attrs": "26.1.0",
+    "beautifulsoup4": "4.15.0",
+    "bleach": "6.4.0",
+    "cloudpickle": "3.1.2",
+    "colorama": "0.4.6",
+    "comm": "0.2.3",
+    "contourpy": "1.4.0",
+    "cycler": "0.12.1",
+    "debugpy": "1.8.22",
+    "decorator": "5.3.1",
+    "defusedxml": "0.7.1",
+    "executing": "2.2.1",
+    "fastjsonschema": "2.22.2",
+    "fonttools": "4.66.1",
+    "iniconfig": "2.3.0",
+    "ipykernel": "7.1.0",
+    "ipython": "9.7.0",
+    "ipython_pygments_lexers": "1.1.1",
+    "jedi": "0.20.0",
+    "Jinja2": "3.1.6",
+    "joblib": "1.6.0",
+    "jsonschema": "4.26.0",
+    "jsonschema-specifications": "2025.9.1",
+    "jupyter_client": "8.10.0",
+    "jupyter_core": "5.9.1",
+    "jupyterlab_pygments": "0.3.0",
+    "kiwisolver": "1.5.1",
+    "librt": "0.16.0",
+    "MarkupSafe": "3.0.3",
+    "matplotlib": "3.10.9",
+    "matplotlib-inline": "0.2.2",
+    "mistune": "3.3.4",
+    "mypy": "2.3.1",
+    "mypy_extensions": "1.1.0",
+    "nbclient": "0.11.0",
+    "nbconvert": "7.17.1",
+    "nbformat": "5.11.1",
+    "nest-asyncio": "1.6.0",
+    "numpy": "2.3.5",
+    "packaging": "26.3",
+    "pandas": "2.3.3",
+    "pandocfilters": "1.5.1",
+    "parso": "0.8.7",
+    "pathspec": "1.1.1",
+    "pillow": "12.3.0",
+    "platformdirs": "4.12.2",
+    "pluggy": "1.6.0",
+    "prompt_toolkit": "3.0.53",
+    "psutil": "7.2.2",
+    "pure_eval": "0.2.4",
+    "Pygments": "2.21.0",
+    "pyparsing": "3.3.3",
+    "pytest": "9.1.1",
+    "python-dateutil": "2.9.0.post0",
+    "pytz": "2026.4",
+    "pyzmq": "27.2.0",
+    "rdkit": "2026.3.6",
+    "referencing": "0.37.0",
+    "rpds-py": "2026.6.3",
+    "ruff": "0.16.8",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.16.3",
+    "setuptools": "78.1.1",
+    "six": "1.17.0",
+    "soupsieve": "2.10",
+    "stack-data": "0.6.3",
+    "threadpoolctl": "3.7.0",
+    "tinycss2": "1.5.1",
+    "tornado": "6.5.10",
+    "traitlets": "5.16.1",
+    "typing_extensions": "4.16.0",
+    "tzdata": "2026.4",
+    "wcwidth": "0.9.1",
+    "webencodings": "0.6.1",
+    "wheel": "0.45.1",
+    "xgboost": "3.2.0"
+  },
+  "inputs": {
+    "gdsc": {
+      "path": "data/raw/GDSC2_fitted_dose_response_27Oct23.csv",
+      "sha256": "b4ebafad8dd98242a1d46e3f7ca6a2e0bf32081ae348e97853109b1147d761f3"
+    },
+    "metadata": {
+      "path": "data/raw/Model.csv",
+      "sha256": "ea4e0b2a3bc806f81df62689a5ae75f1a100135727a3d7b8a4c7ccc8815183f8"
+    },
+    "expression": {
+      "path": "data/raw/OmicsExpressionTPMLogp1HumanProteinCodingGenesStranded.csv",
+      "sha256": "78ed2a2255660cc0234dd9a36f3b0519b34396a802b2369d01b21592195435c7"
+    },
+    "structures": {
+      "path": "data/raw/drug_structures.csv",
+      "sha256": "2511e11a6452af06feb67b378048b39ec4daf8b10821a77d52f17e0974c47a04"
+    },
+    "prism": {
+      "path": "data/raw/secondary-screen-dose-response-curve-parameters.csv",
+      "sha256": "88d1013506e0cd6f191a51c5f3fdd3fb2be54f8afb4e19a5d1f8538e81fbfec8"
+    },
+    "gdsc_doses": {
+      "path": "data/raw/harmonization/GDSCv2_Input.csv",
+      "sha256": "1dff4c935fcd06a6a8e935fde4690104deadbc2d6801c4498963e7155ea7eec7"
+    },
+    "prism_doses": {
+      "path": "data/raw/harmonization/PRISM_Input.csv",
+      "sha256": "0b876e18ddd79129ca5fa10ae792b2e9f74d83660c5aa5cfa32fc8cd4093aef7"
+    },
+    "hgnc": {
+      "path": "data/external/references/hgnc_complete_set_2026-09-30.tsv",
+      "sha256": "91d0ad20c34f26fb12c8cce3f80a65a6fc694f3a508040b19f6bfa29ae0d889e"
+    },
+    "embeddings": {
+      "path": "data/external/drug_embeddings_pinned.csv",
+      "sha256": "3a9fb4540460136d321e147e17566a02806aaacafa2931f56d00ebab355731a9"
+    },
+    "embedding_manifest": {
+      "path": "data/reports/drug_embeddings_pinned_summary.json",
+      "sha256": "4c58c617b4defe62f05a4b9cc3dfd05087526fcfac2afb72c93080835553aa95"
+    }
+  },
+  "expected_cohort_sha256": "178c80b4e927783556e83f336baa224e297e2389b7b6a64d8dd35d1110cd62d0",
+  "seed": 42,
+  "rf_trees": 200,
+  "xgb_params": {
+    "n_estimators": 700,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "early_stopping_rounds": 40,
+    "objective": "reg:squarederror",
+    "eval_metric": "rmse",
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": 8,
+    "device": "cuda"
+  },
+  "scope": {
+    "primary": "five-fold complete-chemical-identity-disjoint cold-drug ln(IC50)",
+    "secondary": "GDSC to PRISM, strict chemical mapping; published and shared-window AUC",
+    "models": [
+      "B0 mean effects",
+      "RF targets/PCA",
+      "RF Morgan/PCA",
+      "B6 targets/PCA",
+      "B6 Morgan/PCA",
+      "B7 frozen ChemBERTa/PCA"
+    ],
+    "experimental": "Other architectures, endpoint interpretations and historical runs"
+  },
+  "reference_rmse_absolute_tolerance": 0.005,
+  "legacy_reference_rmse": {
+    "B6_morgan_expression_pca": 2.7396828099,
+    "B6_targets_expression_pca": 2.5148919041,
+    "B7_pretrained_drug_expression_pca": 2.6323848379,
+    "RF_morgan_expression_pca": 2.4690584398,
+    "RF_targets_expression_pca": 2.4338342802,
+    "B0_mean_effects": 2.6617891482926135
+  },
+  "legacy_reference_defined_at": "Float32 and drug-ID-disjoint checkpoint; different numerical recipe and partitions",
+  "preprocessing_version": "expression_float64_v1",
+  "expression_blas_threads": 8,
+  "cold_drug_grouping": "full_standard_inchikey",
+  "projection_absolute_tolerance": 1e-07,
+  "rf_workers": 2,
+  "release_reference": "data/reports/stable_v1_golden.json",
+  "release_reference_sha256": "36d87aac814a3752f1eb62797875c4148755e4d85e85cd89e28fa3b1ad352d97"
+}

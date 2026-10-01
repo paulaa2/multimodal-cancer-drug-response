@@ -1,0 +1,33 @@
+{
+  "created_at_utc": "2026-09-20T16:26:54.831265+00:00",
+  "cohort_path": "data/processed/transfer_pairs.csv",
+  "split_dir": "data\\processed\\splits",
+  "output": "results/baselines/b0_transfer_prism_metrics.csv",
+  "predictions_output": "results/predictions/transfer_prism/b0.csv",
+  "target": "auc",
+  "splits": [
+    "transfer_prism"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "transfer_prism",
+      "subset": "test",
+      "best_model": "mean_effects",
+      "rmse": 0.15028250760275277,
+      "mae": 0.11383928284252423,
+      "pearson": 0.3761863347161081,
+      "spearman": 0.3356349340591455,
+      "r2": 0.033222655266525125
+    },
+    {
+      "split_name": "transfer_prism",
+      "subset": "validation",
+      "best_model": "mean_effects",
+      "rmse": 0.09146527727898081,
+      "mae": 0.05985775426887355,
+      "pearson": 0.787564123654107,
+      "spearman": 0.7166022344201977,
+      "r2": 0.6201855057158292
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "created_at_utc": "2026-09-30T20:43:55.840614+00:00",
+  "cohort_path": "data/processed/cohort_pairs.csv",
+  "output": "data\\external\\drug_embeddings_pinned.csv",
+  "n_drugs": 238,
+  "n_embedding_dimensions": 384,
+  "embedding_prefix": "emb_",
+  "model_name": "DeepChem/ChemBERTa-77M-MLM",
+  "revision": "ed8a5374f2024ec8da53760af91a33fb8f6a15ff",
+  "resolved_revision": "ed8a5374f2024ec8da53760af91a33fb8f6a15ff",
+  "cohort_sha256": "178c80b4e927783556e83f336baa224e297e2389b7b6a64d8dd35d1110cd62d0",
+  "output_sha256": "3a9fb4540460136d321e147e17566a02806aaacafa2931f56d00ebab355731a9",
+  "runtime": {
+    "torch_version": "2.9.1+cu128",
+    "transformers_version": "4.57.3"
+  },
+  "batch_size": 32,
+  "max_length": 256,
+  "pooling": "mean",
+  "device_requested": "cuda",
+  "device_used": "cuda",
+  "trust_remote_code": false,
+  "limit": null
+}

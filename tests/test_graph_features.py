@@ -75,3 +75,32 @@ def test_collate_hybrid_graph_batch_adds_fingerprints() -> None:
     assert batch.fingerprints.shape == (2, 8)
     assert batch.cell_features.shape == (2, 4)
     assert batch.targets.tolist() == [1.0, 2.0]
+
+
+@pytest.mark.parametrize("encoder_name", ["b4", "b5"])
+def test_graph_encoders_ignore_padding_and_propagate_gradients(encoder_name):
+    torch = pytest.importorskip("torch")
+    from mcdrp.models.gnn_b4 import DrugGraphEncoder
+    from mcdrp.models.gnn_b5 import AttentiveGraphEncoder
+
+    torch.manual_seed(7)
+    encoder = (
+        DrugGraphEncoder(hidden_dim=8, n_layers=2, dropout=0.0)
+        if encoder_name == "b4"
+        else AttentiveGraphEncoder(hidden_dim=8, n_layers=2, output_dim=8, dropout=0.0)
+    )
+    encoder.eval()
+    graph = smiles_to_graph("CCO")
+    x = torch.tensor(graph.node_features)[None]
+    adjacency = torch.tensor(graph.adjacency)[None]
+    mask = torch.ones((1, 3))
+    padded_x = torch.nn.functional.pad(x, (0, 0, 0, 4))
+    padded_adjacency = torch.nn.functional.pad(adjacency, (0, 4, 0, 4))
+    padded_mask = torch.nn.functional.pad(mask, (0, 4))
+    direct = encoder(x, adjacency, mask)
+    padded = encoder(padded_x, padded_adjacency, padded_mask)
+    torch.testing.assert_close(direct, padded)
+    direct.square().sum().backward()
+    gradients = [p.grad for p in encoder.parameters() if p.grad is not None]
+    assert gradients and all(torch.isfinite(g).all() for g in gradients)
+    assert any(g.abs().sum() > 0 for g in gradients)

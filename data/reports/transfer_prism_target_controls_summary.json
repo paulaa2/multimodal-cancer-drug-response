@@ -1,0 +1,70 @@
+{
+  "created_at_utc": "2026-09-20T16:36:17.097120+00:00",
+  "split_name": "transfer_prism",
+  "target": "auc",
+  "hypothesis_tests": "none",
+  "n_test_rows": 15115,
+  "n_test_drugs": 49,
+  "n_test_cells": 335,
+  "mapping": {
+    "unmatched": 98,
+    "full_inchikey": 47,
+    "connectivity": 2
+  },
+  "b0_mean_effects_rmse": 0.1502825076027527,
+  "note": "Single GDSC2-train / PRISM-test split. Overlapping drugs are allowed; this is assay shift, not leave-drug-out. Deltas are model RMSE minus B0 mean_effects on the same test rows. Shuffle permutes whole-drug target vectors before fitting. Within-drug R2 is negative for every model, including B0.",
+  "comparisons": [
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca",
+      "variant": "standard",
+      "rmse": 0.1379977299403463,
+      "mae": 0.1060532724346087,
+      "pearson": 0.4458073490315965,
+      "r2": 0.1848200614313773,
+      "r2_normalized": 0.1568069493877572,
+      "r2_per_drug": -0.1853581052089154,
+      "delta_vs_b0": -0.012284777662406404,
+      "pct_vs_b0": 8.174456134894424
+    },
+    {
+      "stage": "B6",
+      "model": "morgan_expression_pca",
+      "variant": "standard",
+      "rmse": 0.1404501104693383,
+      "mae": 0.1071457386629359,
+      "pearson": 0.4350763540926646,
+      "r2": 0.1555892203496606,
+      "r2_normalized": 0.1265716100503678,
+      "r2_per_drug": -0.2243055233126441,
+      "delta_vs_b0": -0.009832397133414383,
+      "pct_vs_b0": 6.542609176714547
+    },
+    {
+      "stage": "B6",
+      "model": "targets_expression_pca",
+      "variant": "shuffled",
+      "rmse": 0.1464047577246426,
+      "mae": 0.1135371248470459,
+      "pearson": 0.3187750233019993,
+      "r2": 0.0824706211146072,
+      "r2_normalized": 0.0509403391756754,
+      "r2_per_drug": -0.5050619082120171,
+      "delta_vs_b0": -0.0038777498781100983,
+      "pct_vs_b0": 2.5803068766728003
+    },
+    {
+      "stage": "B0",
+      "model": "mean_effects",
+      "variant": "standard",
+      "rmse": 0.1502825076027527,
+      "mae": 0.1138392828425242,
+      "pearson": 0.3761863347161082,
+      "r2": 0.0332226552665251,
+      "r2_normalized": 0.0,
+      "r2_per_drug": -0.3845570978464413,
+      "delta_vs_b0": 0.0,
+      "pct_vs_b0": 0.0
+    }
+  ]
+}

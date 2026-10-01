@@ -45,7 +45,7 @@ class TestFoldAssignment:
             assign_group_folds(3, 5, np.random.default_rng(0))
 
     def test_single_fold_is_rejected(self) -> None:
-        with pytest.raises(ValueError, match="at least two folds"):
+        with pytest.raises(ValueError, match="at least three folds"):
             assign_group_folds(10, 1, np.random.default_rng(0))
 
 
@@ -141,7 +141,7 @@ class TestBuildGroupedCV:
             cohort_path=cohort_path,
             output_dir=tmp_path / "cv",
             summary_path=tmp_path / "summary.json",
-            n_folds=2,
+            n_folds=3,
             split_names=("cold_tissue",),
         )
 

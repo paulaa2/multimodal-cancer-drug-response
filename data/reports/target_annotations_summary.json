@@ -1,0 +1,31 @@
+{
+  "cohort": "data/processed/cohort_pairs.csv",
+  "cohort_sha256": "178c80b4e927783556e83f336baa224e297e2389b7b6a64d8dd35d1110cd62d0",
+  "hgnc": "data/external/references/hgnc_complete_set_2026-09-30.tsv",
+  "hgnc_sha256": "91d0ad20c34f26fb12c8cce3f80a65a6fc694f3a508040b19f6bfa29ae0d889e",
+  "output": "data/mappings/target_annotations_normalized.csv",
+  "output_sha256": "43e2c1198e9b00b6f80c8b59041ebb52a72ef9133d1f0997cace9e0f441a86a9",
+  "n_drugs": 238,
+  "token_counts": {
+    "gene": 287,
+    "unresolved": 64,
+    "mechanism": 22,
+    "missing": 18,
+    "family": 16
+  },
+  "resolution_counts": {
+    "approved_symbol": 235,
+    "not_resolved": 58,
+    "unique_hgnc_alias": 52,
+    "mechanism_text": 22,
+    "missing_annotation": 18,
+    "curated_family_label": 16,
+    "ambiguous_hgnc_alias": 6
+  },
+  "n_drugs_with_genes": 159,
+  "notes": [
+    "Gene aliases resolve only when unique; families are not expanded into guessed genes.",
+    "Annotation date is unknown; cohort release/hash is provenance, not a curation date.",
+    "Views are features for ablations, not causal targets validated by these experiments."
+  ]
+}

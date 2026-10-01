@@ -1,0 +1,7 @@
+# Keep source text consistent across checkouts.
+* text=auto eol=lf
+
+# Reports/mappings contain byte-level provenance; preserve their original bytes.
+data/reports/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+data/mappings/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+notebooks/*.ipynb -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -6,8 +6,30 @@ from mcdrp.experiments.run_experiment import (
     ExperimentStep,
     build_command,
     parse_steps,
+    run_experiment,
     serialize_arg,
 )
+
+
+def test_failed_experiment_keeps_a_reviewable_manifest(tmp_path, monkeypatch):
+    import json
+    import subprocess
+
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"name": "failure", "steps": [
+        {"name": "first", "module": "mcdrp.models.baseline_b0"}
+    ]}))
+
+    def fail(command, **kwargs):
+        raise subprocess.CalledProcessError(2, command)
+
+    monkeypatch.setattr(subprocess, "run", fail)
+    with pytest.raises(subprocess.CalledProcessError):
+        run_experiment(config, run_dir=tmp_path)
+    manifest = json.loads((tmp_path / "failure" / "manifest.json").read_text())
+    assert manifest["status"] == "failed"
+    assert manifest["steps"][0]["returncode"] == 2
+    assert len(manifest["source_sha256"]) == 64
 
 
 def test_serialize_arg_handles_lists_and_flags() -> None:

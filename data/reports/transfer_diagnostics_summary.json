@@ -1,0 +1,56 @@
+{
+  "inputs": {
+    "transfer_cohort": "data/processed/transfer_checked_pairs.csv",
+    "cohort": "data/processed/cohort_pairs.csv",
+    "cv_dir": "data/processed/splits/cv/cold_drug",
+    "predictions_dir": "results/predictions/cv_checked/cold_drug"
+  },
+  "assay_concordance": {
+    "n_drugs": 46,
+    "n_shared_pairs": 13263,
+    "n_eligible_drugs": 46,
+    "n_finite_spearman": 46,
+    "median_spearman": 0.29434822516244386,
+    "mean_spearman": 0.29827153533273776,
+    "median_pearson": 0.3726364995063062,
+    "drugs_spearman_above_0_3": 20
+  },
+  "annotation_coverage": [
+    {
+      "coverage": "covered",
+      "n_drugs": 141,
+      "n_rows": 90177,
+      "row_weighted_model_rmse": 2.340050187792479,
+      "row_weighted_reference_rmse": 2.594666993889879,
+      "row_weighted_rmse_delta": -0.2546168060973999,
+      "drug_mean_paired_rmse_delta": -0.21079060417551876,
+      "drugs_won": 78
+    },
+    {
+      "coverage": "missing",
+      "n_drugs": 18,
+      "n_rows": 9800,
+      "row_weighted_model_rmse": 2.2083967482560207,
+      "row_weighted_reference_rmse": 2.218146150067792,
+      "row_weighted_rmse_delta": -0.009749401811771197,
+      "drug_mean_paired_rmse_delta": -0.06449810843302563,
+      "drugs_won": 11
+    },
+    {
+      "coverage": "unseen_tokens",
+      "n_drugs": 79,
+      "n_rows": 49387,
+      "row_weighted_model_rmse": 2.940226118045494,
+      "row_weighted_reference_rmse": 2.9261118029834363,
+      "row_weighted_rmse_delta": 0.014114315062057514,
+      "drug_mean_paired_rmse_delta": -0.11181185604506963,
+      "drugs_won": 51
+    }
+  ],
+  "notes": [
+    "Published AUC values are not harmonized to a common dose range.",
+    "Coverage uses the vocabulary of training drugs separately in each fold.",
+    "Pooled squared errors use each prediction's own fold reference.",
+    "Descriptive diagnostics, no hypothesis tests or causal conclusions."
+  ]
+}

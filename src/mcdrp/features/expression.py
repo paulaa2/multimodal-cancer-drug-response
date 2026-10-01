@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_limits
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +49,13 @@ MIN_GENE_STD = 1e-3
 # touching real training signal. Applied identically to train and test rows.
 MAX_ABS_ZSCORE = 30.0
 
+# Freeze BLAS reduction order as well as precision and RNG for new pipelines.
+EXPRESSION_BLAS_THREADS = 8
+
 
 @dataclass
 class ExpressionPipeline:
-    """Fitted StandardScaler + PCA pipeline for gene expression features.
-    """
+    """Fitted StandardScaler + PCA pipeline for gene expression features."""
 
     scaler: StandardScaler
     pca: PCA
@@ -60,6 +63,9 @@ class ExpressionPipeline:
     n_components: int
     max_abs_zscore: float = MAX_ABS_ZSCORE
     n_genes_dropped_low_variance: int = 0
+    # Keep old serialized float32 pipelines readable. New fits explicitly use float64.
+    computation_dtype: str = "float32"
+    blas_threads: int | None = None
 
     @property
     def explained_variance_ratio_sum(self) -> float:
@@ -129,6 +135,27 @@ def load_expression_matrix(
             before,
         )
 
+    # This release includes alternative sequencing/model-condition entries.
+    # Select the declared default biological profile, rather than weighting
+    # duplicated cells twice in PCA and overwriting their features by file order.
+    if "IsDefaultEntryForModel" in expression.columns:
+        defaults = (
+            expression["IsDefaultEntryForModel"]
+            .astype(str)
+            .str.lower()
+            .isin(("yes", "true", "1"))
+        )
+        selected = expression.loc[defaults].copy()
+        missing_ids = set(expression["ModelID"]) - set(selected["ModelID"])
+        if missing_ids:
+            raise ValueError(f"No default expression profile for {len(missing_ids)} models.")
+        expression = selected
+    if expression["ModelID"].duplicated().any():
+        raise ValueError("Expression must contain one default profile per ModelID.")
+    if model_ids is not None and model_ids - set(expression["ModelID"]):
+        raise ValueError("Some requested cohort models have no expression profile.")
+    logger.info("Using %d unique default expression profiles.", len(expression))
+
     expression = expression.set_index("ModelID")[gene_columns]
     expression = expression.apply(pd.to_numeric, errors="coerce")
 
@@ -139,7 +166,6 @@ def load_expression_matrix(
         expression = expression.fillna(0.0)
 
     return expression
-
 
 
 def fit_expression_pipeline(
@@ -174,7 +200,10 @@ def fit_expression_pipeline(
     """
     # Slice the numpy array rather than the DataFrame: the expression matrix is
     # wide enough that a second full materialization is worth avoiding.
-    values = expression.values.astype(np.float32)
+    # Float32 randomized SVD is sensitive to BLAS reduction order even with a
+    # fixed RNG seed. Fit the scaler and PCA in double precision; cast only the
+    # final model features to float32.
+    values = expression.values.astype(np.float64)
     keep = values.std(axis=0) >= min_gene_std
     n_dropped = int((~keep).sum())
     if n_dropped:
@@ -196,11 +225,11 @@ def fit_expression_pipeline(
 
     n_components = min(n_components, values.shape[0], values.shape[1])
 
-    scaler = StandardScaler()
-    scaled = np.clip(scaler.fit_transform(values), -max_abs_zscore, max_abs_zscore)
-
-    pca = PCA(n_components=n_components, random_state=random_state)
-    pca.fit(scaled)
+    with threadpool_limits(limits=EXPRESSION_BLAS_THREADS, user_api="blas"):
+        scaler = StandardScaler()
+        scaled = np.clip(scaler.fit_transform(values), -max_abs_zscore, max_abs_zscore)
+        pca = PCA(n_components=n_components, random_state=random_state)
+        pca.fit(scaled)
 
     explained = pca.explained_variance_ratio_.sum()
     logger.info(
@@ -219,6 +248,8 @@ def fit_expression_pipeline(
         n_components=n_components,
         max_abs_zscore=max_abs_zscore,
         n_genes_dropped_low_variance=n_dropped,
+        computation_dtype="float64",
+        blas_threads=EXPRESSION_BLAS_THREADS,
     )
 
 
@@ -241,13 +272,16 @@ def transform_expression(
     """
     # Ensure column alignment (handles column reordering, and drops the
     # low-variance genes the pipeline excluded at fit time).
-    values = expression[pipeline.gene_columns].values.astype(np.float32)
-    scaled = np.clip(
-        pipeline.scaler.transform(values),
-        -pipeline.max_abs_zscore,
-        pipeline.max_abs_zscore,
+    values = expression[pipeline.gene_columns].values.astype(
+        getattr(pipeline, "computation_dtype", "float32")
     )
-    return pipeline.pca.transform(scaled).astype(np.float32)
+    with threadpool_limits(limits=getattr(pipeline, "blas_threads", None), user_api="blas"):
+        scaled = np.clip(
+            pipeline.scaler.transform(values),
+            -pipeline.max_abs_zscore,
+            pipeline.max_abs_zscore,
+        )
+        return pipeline.pca.transform(scaled).astype(np.float32)
 
 
 def build_cell_features(

@@ -1,0 +1,508 @@
+{
+  "status": "verified",
+  "validated_at_utc": "2026-10-01T16:57:29.932230+00:00",
+  "run": {
+    "status": "verified",
+    "files": 366,
+    "config_sha256": "801a5b04d7228a65bbfa805a23b48756f3361ee77079d63fe6a5572686560991"
+  },
+  "scope": "B0/RF/B6/B7; five chemical-identity folds and three transfer endpoints; 60 fits",
+  "tests": {
+    "locked": {
+      "passed": 177,
+      "skipped": 13,
+      "log": "logs/stable_chemical_tests.log"
+    },
+    "supplemental": {
+      "passed": 190,
+      "failed": 0,
+      "log": "logs/stable_optional_chemical_tests.log",
+      "runtime": "APRNS_env Python 3.11.14 + base pytest; plugin autoload disabled"
+    }
+  },
+  "static_checks": {
+    "ruff": "passed",
+    "mypy": "passed",
+    "mypy_source_files": 70,
+    "git_diff_check": "passed"
+  },
+  "isolated_environments": {
+    "main": "logs/stable_v1_lockcheck",
+    "repeat": "logs/stable_v1_env",
+    "packages": 78,
+    "main_installation": "--require-hashes",
+    "pip_check": "passed"
+  },
+  "raw_cohort_sha256": "178c80b4e927783556e83f336baa224e297e2389b7b6a64d8dd35d1110cd62d0",
+  "chemical_identities": {
+    "grouping": "full_standard_inchikey",
+    "drug_ids": 238,
+    "chemical_identities": 229,
+    "aliases": [
+      {
+        "chemical_id": "AXTAPYRUEKNRBA-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1553",
+          "2106"
+        ]
+      },
+      {
+        "chemical_id": "CYOHGALHFOKKQC-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1062",
+          "1736"
+        ]
+      },
+      {
+        "chemical_id": "DRMCATBEKSVAPL-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1089",
+          "1806"
+        ]
+      },
+      {
+        "chemical_id": "KSERXGMCDHOLSS-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1908",
+          "2047"
+        ]
+      },
+      {
+        "chemical_id": "PHPUXYRXPHEJDF-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1803",
+          "1804"
+        ]
+      },
+      {
+        "chemical_id": "RJURFGZVJUQBHK-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1811",
+          "1911"
+        ]
+      },
+      {
+        "chemical_id": "ULNXAWLQFZMIHX-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1627",
+          "2037"
+        ]
+      },
+      {
+        "chemical_id": "VWUXBMIQPBEWFH-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1200",
+          "1816"
+        ]
+      },
+      {
+        "chemical_id": "ZDZOTLJHXYCWBA-UHFFFAOYSA-N",
+        "drug_ids": [
+          "1007",
+          "1819"
+        ]
+      }
+    ],
+    "note": "Aliases remain as measured records but cannot cross cold-drug subsets."
+  },
+  "preprocessing": [
+    {
+      "case": "cold_drug_fold_0",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_0_calibration",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_1",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_1_calibration",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_2",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_2_calibration",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_3",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_3_calibration",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_4",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "cold_drug_fold_4_calibration",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "harmonized_transfer",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 616,
+      "genes_retained": 19190,
+      "pca_components": 256,
+      "explained_variance": 0.8230416243266063,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "harmonized_transfer_calibration",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 523,
+      "genes_retained": 19187,
+      "pca_components": 256,
+      "explained_variance": 0.8512062794203648,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "matched_published_transfer",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 616,
+      "genes_retained": 19190,
+      "pca_components": 256,
+      "explained_variance": 0.8230416243266063,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    },
+    {
+      "case": "published_transfer",
+      "max_abs_delta": 0.0,
+      "cells": 717,
+      "train_cells": 717,
+      "genes_retained": 19198,
+      "pca_components": 256,
+      "explained_variance": 0.8032493946296583,
+      "computation_dtype": "float64",
+      "blas_threads": 8,
+      "status": "verified"
+    }
+  ],
+  "numeric_profiles": [
+    {
+      "case": "cold_drug_fold_0",
+      "train_cells": 717,
+      "dtype": "float64",
+      "blas_threads": [
+        8,
+        16
+      ],
+      "effective_expression_blas_threads": 8,
+      "max_abs_delta": 0.0,
+      "status": "verified"
+    },
+    {
+      "case": "harmonized_transfer",
+      "train_cells": 616,
+      "dtype": "float64",
+      "blas_threads": [
+        8,
+        16
+      ],
+      "effective_expression_blas_threads": 8,
+      "max_abs_delta": 0.0,
+      "status": "verified"
+    },
+    {
+      "case": "harmonized_transfer_calibration",
+      "train_cells": 523,
+      "dtype": "float64",
+      "blas_threads": [
+        8,
+        16
+      ],
+      "effective_expression_blas_threads": 8,
+      "max_abs_delta": 0.0,
+      "status": "verified"
+    }
+  ],
+  "independent_repeat": {
+    "status": "verified",
+    "purpose": "Independent environment, raw preprocessing and fixed model recipe",
+    "case": "cold_drug_fold_0",
+    "blas_threads": 16,
+    "max_feature_delta": 0.0,
+    "projection_tolerance": 1e-07,
+    "prediction_tolerance": 1e-07,
+    "models": [
+      {
+        "model": "RF_morgan_expression_pca",
+        "test_pairs": 30014,
+        "best_iteration": null,
+        "max_prediction_delta": 3.552713678800501e-15,
+        "status": "verified"
+      },
+      {
+        "model": "B6_targets_expression_pca",
+        "test_pairs": 30014,
+        "best_iteration": 697,
+        "max_prediction_delta": 0.0,
+        "status": "verified"
+      }
+    ],
+    "environment": {
+      "python": "3.13.5",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "packages": {
+        "ast_serialize": "0.11.2",
+        "asttokens": "3.0.2",
+        "attrs": "26.1.0",
+        "beautifulsoup4": "4.15.0",
+        "bleach": "6.4.0",
+        "cloudpickle": "3.1.2",
+        "colorama": "0.4.6",
+        "comm": "0.2.3",
+        "contourpy": "1.4.0",
+        "cycler": "0.12.1",
+        "debugpy": "1.8.22",
+        "decorator": "5.3.1",
+        "defusedxml": "0.7.1",
+        "executing": "2.2.1",
+        "fastjsonschema": "2.22.2",
+        "fonttools": "4.66.1",
+        "iniconfig": "2.3.0",
+        "ipykernel": "7.1.0",
+        "ipython": "9.7.0",
+        "ipython_pygments_lexers": "1.1.1",
+        "jedi": "0.20.0",
+        "Jinja2": "3.1.6",
+        "joblib": "1.6.0",
+        "jsonschema": "4.26.0",
+        "jsonschema-specifications": "2025.9.1",
+        "jupyter_client": "8.10.0",
+        "jupyter_core": "5.9.1",
+        "jupyterlab_pygments": "0.3.0",
+        "kiwisolver": "1.5.1",
+        "librt": "0.16.0",
+        "MarkupSafe": "3.0.3",
+        "matplotlib": "3.10.9",
+        "matplotlib-inline": "0.2.2",
+        "mistune": "3.3.4",
+        "mypy": "2.3.1",
+        "mypy_extensions": "1.1.0",
+        "nbclient": "0.11.0",
+        "nbconvert": "7.17.1",
+        "nbformat": "5.11.1",
+        "nest-asyncio": "1.6.0",
+        "numpy": "2.3.5",
+        "packaging": "26.3",
+        "pandas": "2.3.3",
+        "pandocfilters": "1.5.1",
+        "parso": "0.8.7",
+        "pathspec": "1.1.1",
+        "pillow": "12.3.0",
+        "platformdirs": "4.12.2",
+        "pluggy": "1.6.0",
+        "prompt_toolkit": "3.0.53",
+        "psutil": "7.2.2",
+        "pure_eval": "0.2.4",
+        "Pygments": "2.21.0",
+        "pyparsing": "3.3.3",
+        "pytest": "9.1.1",
+        "python-dateutil": "2.9.0.post0",
+        "pytz": "2026.4",
+        "pyzmq": "27.2.0",
+        "rdkit": "2026.3.6",
+        "referencing": "0.37.0",
+        "rpds-py": "2026.6.3",
+        "ruff": "0.16.8",
+        "scikit-learn": "1.7.2",
+        "scipy": "1.16.3",
+        "setuptools": "78.1.1",
+        "six": "1.17.0",
+        "soupsieve": "2.10",
+        "stack-data": "0.6.3",
+        "threadpoolctl": "3.7.0",
+        "tinycss2": "1.5.1",
+        "tornado": "6.5.10",
+        "traitlets": "5.16.1",
+        "typing_extensions": "4.16.0",
+        "tzdata": "2026.4",
+        "wcwidth": "0.9.1",
+        "webencodings": "0.6.1",
+        "wheel": "0.45.1",
+        "xgboost": "3.2.0"
+      },
+      "executable": "C:\\Users\\Paess\\Documents\\GitHub\\multimodal-cancer-drug-response\\logs\\stable_v1_env\\Scripts\\python.exe",
+      "logical_cpus": 16,
+      "xgboost_build": {
+        "BUILTIN_PREFETCH_PRESENT": false,
+        "CUDA_VERSION": [
+          12,
+          9
+        ],
+        "DEBUG": false,
+        "MM_PREFETCH_PRESENT": true,
+        "THRUST_VERSION": [
+          2,
+          8,
+          2
+        ],
+        "USE_CUDA": true,
+        "USE_DLOPEN_NCCL": false,
+        "USE_FEDERATED": false,
+        "USE_NCCL": false,
+        "USE_NVCOMP": false,
+        "USE_OPENMP": true,
+        "USE_RMM": false,
+        "libxgboost": "C:\\Users\\Paess\\Documents\\GitHub\\multimodal-cancer-drug-response\\logs\\stable_v1_env\\Lib\\site-packages\\xgboost\\lib\\xgboost.dll"
+      },
+      "gpu_driver_memory": "NVIDIA GeForce RTX 4060 Laptop GPU, 591.66, 8188 MiB"
+    }
+  },
+  "notebook": {
+    "status": "verified",
+    "figures": 14,
+    "code_cells": 11,
+    "exports": 42,
+    "executed_with": "C:\\Users\\Paess\\Documents\\GitHub\\multimodal-cancer-drug-response\\logs\\stable_v1_lockcheck\\Scripts\\python.exe"
+  },
+  "golden_reference_sha256": "36d87aac814a3752f1eb62797875c4148755e4d85e85cd89e28fa3b1ad352d97",
+  "frozen_scientific_config_sha256": "055a572f939b39a4d97d141695ed22fd1d4f4f5e84c763c3c4578788d0e292bf",
+  "golden_model_cases": 60,
+  "golden_derived_csv_files": 22,
+  "versioned_notebook_sha256": "14e7d679550f74688dd5fc19053fc2ee840c6ff920af08defe213c20063446aa",
+  "versioned_summary_sha256": "c9bef037e40d3ad1e99a8318c76b4fee22556ca25b4b9e834740ce8fd9d18de3",
+  "prior_failures_preserved": [
+    "results/stable_v1_failed_float32",
+    "results/stable_v1_failed_float64_unfixed_blas",
+    "results/stable_v1_failed_id_disjoint"
+  ],
+  "limits": [
+    "Supplemental tests do not certify neural architecture training.",
+    "The targeted independent repeat covers two models, not all 60 fits.",
+    "PRISM was examined previously; coverage failure remains a scientific result."
+  ],
+  "portable_notebook": {
+    "status": "verified",
+    "figures": 14,
+    "exports": 42,
+    "input": "Only the compact versioned summary; no raw data, models or project imports",
+    "executed_with": "C:\\Users\\Paess\\Documents\\GitHub\\multimodal-cancer-drug-response\\logs\\stable_v1_lockcheck\\Scripts\\python.exe",
+    "folder": "C:\\Users\\Paess\\Documents\\GitHub\\multimodal-cancer-drug-response\\logs\\stable_v1_portable"
+  },
+  "release_archives": {
+    "status": "verified",
+    "whole_file_sha256": "verified",
+    "member_round_trip": "verified",
+    "report": "data/reports/stable_v1_release.json"
+  },
+  "visual_qa": {
+    "status": "reviewed",
+    "figures": 14,
+    "files": [
+      "01_cold_drug_rmse.png",
+      "02_folds.png",
+      "03_spearman.png",
+      "03b_r2_normalizado.png",
+      "03c_spearman_por_farmaco.png",
+      "04_densidad_predicciones.png",
+      "05_error_por_farmaco.png",
+      "06_bootstrap.png",
+      "07_seleccion_rf.png",
+      "07b_validacion_xgboost.png",
+      "08_transferencia.png",
+      "09_bootstrap_transferencia.png",
+      "10_cobertura.png",
+      "11_radios.png"
+    ],
+    "checks": "Actual final PNGs reviewed for readable labels, layout and faithful scales."
+  }
+}

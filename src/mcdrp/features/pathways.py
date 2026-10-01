@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from mcdrp.features.expression import load_expression_matrix
+from mcdrp.features.expression import MAX_ABS_ZSCORE, load_expression_matrix
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +249,7 @@ def transform_pathways(
     """Transform expression rows into pathway activity scores."""
 
     values = expression[pipeline.gene_columns].to_numpy(dtype=np.float32)
-    scaled = pipeline.scaler.transform(values)
+    scaled = np.clip(pipeline.scaler.transform(values), -MAX_ABS_ZSCORE, MAX_ABS_ZSCORE)
     scores = np.zeros((len(expression), len(pipeline.pathway_to_indices)), dtype=np.float32)
     for pathway_idx, indices in enumerate(pipeline.pathway_to_indices.values()):
         scores[:, pathway_idx] = scaled[:, indices].mean(axis=1)

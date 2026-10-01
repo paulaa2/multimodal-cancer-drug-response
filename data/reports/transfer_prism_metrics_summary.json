@@ -1,0 +1,32 @@
+{
+  "created_at_utc": "2026-09-20T16:35:01.022299+00:00",
+  "prediction_files": [
+    "results\\predictions\\transfer_prism\\b0.csv",
+    "results\\predictions\\transfer_prism\\b6_morgan.csv",
+    "results\\predictions\\transfer_prism\\b6_shuffled.csv",
+    "results\\predictions\\transfer_prism\\b6_targets.csv"
+  ],
+  "target": "auc",
+  "n_model_split_rows": 16,
+  "splits": [
+    "transfer_prism"
+  ],
+  "best_by_split_subset": [
+    {
+      "split_name": "transfer_prism",
+      "subset": "test",
+      "model_id": "B6_targets_expression_pca",
+      "rmse": 0.13799772994034637,
+      "r2_normalized": 0.1568069493877572,
+      "r2_per_drug": -0.18535810520891546
+    },
+    {
+      "split_name": "transfer_prism",
+      "subset": "validation",
+      "model_id": "B6_morgan_expression_pca",
+      "rmse": 0.08843685261987515,
+      "r2_normalized": 0.0651239251231458,
+      "r2_per_drug": -0.847601603982644
+    }
+  ]
+}

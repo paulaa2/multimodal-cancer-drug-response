@@ -1,0 +1,33 @@
+{
+  "created_at_utc": "2026-09-20T16:24:34.011792+00:00",
+  "split_name": "transfer_prism",
+  "target": "auc",
+  "hypothesis_tests": "none",
+  "note": "Train and validation are GDSC2 only. Test is PRISM AUC for InChIKey-mapped drugs and overlapping DepMap cell lines. Assay shift is the question; overlapping drugs are allowed.",
+  "inputs": {
+    "gdsc_cohort": "data/processed/cohort_pairs.csv",
+    "prism_path": "data/raw/secondary-screen-dose-response-curve-parameters.csv",
+    "random_pair_split": "data/processed/splits/random_pair.csv"
+  },
+  "outputs": {
+    "cohort": "data/processed/transfer_pairs.csv",
+    "split": "data/processed/splits/transfer_prism.csv",
+    "drug_map": "data/mappings/prism_gdsc_drug_map.csv"
+  },
+  "mapping": {
+    "unmatched": 98,
+    "full_inchikey": 47,
+    "connectivity": 2
+  },
+  "counts": {
+    "gdsc_rows": 149364,
+    "prism_rows": 15115,
+    "train_rows": 126959,
+    "validation_rows": 22405,
+    "test_rows": 15115,
+    "test_drugs": 49,
+    "test_cells": 335,
+      "drug_overlap_train_test": 49,
+    "cell_overlap_train_test": 335
+  }
+}

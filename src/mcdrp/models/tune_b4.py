@@ -30,6 +30,7 @@ from mcdrp.models.baseline_b1 import EXPRESSION_PATH
 from mcdrp.models.baseline_b3 import resolve_torch_device
 from mcdrp.results.predictions import TUNED_VARIANT, write_predictions
 from mcdrp.splits.make_splits import DEFAULT_SPLITS
+from mcdrp.splits.validation import validate_assignments
 
 RunSplitFn = Callable[..., tuple[list[dict[str, Any]], list[pd.DataFrame]]]
 
@@ -186,6 +187,7 @@ def tune_b4(
     for split_name in split_names:
         logger.info("=== Tuning B4 split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
         _pipeline, cell_feature_map = build_cell_features(

@@ -16,11 +16,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
+from mcdrp.data.prism import STUDY_GDSC, STUDY_PRISM
 from mcdrp.results.compare_baselines import REQUIRED_COLUMNS, is_truthy
 from mcdrp.results.selection import lowest_rmse_rows
-from mcdrp.splits.make_splits import DEFAULT_SPLITS, SPLIT_LABELS
+from mcdrp.splits.make_splits import (
+    DEFAULT_SPLITS,
+    KNOWN_SPLIT_CHOICES,
+    SPLIT_LABELS,
+    TISSUE_COLUMN,
+    TRANSFER_SPLIT,
+    expected_overlap_policy,
+    smiles_to_scaffold,
+)
+from mcdrp.splits.validation import validate_assignments
 
 STANDARD_METRICS = {
     "B0": "results/baselines/b0_metrics.csv",
@@ -118,8 +129,7 @@ def validate_cohort(cohort_path: str | Path) -> CheckResult:
     missing = required - set(cohort.columns)
     duplicate_pairs = int(cohort["pair_id"].duplicated().sum()) if "pair_id" in cohort else -1
     null_counts = {
-        column: int(cohort[column].isna().sum())
-        for column in required & set(cohort.columns)
+        column: int(cohort[column].isna().sum()) for column in required & set(cohort.columns)
     }
 
     if missing:
@@ -141,6 +151,12 @@ def validate_cohort(cohort_path: str | Path) -> CheckResult:
             "Cohort has null values in required columns.",
             null_counts=null_required,
         )
+    if cohort.duplicated(["depmap_id", "drug_id"]).any():
+        return fail_check(
+            "cohort_schema", "Repeated cell-drug responses need a replicate policy."
+        )
+    if not np.isfinite(cohort["ln_ic50"].to_numpy(float)).all():
+        return fail_check("cohort_schema", "Response values must be finite.")
 
     return pass_check(
         "cohort_schema",
@@ -176,18 +192,25 @@ def validate_split(
             missing=sorted(missing),
         )
 
+    try:
+        validate_assignments(cohort, assignments)
+    except ValueError as exc:
+        return fail_check(f"split_{split_name}", str(exc))
     merged = cohort.merge(assignments, on="pair_id", how="inner", validate="one_to_one")
     labels = set(merged["split"].unique())
     missing_labels = sorted(set(SPLIT_LABELS) - labels)
-    unknown_labels = sorted(labels - set(SPLIT_LABELS))
+    allowed_labels = (
+        {*SPLIT_LABELS, "unused"} if split_name == "cold_both" else set(SPLIT_LABELS)
+    )
+    if "calibration" in labels:
+        allowed_labels.update({"calibration", "unused"})
+    unknown_labels = sorted(labels - allowed_labels)
     row_count_ok = len(merged) == len(cohort) == len(assignments)
 
     details: dict[str, Any] = {
         "path": str(split_path),
         "rows": int(len(merged)),
-        "by_split": {
-            label: int(merged["split"].eq(label).sum()) for label in SPLIT_LABELS
-        },
+        "by_split": {label: int(merged["split"].eq(label).sum()) for label in sorted(labels)},
     }
     if not row_count_ok:
         return fail_check(
@@ -235,6 +258,54 @@ def validate_split(
             "Cold-drug split leaks drugs into validation/test.",
             **details,
         )
+    policy = expected_overlap_policy(split_name)
+    group_columns = {"cell": "depmap_id", "drug": "drug_id", "tissue": TISSUE_COLUMN}
+    if split_name == "cold_scaffold":
+        merged = merged.copy()
+        catalog = merged[["drug_id", "canonical_smiles"]].drop_duplicates("drug_id")
+        scaffold_map = {
+            drug: smiles_to_scaffold(smiles, str(drug))
+            for drug, smiles in catalog.itertuples(index=False, name=None)
+        }
+        merged["chemical_scaffold"] = merged["drug_id"].map(scaffold_map)
+        group_columns["scaffold"] = "chemical_scaffold"
+    for entity, column in group_columns.items():
+        if policy[f"{entity}_overlap_allowed"]:
+            continue
+        if column not in merged or merged[column].isna().any():
+            return fail_check(f"split_{split_name}", f"Missing non-null {column}.")
+        groups = [
+            set(merged.loc[merged["split"].eq(label), column])
+            for label in (*SPLIT_LABELS, "calibration")
+        ]
+        if any(left & right for idx, left in enumerate(groups) for right in groups[idx + 1 :]):
+            return fail_check(f"split_{split_name}", f"Held-out {entity} groups overlap.")
+    if split_name == TRANSFER_SPLIT:
+        if "study" not in merged.columns:
+            return fail_check(
+                f"split_{split_name}",
+                "Transfer split requires a study column on the cohort.",
+                **details,
+            )
+        train_val = pd.concat([train, validation], ignore_index=True)
+        calibration = merged.loc[merged["split"].eq("calibration")]
+        if set(calibration["depmap_id"]) & set(train_val["depmap_id"]):
+            return fail_check(
+                f"split_{split_name}", "Calibration cells overlap fitting/validation."
+            )
+        train_val = pd.concat([train_val, calibration], ignore_index=True)
+        if train_val["study"].ne(STUDY_GDSC).any():
+            return fail_check(
+                f"split_{split_name}",
+                "PRISM rows leaked into GDSC train or validation.",
+                **details,
+            )
+        if test["study"].ne(STUDY_PRISM).any():
+            return fail_check(
+                f"split_{split_name}",
+                "GDSC rows leaked into the PRISM test set.",
+                **details,
+            )
 
     return pass_check(
         f"split_{split_name}",
@@ -346,7 +417,7 @@ def validate_metric_values(
 ) -> CheckResult:
     """Validate metric values and required split/subset coverage."""
 
-    allowed_subsets = {"validation", "test"}
+    allowed_subsets = {"validation", "calibration", "test"}
     invalid_subsets = sorted(set(table["subset"]) - allowed_subsets)
     required_metric_columns = ["rmse", "mae"]
     optional_metric_columns = ["pearson", "spearman", "r2"]
@@ -448,11 +519,9 @@ def validate_comparison_outputs(
             )
         )
 
-    expected_best = (
-        lowest_rmse_rows(comparison, ["split_name", "subset"])[
-            ["split_name", "subset", "model_id", "rmse"]
-        ]
-    )
+    expected_best = lowest_rmse_rows(comparison, ["split_name", "subset"])[
+        ["split_name", "subset", "model_id", "rmse"]
+    ]
     observed_best = best[["split_name", "subset", "model_id", "rmse"]]
     merged = expected_best.merge(
         observed_best,
@@ -599,7 +668,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--splits",
         nargs="+",
         default=list(DEFAULT_SPLITS),
-        choices=list(DEFAULT_SPLITS),
+        choices=list(KNOWN_SPLIT_CHOICES),
     )
     return parser
 

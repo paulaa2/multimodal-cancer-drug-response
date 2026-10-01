@@ -23,7 +23,14 @@ from mcdrp.features.expression import build_cell_features
 from mcdrp.features.fingerprints import build_fingerprint_matrix
 from mcdrp.metrics import regression_metrics
 from mcdrp.models.baseline_b1 import DEFAULT_SPLITS, EXPRESSION_PATH, assemble_features
-from mcdrp.models.baseline_b2 import fit_xgboost, predict_xgboost, xgb_device_params
+from mcdrp.models.baseline_b2 import (
+    fit_xgboost,
+    predict_xgboost,
+    xgb_device_params,
+    xgb_selection_context,
+)
+from mcdrp.results.predictions import TUNED_VARIANT, prediction_frame, write_predictions
+from mcdrp.splits.validation import selection_fingerprint, validate_assignments
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +113,7 @@ def tune_b2_for_split(
     n_estimators: int,
     early_stopping_rounds: int,
     device: str,
+    prediction_frames: list[pd.DataFrame] | None = None,
 ) -> list[dict[str, Any]]:
     """Tune XGBoost on validation RMSE and evaluate best setting on test."""
 
@@ -176,6 +184,23 @@ def tune_b2_for_split(
         best_iteration,
     )
     test_row["device"] = best_device
+    if prediction_frames is not None:
+        for subset, eval_rows, values in (
+            ("validation", val_rows, predict_xgboost(best_model, x_val)),
+            ("test", test_rows, test_predictions),
+        ):
+            prediction_frames.append(
+                prediction_frame(
+                    eval_rows,
+                    eval_rows[target].to_numpy(),
+                    values,
+                    stage="B2",
+                    model="xgboost",
+                    split_name=split_name,
+                    subset=subset,
+                    variant=TUNED_VARIANT,
+                )
+            )
     test_row["selected_by_validation"] = True
     rows.append(test_row)
     return rows
@@ -187,6 +212,7 @@ def tune_b2(
     expression_path: str | Path = EXPRESSION_PATH,
     output: str | Path = "results/baselines/b2_tuning_metrics.csv",
     summary: str | Path = "data/reports/b2_tuning_summary.json",
+    predictions_output: str | Path = "results/predictions/b2_tuned.csv",
     *,
     target: str = "ln_ic50",
     n_components: int = 256,
@@ -205,9 +231,12 @@ def tune_b2(
     logger.info("Fingerprint matrix shape: %s", fp_matrix.shape)
 
     all_rows: list[dict[str, Any]] = []
+    prediction_frames: list[pd.DataFrame] = []
+    selection_context = xgb_selection_context(expression_path, n_components)
     for split_name in split_names:
         logger.info("=== Tuning B2 split: %s ===", split_name)
         assignments = pd.read_csv(split_dir / f"{split_name}.csv")
+        validate_assignments(cohort, assignments)
         merged = cohort.merge(assignments, on="pair_id", how="inner")
         train_ids = set(merged.loc[merged["split"].eq("train"), "depmap_id"].unique())
         pipeline, cell_feature_map = build_cell_features(
@@ -220,24 +249,35 @@ def tune_b2(
             "PCA explained variance: %.1f%%",
             pipeline.explained_variance_ratio_sum * 100,
         )
-        all_rows.extend(
-            tune_b2_for_split(
-                cohort,
-                assignments,
-                fp_matrix,
-                cell_feature_map,
-                split_name=split_name,
-                target=target,
-                n_estimators=n_estimators,
-                early_stopping_rounds=early_stopping_rounds,
-                device=device,
-            )
+        split_rows = tune_b2_for_split(
+            cohort,
+            assignments,
+            fp_matrix,
+            cell_feature_map,
+            split_name=split_name,
+            target=target,
+            n_estimators=n_estimators,
+            early_stopping_rounds=early_stopping_rounds,
+            device=device,
+            prediction_frames=prediction_frames,
         )
+        fingerprint = selection_fingerprint(
+            cohort, assignments, target=target, context=selection_context
+        )
+        for row in split_rows:
+            row["selection_fingerprint"] = fingerprint
+            params = json.loads(row["params"])
+            params.update(
+                n_estimators=n_estimators, early_stopping_rounds=early_stopping_rounds
+            )
+            row["params"] = json.dumps(params, sort_keys=True)
+        all_rows.extend(split_rows)
 
     metrics = pd.DataFrame(all_rows)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(output_path, index=False)
+    write_predictions(prediction_frames, predictions_output)
 
     summary_data = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -245,6 +285,7 @@ def tune_b2(
         "expression_path": str(expression_path),
         "output": str(output),
         "target": target,
+        "selection_context": selection_context,
         "n_pca_components": n_components,
         "n_estimators": n_estimators,
         "early_stopping_rounds": early_stopping_rounds,
@@ -284,6 +325,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Create the command-line parser."""
 
     parser = argparse.ArgumentParser(description="Tune B2 XGBoost baseline.")
+    parser.add_argument("--predictions-output", default="results/predictions/b2_tuned.csv")
     parser.add_argument("--cohort", default="data/processed/cohort_pairs.csv")
     parser.add_argument("--split-dir", default="data/processed/splits")
     parser.add_argument("--expression", default=EXPRESSION_PATH)
@@ -321,6 +363,7 @@ def main() -> None:
         split_dir=args.split_dir,
         expression_path=args.expression,
         output=args.output,
+        predictions_output=args.predictions_output,
         summary=args.summary,
         target=args.target,
         n_components=args.n_components,

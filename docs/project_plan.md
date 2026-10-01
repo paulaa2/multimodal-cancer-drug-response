@@ -1,7 +1,8 @@
 # Project Plan
 
-This plan translates the design document into implementation phases that can be
-worked through incrementally.
+This is a reference for the implemented F0–F7 phases and their commands.
+Current experiment status and priorities live in [research roadmap](research_roadmap.md);
+known corrections and artifact validity live in [repository audit](repository_audit.md).
 
 ## F0 - Biology and Data Audit
 
@@ -92,8 +93,9 @@ python -m mcdrp.experiments.run_experiment configs/experiments/b4_tuning_full.js
 ```
 
 `tune_b4` and `tune_b5` search a four-point grid of learning rate × dropout,
-keep architecture at the published defaults, and score test only for the
-validation-selected candidate of that split. A `random_pair` smoke test does
+keep architecture at the published defaults, and export test results only for the
+validation-selected candidate of that split. Candidate runners currently compute
+test predictions internally without using them for selection. A `random_pair` smoke test does
 not substitute for this. B6 overlays the B2 hyperparameters of the **same**
 split, so B2 has to be tuned on every split B6 will report.
 
@@ -226,7 +228,7 @@ interpretability.
 
 Outputs:
 
-- pathway activity matrix
+- pathway mean-expression matrix
 - comparison of selected genes vs PCA vs pathway scores
 - ablation table under identical splits
 - B6 modality ablation metrics and summary

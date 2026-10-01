@@ -10,6 +10,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  stable-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.5"
+          cache: pip
+          cache-dependency-path: requirements/stable-v1-win-py313.lock.txt
+      - name: Install frozen Windows environment
+        run: python -m pip install --require-hashes -r requirements/stable-v1-win-py313.lock.txt
+      - name: Check dependencies and stable acceptance contracts
+        run: |
+          python -m pip check
+          python -m pytest tests/test_stable_v1.py tests/test_chemical_identity.py
+      # Full raw-data/CUDA reproduction is certified locally; no private/raw
+      # datasets or GPU availability are assumed on a hosted CI runner.
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -25,14 +42,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      # The baselines extra brings RDKit and XGBoost, which the fingerprint,
-      # scaffold-split, and tree-model tests need. Torch is deliberately left
-      # out: the GNN tests skip themselves when it is missing, which keeps CI
-      # fast. Run the GNN suite locally or on a GPU runner.
+      # RDKit/XGBoost support baseline and split tests. One matrix entry also
+      # exercises neural graph tests with CPU torch; CUDA training is separate.
       - name: Install
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,baselines]"
+
+      - name: Install CPU PyTorch for neural regression checks
+        if: matrix.python-version == '3.12'
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Lint
         run: ruff check src tests
@@ -58,8 +77,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      # Catches broken module paths and malformed step arguments without
-      # running any training.
+      # Checks pipeline structure without training. Actual argparse contracts
+      # are exercised by test_configs.py in the main test job.
       - name: Dry-run every experiment config
         run: |
           for config in configs/experiments/*.json; do

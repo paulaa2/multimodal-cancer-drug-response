@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.metadata
 import json
 import shlex
 import subprocess
@@ -130,8 +132,21 @@ def run_experiment(
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "config_path": str(config_path),
         "dry_run": dry_run,
+        "config": config,
+        "config_sha256": hashlib.sha256(Path(config_path).read_bytes()).hexdigest(),
+        "python_executable": sys.executable,
+        "python_version": sys.version,
+        "package_versions": package_versions(),
+        "source_sha256": source_digest(),
+        "status": "dry_run" if dry_run else "running",
         "steps": [],
     }
+    manifest_path = experiment_dir / ("dry_run_manifest.json" if dry_run else "manifest.json")
+
+    def save_manifest() -> None:
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    save_manifest()
 
     for step in steps:
         command = build_command(step)
@@ -140,18 +155,53 @@ def run_experiment(
             "module": step.module,
             "command": command,
             "command_text": shell_join(command),
+            "source_sha256": source_digest(),
         }
         print(f"[{step.name}] {entry['command_text']}")
-        if not dry_run:
-            completed = subprocess.run(command, check=True)
-            entry["returncode"] = completed.returncode
         manifest["steps"].append(entry)
+        entry["started_at_utc"] = datetime.now(timezone.utc).isoformat()
+        entry["status"] = "planned" if dry_run else "running"
+        save_manifest()
+        if not dry_run:
+            try:
+                completed = subprocess.run(command, check=True)
+            except subprocess.CalledProcessError as exc:
+                entry.update(status="failed", returncode=exc.returncode)
+                manifest["status"] = "failed"
+                save_manifest()
+                raise
+            entry["returncode"] = completed.returncode
+            entry["status"] = "completed"
+        entry["finished_at_utc"] = datetime.now(timezone.utc).isoformat()
+        save_manifest()
 
-    manifest_path = experiment_dir / "manifest.json"
-    with manifest_path.open("w", encoding="utf-8") as handle:
-        json.dump(manifest, handle, indent=2)
+    manifest["status"] = "dry_run" if dry_run else "completed"
+    save_manifest()
     print(f"Wrote experiment manifest to {manifest_path}")
     return manifest
+
+
+def package_versions() -> dict[str, str | None]:
+    """Record installed versions without importing optional neural libraries."""
+
+    versions: dict[str, str | None] = {}
+    for name in ("numpy", "pandas", "scikit-learn", "xgboost", "rdkit", "torch"):
+        try:
+            versions[name] = importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            versions[name] = None
+    return versions
+
+
+def source_digest() -> str:
+    """Fingerprint local source, including uncommitted edits in this research repo."""
+
+    root = Path(__file__).resolve().parents[1]
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*.py")):
+        digest.update(path.relative_to(root).as_posix().encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def build_parser() -> argparse.ArgumentParser:

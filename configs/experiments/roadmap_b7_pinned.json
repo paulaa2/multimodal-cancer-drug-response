@@ -1,0 +1,120 @@
+{
+  "name": "roadmap_b7_pinned",
+  "steps": [
+    {
+      "name": "b7_0",
+      "module": "mcdrp.models.pretrained_b7",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_0",
+        "splits": [
+          "cold_drug"
+        ],
+        "models": [
+          "pretrained_drug_expression_pca"
+        ],
+        "drug-embeddings": "data/external/drug_embeddings_pinned.csv",
+        "embedding-manifest": "data/reports/drug_embeddings_pinned_summary.json",
+        "output": "results/roadmap_2_6/b7_pinned/fold_0/metrics.csv",
+        "predictions-output": "results/roadmap_2_6/b7_pinned/fold_0/predictions.csv",
+        "summary": "results/roadmap_2_6/b7_pinned/fold_0/summary.json",
+        "n-estimators": 700,
+        "learning-rate": 0.05,
+        "max-depth": 6,
+        "early-stopping-rounds": 40,
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "b7_1",
+      "module": "mcdrp.models.pretrained_b7",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_1",
+        "splits": [
+          "cold_drug"
+        ],
+        "models": [
+          "pretrained_drug_expression_pca"
+        ],
+        "drug-embeddings": "data/external/drug_embeddings_pinned.csv",
+        "embedding-manifest": "data/reports/drug_embeddings_pinned_summary.json",
+        "output": "results/roadmap_2_6/b7_pinned/fold_1/metrics.csv",
+        "predictions-output": "results/roadmap_2_6/b7_pinned/fold_1/predictions.csv",
+        "summary": "results/roadmap_2_6/b7_pinned/fold_1/summary.json",
+        "n-estimators": 700,
+        "learning-rate": 0.05,
+        "max-depth": 6,
+        "early-stopping-rounds": 40,
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "b7_2",
+      "module": "mcdrp.models.pretrained_b7",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_2",
+        "splits": [
+          "cold_drug"
+        ],
+        "models": [
+          "pretrained_drug_expression_pca"
+        ],
+        "drug-embeddings": "data/external/drug_embeddings_pinned.csv",
+        "embedding-manifest": "data/reports/drug_embeddings_pinned_summary.json",
+        "output": "results/roadmap_2_6/b7_pinned/fold_2/metrics.csv",
+        "predictions-output": "results/roadmap_2_6/b7_pinned/fold_2/predictions.csv",
+        "summary": "results/roadmap_2_6/b7_pinned/fold_2/summary.json",
+        "n-estimators": 700,
+        "learning-rate": 0.05,
+        "max-depth": 6,
+        "early-stopping-rounds": 40,
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "b7_3",
+      "module": "mcdrp.models.pretrained_b7",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_3",
+        "splits": [
+          "cold_drug"
+        ],
+        "models": [
+          "pretrained_drug_expression_pca"
+        ],
+        "drug-embeddings": "data/external/drug_embeddings_pinned.csv",
+        "embedding-manifest": "data/reports/drug_embeddings_pinned_summary.json",
+        "output": "results/roadmap_2_6/b7_pinned/fold_3/metrics.csv",
+        "predictions-output": "results/roadmap_2_6/b7_pinned/fold_3/predictions.csv",
+        "summary": "results/roadmap_2_6/b7_pinned/fold_3/summary.json",
+        "n-estimators": 700,
+        "learning-rate": 0.05,
+        "max-depth": 6,
+        "early-stopping-rounds": 40,
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "b7_4",
+      "module": "mcdrp.models.pretrained_b7",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_4",
+        "splits": [
+          "cold_drug"
+        ],
+        "models": [
+          "pretrained_drug_expression_pca"
+        ],
+        "drug-embeddings": "data/external/drug_embeddings_pinned.csv",
+        "embedding-manifest": "data/reports/drug_embeddings_pinned_summary.json",
+        "output": "results/roadmap_2_6/b7_pinned/fold_4/metrics.csv",
+        "predictions-output": "results/roadmap_2_6/b7_pinned/fold_4/predictions.csv",
+        "summary": "results/roadmap_2_6/b7_pinned/fold_4/summary.json",
+        "n-estimators": 700,
+        "learning-rate": 0.05,
+        "max-depth": 6,
+        "early-stopping-rounds": 40,
+        "device": "cuda"
+      }
+    }
+  ]
+}
