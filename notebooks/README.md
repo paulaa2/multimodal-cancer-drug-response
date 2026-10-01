@@ -6,7 +6,14 @@ for plotting. See the [stable protocol](../docs/stable_v1.md) for full retrainin
 It contains 14 executed figures and exports PNG (300 dpi), SVG and PDF under
 the repository's ignored `figures/stable_v1/` directory. Its numerical reference
 uses float64 scaling/PCA; the earlier float32 checkpoint is kept separately.
-Select the locked Python kernel, or execute explicitly:
+The new exploratory follow-up is
+[`improvement_v1_results.ipynb`](improvement_v1_results.ipynb), with cold-drug,
+neural learning, error diagnostics, original source-only transfer and separately
+labelled PRISM-supervised adaptation. Its portable snapshot needs no GPU.
+See [its protocol](../docs/improvement_v1.md) before comparing adaptation results
+with the original transfer experiment.
+
+Select the locked Python kernel for the stable notebook, or execute explicitly:
 
 ```powershell
 python -m nbconvert --to notebook --execute --ExecutePreprocessor.kernel_name=python3 --inplace notebooks/stable_v1_results.ipynb

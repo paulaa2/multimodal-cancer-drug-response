@@ -14,6 +14,11 @@ Start with the [stable notebook](notebooks/stable_v1_results.ipynb). Other
 architectures and older runs remain experimental. The stable guide contains
 the isolated reproduction command and local release manifests.
 
+The [bounded improvement follow-up](docs/improvement_v1.md) compares a
+validation-selected ensemble, small residual neural towers and explicitly
+supervised PRISM adaptation. It preserves stable v1 as its reference and keeps
+source-only transfer separate from experiments using destination-domain labels.
+
 > Can a multimodal model combining transcriptomic state and molecular structure
 > predict cancer drug response robustly under realistic distribution shifts, and
 > do biologically informed pathway representations improve generalization and

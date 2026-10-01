@@ -121,6 +121,13 @@ annotation hashes and complete five-fold coverage are checked before reporting.
 
 ## Next priorities
 
+The [bounded improvement phase](improvement_v1.md) adds a validation-selected
+convex ensemble, two-seed residual neural towers on the stable chemical folds,
+and PRISM-supervised adaptation with separate development/calibration/evaluation
+cells. It does not refresh historical B3/B4/B5 or convert reused PRISM data into
+fresh external confirmation. Its notebook reports gains and tradeoffs separately
+for absolute error, within-drug ranking and interval coverage.
+
 Repeat the modality permutations and annotation-view controls on the frozen
 chemical-identity folds before transferring their historical conclusions to
 the stable comparison. Their previous drug-ID results remain exploratory.

@@ -1,0 +1,56 @@
+{
+  "status": "verified",
+  "stable_reference": {
+    "status": "verified",
+    "files": 366,
+    "config_sha256": "801a5b04d7228a65bbfa805a23b48756f3361ee77079d63fe6a5572686560991"
+  },
+  "cases": [
+    {
+      "case": "cold_drug_fold_0",
+      "test_pairs": 30014,
+      "neural_candidates": 4
+    },
+    {
+      "case": "cold_drug_fold_1",
+      "test_pairs": 30361,
+      "neural_candidates": 4
+    },
+    {
+      "case": "cold_drug_fold_2",
+      "test_pairs": 30761,
+      "neural_candidates": 4
+    },
+    {
+      "case": "cold_drug_fold_3",
+      "test_pairs": 30107,
+      "neural_candidates": 4
+    },
+    {
+      "case": "cold_drug_fold_4",
+      "test_pairs": 28121,
+      "neural_candidates": 4
+    },
+    {
+      "case": "published_transfer",
+      "test_pairs": 14200,
+      "neural_candidates": 4
+    },
+    {
+      "case": "harmonized_transfer",
+      "test_pairs": 10785,
+      "neural_candidates": 4
+    },
+    {
+      "case": "matched_published_transfer",
+      "test_pairs": 10785,
+      "neural_candidates": 4
+    }
+  ],
+  "neural_models_reloaded": 32,
+  "selected_test_reload_max_delta": 1.7763568394002505e-15,
+  "cold_test_pairs_per_model": 149364,
+  "adaptation_cells_disjoint": true,
+  "adaptation_test_cells": 168,
+  "manifest_sha256": "c7a25264a00e9d71de33ef40646a8bdb62993e8b175f34da23de8cb0bcd7796c"
+}
