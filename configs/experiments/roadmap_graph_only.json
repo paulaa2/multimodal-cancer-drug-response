@@ -1,0 +1,50 @@
+{
+  "name": "roadmap_graph_only",
+  "steps": [
+    {
+      "name": "graph_0",
+      "module": "mcdrp.models.graph_only",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_0",
+        "output-dir": "results/roadmap_2_6/graph_only/fold_0",
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "graph_1",
+      "module": "mcdrp.models.graph_only",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_1",
+        "output-dir": "results/roadmap_2_6/graph_only/fold_1",
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "graph_2",
+      "module": "mcdrp.models.graph_only",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_2",
+        "output-dir": "results/roadmap_2_6/graph_only/fold_2",
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "graph_3",
+      "module": "mcdrp.models.graph_only",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_3",
+        "output-dir": "results/roadmap_2_6/graph_only/fold_3",
+        "device": "cuda"
+      }
+    },
+    {
+      "name": "graph_4",
+      "module": "mcdrp.models.graph_only",
+      "args": {
+        "split-dir": "data/processed/splits/cv/cold_drug/fold_4",
+        "output-dir": "results/roadmap_2_6/graph_only/fold_4",
+        "device": "cuda"
+      }
+    }
+  ]
+}

@@ -108,25 +108,31 @@ exactly that.
 
 | Resource | Role |
 | --- | --- |
-| GDSC2 | drug response labels, `ln(IC50)` |
+| GDSC2 | drug response labels, `ln(IC50)` and AUC |
+| PRISM Repurposing 19Q4 | secondary-screen AUC for the `transfer_prism` split |
 | DepMap / CCLE | transcriptomics and cell-line lineage metadata |
 | PubChem / ChEMBL | canonical SMILES |
-| MSigDB / Reactome / PROGENy | pathway gene sets |
+| MSigDB / Reactome | pathway gene sets for mean-expression features |
+| PROGENy | weighted perturbation footprints for a future activity scorer |
 
 One frozen release per resource, per the audit in
 [`data_audit.md`](data_audit.md). DrEval notes that technical differences
 between screens are substantial enough that naively pooling datasets is
-counterproductive, which is why cross-study validation is scoped as a separate
-milestone rather than as extra training data.
+counterproductive, which is why `transfer_prism` is a held-out test rather
+than extra training data. Refreshed target features improve absolute error
+against B0 and Morgan; within-drug R² remains negative while within-drug
+Spearman is modestly positive. See the [audit](repository_audit.md) for the
+corrected three-seed cohort/results and the roadmap for remaining comparisons.
 
 ## Deliberate differences from DrEval
 
 This repository is not a DrEval reimplementation, and where it diverges the
 reason is scope rather than disagreement:
 
-- **Single train/validation/test split per setting**, not k-fold nested CV.
-  Cheaper, but it means no dispersion estimates, which is the main outstanding
-  weakness.
+- **Grouped outer folds with a separate validation group**, rather than full
+  nested CV, are implemented for cold-cell/tissue/drug/scaffold. Random-pair,
+  double-cold and assay-transfer replication have different estimands. Fitting
+  seeds on one external cohort do not measure dispersion over new screens.
 - **`cold_scaffold` split**, which DrEval does not include. Bemis-Murcko
   scaffold grouping is a stricter chemical generalization test than holding out
   drug IDs.
@@ -135,3 +141,70 @@ reason is scope rather than disagreement:
 
 Using `drevalpy` directly as an external cross-check would be a strong addition
 and is listed in [`research_roadmap.md`](research_roadmap.md).
+
+## Literature added during the 2026-09-30 audit
+
+**Chen et al. — Harmonization and integration of pharmacogenomics screens.**
+*Bioinformatics* 42(7), btag382 (2026).
+<https://doi.org/10.1093/bioinformatics/btag382>
+
+Compares curve fits, response metrics and concentration windows across screens.
+Its strongest agreement uses sigmoid-derived AUC on a truncated dose interval.
+This directly motivates obtaining raw curves and harmonizing endpoints before
+treating published GDSC and PRISM AUC as the same scale. The current local
+fitted-response summaries do not implement this procedure.
+
+**Xia et al. — A cross-study analysis of drug response prediction in cancer
+cell lines.** *Briefings in Bioinformatics* 23(1), bbab356 (2022; online 2021).
+<https://doi.org/10.1093/bib/bbab356>
+
+Evaluates five screens and recomputes response summaries from viability curves.
+Its fixed-concentration-range AUC comparison reinforces the need to distinguish
+assay portability from generalization to new biological or chemical entities.
+Useful for designing concordance diagnostics and a harmonized external cohort.
+
+**Corsello et al. — Discovering the anticancer potential of non-oncology drugs
+by systematic viability profiling.** *Nature Cancer* 1, 235–248 (2020).
+<https://doi.org/10.1038/s43018-019-0018-6>
+
+The primary PRISM repurposing reference. Use its screen definitions and source
+release metadata when documenting pooled cell-line viability, secondary
+concentration-response profiling, technical replicates and QC decisions.
+Chemical connectivity matches need separate sensitivity analysis because they
+ignore stereochemical distinctions.
+
+**Schubert et al. — Perturbation-response genes reveal signaling footprints in
+cancer gene expression.** *Nature Communications* 9, 20 (2018).
+<https://doi.org/10.1038/s41467-017-02391-6>
+
+PROGENy infers pathway activity from perturbation-response footprints rather
+than averaging expression of pathway members. The current GMT pathway means
+are an exploratory feature block, not PROGENy. A faithful extension requires
+signed weighted coefficients and documented gene alignment.
+
+Chen et al. provide [derived profiles](https://zenodo.org/records/20620409),
+[CTRP inputs](https://zenodo.org/records/17981848) and
+[GDSC/PRISM replicate-level inputs](https://zenodo.org/records/17196025), plus
+[analysis code](https://github.com/digitaltumors/Pharmacogenomics_Screens_Harmonization).
+The GDSCv2/PRISM raw inputs are now checksum-verified locally and used in the
+separate shared-window experiment described in [roadmap 2–6](roadmap_2_6.md).
+CTRP and derived profiles have not been incorporated. The local fitter is a
+documented 3PL protocol, rather than an exact copy of the reference analysis.
+
+**Angelopoulos and Bates — A Gentle Introduction to Conformal Prediction and
+Distribution-Free Uncertainty Quantification.**
+[arXiv:2107.07511](https://arxiv.org/abs/2107.07511).
+Use the independent calibration sample and finite-sample quantile construction.
+The current implementation uses entity-maximum residuals to respect the
+evaluation unit; it reports empirical coverage under assay shift.
+
+**Barber et al. — Conformal prediction beyond exchangeability.**
+*Annals of Statistics* 51(2), 816–845 (2023).
+[doi:10.1214/23-AOS2276](https://doi.org/10.1214/23-AOS2276).
+This motivates explicitly qualifying interval guarantees under distribution
+drift. The local baseline does not implement that paper's weighted/randomized
+extension or claim that ordinary conformal intervals solve arbitrary assay shift.
+
+These papers support protocol decisions; they do not validate this repository's
+numerical results. A failed small Ridge target predictor does not refute the
+more extensive pretraining or data used by published target-profile models.

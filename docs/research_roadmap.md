@@ -1,274 +1,155 @@
-# Research Roadmap
+# Research roadmap
 
-Prioritized next steps, ordered by how much each one strengthens the
-conclusions rather than by how interesting it is to build. Rationale and
-citations are in [`related_work.md`](related_work.md).
+The frozen software/evaluation release is [stable v1](stable_v1.md), covering
+B0/RF/B6/B7, five full-chemical-identity cold-drug folds and strict GDSC→PRISM transfer. Reproduce
+that release before extending architectures. The broader exploratory controls
+below remain a separate checkpoint; historical architectures are excluded
+from the stable ranking.
 
-## Where the project stands
+Stable v1 uses float64 scaling/PCA with float32 final features, after a failed
+float32 reproduction and a data-only numerical audit. Its hash-pinned reference
+belongs to that revised recipe; see the [acceptance criteria](stable_v1.md).
+Historical float32 scores remain a separate checkpoint.
+The historical drug-ID folds also allow nine chemical alias pairs to cross
+subsets; they cannot establish unseen-chemical performance. The stable
+protocol groups all 238 IDs into 229 complete chemical identities for folds,
+calibration and bootstrap, while preserving every measured pair.
 
-The model ladder B0-B7 is implemented. Every model writes per-row predictions,
-reporting computes mean-effect normalized and stratified metrics, and the
-leave-tissue-out split is wired into the default split suite and full
-experiment configs. B4/B5 have a four-point validation tuner; B6 reuses
-validation-selected B2 XGBoost hyperparameters. A multi-seed runner rebuilds
-splits and models under several seeds and reports mean and spread, without
-p-values.
+This is the authoritative list of project status and next experiments. The
+[evaluation protocol](evaluation_protocol.md) defines measurement;
+[related work](related_work.md) supplies the literature rationale;
+[project plan](project_plan.md) is a command/reference guide to implemented phases.
 
-The first thing that machinery revealed, on the `random_pair` test set:
+## Audit checkpoint — 2026-09-30
 
-| Model | Features | Pearson (global) | Pearson (per drug) | R2 (per drug) |
-| --- | --- | --- | --- | --- |
-| B0 `mean_effects` | none | 0.906 | 0.640 | 0.363 |
-| B2 tuned XGBoost | Morgan + expression PCA | 0.913 | 0.668 | 0.396 |
+The full source tree and existing artifact contracts were reviewed, with unit
+checks, static checks and real-data diagnostics. See
+[repository audit](repository_audit.md). Code passing tests is not proof that
+all scientific conclusions are correct.
 
-Read globally, XGBoost adds 0.007 Pearson over a model with no features — which
-would look like the modalities contribute nothing. Read per drug, it lifts R2
-from 0.363 to 0.396, about a 9% relative gain in explained within-drug variance.
-Both readings are of the same run. The global number is the misleading one, and
-this is why the reporting rules in
-[`evaluation_protocol.md`](evaluation_protocol.md) exist.
+Historical results remain available, but expression-based comparisons predate
+the default-profile correction. GNN comparisons also predate the initialization
+seed correction; B3 predates grouped external early stopping. Do not mix these
+artifacts with refreshed predictions in one ranking.
 
-## Tier 1 — required before any result is a finding
+## Implemented and executed in this audit
 
-### 1. Multi-seed runs with dispersion — code done, numbers pending
+1. **Data and scoring integrity.** Select the default DepMap profile for each
+   model; reject missing/duplicate profiles, incomplete split assignments,
+   duplicate/stale predictions, inconsistent targets, wrong subsets and
+   nonfinite scores. Allow `unused` in the double-cold audit and independent
+   calibration reservation; verify tissue/scaffold and validation–test group
+   separation, including calibration groups when present.
+2. **Reproducible fitting.** Seed GNN construction; give B3 the declared
+   validation groups in both backends; prevent ElasticNet tuning from mutating
+   a shared feature matrix. B1/B2/B3/B7 tuners now persist validation-selected
+   predictions for normalized reporting. Experiment manifests survive failures
+   and contain config snapshots, package versions and source hashes.
+3. **Annotation coverage diagnostic (§7b of the previous roadmap).** Score
+   held-out drugs as covered, unannotated, or annotated only with tokens absent
+   from that fold's training vocabulary. Report both pair-weighted squared-error
+   aggregation and mean drug deltas; they are different estimands.
+4. **Assay concordance (§8c).** Match the same cells within each drug and report
+   Pearson/Spearman and published-AUC offsets. Low concordance is a diagnostic,
+   not a mathematical upper bound on model accuracy. Negative R² diagnoses
+   absolute prediction error; Spearman diagnoses ranking.
+5. **Transfer fitting replication (§8b).** Three seeds, fixed GDSC partition,
+   strict unambiguous InChIKey matching and default expression. Targets, Morgan
+   and a whole-drug target permutation share model settings. Fitting replication
+   is not independent external validation.
+6. **Refresh the main LDO comparison.** Five existing cold-drug folds, target +
+   PCA and Morgan + PCA against B0, with explicitly fixed settings. This checks
+   the central claim after correcting preprocessing. Other architectures and
+   splits remain historical until retrained.
 
-`python -m mcdrp.experiments.multiseed` rebuilds splits and retrains under
-several seeds, then writes mean and spread. Split construction and model
-initialization share the same seed. Canonical seed-42 artifacts are not
-overwritten. The runner does not compute p-values: pairs are not independent,
-and the units of replication are cell lines and drugs.
+## Requested steps 2–6 — implemented and executed
 
-The experiment that counts is `configs/experiments/multiseed_b0_b2_full.json`.
-Until those numbers exist, the README ranking remains provisional.
+The [implementation and commands](roadmap_2_6.md) define the protocols. The
+canonical machine-readable evidence is
+[`roadmap_2_6_summary.json`](../data/reports/roadmap_2_6_summary.json);
+prediction artifacts are under `results/roadmap_2_6`. This checkpoint supersedes
+the pending endpoint, baseline, modality, provenance and uncertainty tasks
+listed before this execution. Historical artifacts retain their original status.
 
-### 1b. Grouped cross-validation for the cold splits — done
+2. **Shared-window endpoints.** Verified raw GDSC/PRISM dose-response files,
+   explicit dose units, decreasing curves and integration over log10 µM
+   [-1.9, 0.9], without extrapolation. Retained published AUC separately and
+   fitted both endpoints on identical eligible pairs. The harmonized cohort
+   contains 9,197 training, 1,550 validation and 10,785 PRISM test pairs.
+   Exact per-curve exposure durations are unavailable; nominal assay durations
+   are documented rather than treated as a time correction. On the same 22
+   drugs/4,548 cell–drug pairs, mean drug Spearman rises from 0.343 to 0.367,
+   while absolute between-assay AUC discrepancy increases. Harmonization does
+   not remove assay shift; absolute RMSE across endpoint definitions is not a
+   fair improvement comparison.
+3. **Simple baselines and independent metric check.** Validation-selected
+   random forests with targets or Morgan plus training-fitted expression PCA,
+   all five cold-drug folds. Mean target-RF RMSE is 2.434, against 2.515 for the
+   refreshed target XGBoost and 2.662 for B0 mean effects. These are exploratory
+   test comparisons, not selection on an untouched confirmatory cohort.
+   Official DrEvalPy 1.5.1 checks 450 global metric values: 410 agree numerically
+   and 40 differ only by the explicitly recorded constant-correlation convention.
+   This checks metric interoperability and group separation, not independent
+   retraining of the whole DrEval benchmark.
+4. **Modality controls.** Three seeds of consistent whole-cell and whole-drug
+   feature permutations, restricted by partition-membership strata, for both
+   target and Morgan models on all five folds. Donor identity and unchanged
+   feature vectors are reported. Five graph-only fits ignore expression and
+   yield mean RMSE 2.726. Null results diagnose representation dependence;
+   they do not establish causal mechanisms.
+5. **Annotation and representation provenance.** Frozen HGNC snapshot,
+   separate genes/families/mechanisms/unresolved tokens, three refreshed target
+   views and explicit missingness. Gene-only RMSE is 2.655, mechanism/family
+   RMSE 2.537 and typed-view RMSE 2.491; collapsing everything to genes loses
+   predictive information. ChemBERTa embeddings have a resolved checkpoint
+   commit, source/output hashes and a successful audit; B7 was refreshed on
+   all five folds (RMSE 2.632). Full-InChIKey-only transfer sensitivity retains
+   the target advantage on 44 drugs/13,597 pairs. HGNC aliases are nomenclature
+   matches, not experimental binding evidence; pharmacological specificity
+   still needs expert curation.
+6. **Independent calibration and uncertainty.** Reserved training entities
+   without using responses; fitted models/early stopping exclude them. Executed
+   five cold-drug calibration fits and harmonized transfer calibration, reporting
+   raw and validation-affine predictions, group-max residual intervals and
+   paired drug bootstrap comparisons. PRISM raw interval coverage by complete
+   cell is only 17.9% for Morgan and 24.8% for targets, despite row coverage of
+   93.4% and 94.6%. A nominal 90% simultaneous group guarantee is unsupported
+   under this shift. Stratified diagnostics and interval widths are retained.
 
-A single group-level partition cannot support a cold-split claim.
-`cold_drug` holds out 36 of 238 drugs and validates on a different 36, and
-because drug potency dominates ln(IC50), the two subsets measure different
-things: under seed 42 the validation mean is 1.924 and the test mean is 3.463,
-a gap of 1.54 against a target standard deviation of about 2.7.
-`cold_scaffold` shows the same gap with the sign reversed. That single number
-is what tuning was selecting against, which is why tuning B4 made test RMSE
-worse on exactly those two splits and why XGBoost early-stopped at iteration 0
-on `cold_scaffold`.
+Validation: 182 tests passed; Ruff and mypy passed. Source, prediction identity,
+annotation hashes and complete five-fold coverage are checked before reporting.
 
-`python -m mcdrp.splits.grouped_cv` builds K folds over the grouping entity so
-every group is tested exactly once. Each fold is written as its own directory
-mirroring the flat split layout, `splits/cv/cold_drug/fold_0/cold_drug.csv`, so
-models consume a fold unchanged through `--split-dir`. No model or tuner knows
-that cross-validation exists.
+## Next priorities
 
-`python -m mcdrp.results.grouped_cv_report` computes metrics per fold and then
-averages them. Per fold, not pooled: each fold has its own training rows, so
-`r2_normalized` is only defined against that fold's `mean_effects` reference,
-and pooling first would silently compare every fold against one arbitrary
-reference. As with multi-seed, no p-values: folds share training data and the
-units of replication are still drugs and cell lines.
+Repeat the modality permutations and annotation-view controls on the frozen
+chemical-identity folds before transferring their historical conclusions to
+the stable comparison. Their previous drug-ID results remain exploratory.
 
-Five folds over `cold_drug` test all 238 drugs and cut the validation/test mean
-gap from 1.54 to 0.51 on average. The measurement this replaces was worse than
-it looked: B0 `mean_effects` reads 2.653 RMSE on the seed-42 partition, but
-across folds it ranges from 2.200 to 3.204, giving 2.662 +/- 0.424. Any cold
-split comparison decided by a tenth of an RMSE was reading noise.
+1. **Refresh remaining comparisons.** Rerun corrected `cold_scaffold`,
+   `cold_cell`, `cold_tissue`, B3/B4/B5 and random-pair replications in isolated
+   output directories. Keep hyperparameter selection inside each fold, including
+   PCA dimension if it is tuned. Do not reuse a tuning CSV solely because its
+   split name matches: the actual training/validation identities must match.
+2. **Biological representations and interpretation.** Hallmark/Reactome GMT
+   files work with the current unweighted mean-expression scorer. PROGENy needs
+   signed weighted perturbation footprints and a separate implementation; it
+   cannot be reproduced by passing its genes as an ordinary GMT. mRNA-target
+   products do not imply a mechanistic sensitivity law.
+3. **Additional omics and target evidence.** Mutation/CNV views should use
+   frozen releases and train-only fitting, evaluated with ablations. Curate
+   pharmacological family specificity against primary binding data before
+   mechanistic interpretation. Predicted targets need a documented source and
+   validation protocol; failure of one Ridge map does not rule out the approach.
+4. **Fresh external confirmation and calibration under shift.** Select the
+   protocol using development data, then obtain an untouched external screen.
+   Investigate transfer calibration with a separately reserved target-domain
+   sample and explicit assumptions; the current PRISM result supplies a
+   negative coverage diagnostic, not an interval guarantee.
 
-`cold_cell` is the control that shows this is specific rather than general.
-Its 717 cell lines give a validation/test target mean gap of 0.062, against
-0.51 for `cold_drug`, because cell identity explains far less of ln(IC50) than
-drug potency does. The single partition was unreliable where the grouping
-entity dominates the target, not everywhere.
+## Claim limits
 
-### 1c. What grouped CV found on unseen drugs — done
-
-No model beats predicting the cell-line mean. B6 with pathways reads 2.196
-against a 2.662 baseline on the seed-42 `cold_drug` partition; across the five
-folds it reads 2.748 and loses. Paired within folds, which is the right
-comparison because the +/-0.42 spread is fold difficulty common to every
-model, B2 XGBoost is 0.091 worse than the baseline and wins 1 fold of 5, and
-B6 with Morgan, expression and pathways is 0.086 worse and wins none.
-`cold_scaffold` repeats it against a 2.665 baseline.
-
-Two things follow, and both point away from the model and toward the drug
-representation. Expression-only B6 ties the baseline to three decimals, which
-is what a model does when the drug is unseen and the cell mean is all it has.
-And every variant carrying Morgan fingerprints is worse than the same variant
-without them, in both splits, so structural similarity is not merely failing
-to transfer, it is adding noise.
-
-This is the direct argument for item 7 below. The cohort already ships
-`putative_target` and `gdsc_pathway_name`, so testing whether target biology
-transfers where structure does not needs no new data.
-
-### 1d. What grouped CV found on unseen cells — done
-
-The same protocol on `cold_cell` and `cold_tissue` is the control, and it
-holds. Across 5 folds covering all 717 cell lines, B6 Morgan + expression PCA
-reaches 1.348 +/- 0.017 RMSE against a 1.512 +/- 0.045 `mean_effects`
-baseline and wins every fold (paired delta -0.163). B2 XGBoost is close
-behind (-0.150, 5 of 5). Expression without any drug representation collapses
-to 2.762: when the drug has been seen, potency is available as a mean, and
-cell features only help once that is in the model.
-
-`cold_tissue` repeats it against a 1.530 +/- 0.121 baseline. B6 Morgan +
-expression + pathways reaches 1.381 +/- 0.025 and wins all 5 folds. The 27
-lineages are very unequal, so the fold spread is larger than on `cold_cell`,
-but the sign of the paired delta does not flip.
-
-Together with 1c this splits the project in two. Drug structure helps when
-the drug has been seen and the cell is new. It does not help, and actively
-hurts, when the drug is new. That is the condition under which target
-profiles are the next experiment, not a better structural encoder.
-
-### 2. Persist per-row predictions — done
-
-B0–B7 write tidy prediction files (`pair_id`, `stage`, `model`, `variant`,
-`split_name`, `subset`, `y_true`, `y_pred`) under `results/predictions/`.
-`metrics_report` computes all metric families from those files, so a new metric
-no longer requires retraining.
-
-`variant` separates a model's default-hyperparameter run from its tuner's
-validation-selected run. A tuner reuses the stage and model labels of the model
-it tunes, so without it `b4.csv` and `b4_tuned.csv` grouped together and every
-B4 metric was computed over both runs at once. Files written before the column
-existed keep working: the variant is recovered from the `_tuned` filename stem.
-
-### 3. Normalized metrics for every model — done
-
-Mean-effect normalized metrics, including `r2_normalized`, are computed in
-reporting from the prediction artifacts and the split-wise `mean_effects`
-reference. They are no longer limited to B0.
-
-Reports must select the winning row whole, via
-`mcdrp.results.selection.lowest_rmse_rows`, and never with
-`sort_values("rmse").groupby(keys).first()`. pandas reduces each column
-independently and skips NaN, so the second spelling took the winner's RMSE but
-filled each hyperparameter column from whichever other stage first had a value
-there. Stages report disjoint hyperparameter columns, so that happened on
-essentially every "best model" row.
-
-### 3b. Guard the expression pipeline against near-constant genes — done
-
-`fit_expression_pipeline` drops genes whose training standard deviation falls
-below `MIN_GENE_STD` and clips scaled values to `MAX_ABS_ZSCORE` on both the
-fit and transform paths. Without this, `StandardScaler` divides by almost zero:
-`SMIM10L3 (122526779)` has standard deviation 6.3e-08 across the 501 training
-cell lines of the seed-13 `cold_cell` split, which gave the held-out line
-ACH-000470 a z-score of 3.05e7, a PCA component of 6.2e5, and a B1 ridge
-prediction of 28269 against a target range of roughly [-9, 12]. Tree models
-hide the problem because they never extrapolate; linear models and MLPs do not.
-
-The guard is a safety net, not a change of representation. On the seed-42
-splits it drops 17 of 19215 genes and moves explained variance from 0.8045 to
-0.8047, leaving the canonical artifacts comparable.
-
-### 4. Close the `cold_tissue` gap — done
-
-`cold_tissue` is in `DEFAULT_SPLITS` and in the full B4–B7 experiment and
-tuning configs, and the trained-model numbers exist across B0–B7.
-
-One caveat belongs with its grouped CV. The 27 lineages are very unequal, from
-27931 pairs for Lung to 177 for Fibroblast, so folds balanced by group count
-range from 21654 to 44342 test rows. Every tissue is still tested exactly
-once, which is what makes pooling legitimate, but the fold mean weights a
-small fold as heavily as a large one. `n_rows_total` is recorded in the
-aggregate for anyone who wants a row-weighted figure instead.
-
-## Tier 2 — strengthens the scientific contribution
-
-### 5. Real pathway resources
-
-The built-in pathway panel validates the pipeline but is not a serious
-biological resource. Move to MSigDB Hallmark, Reactome, or PROGENy via the
-existing `--gene-sets` option. Pathway scaling is already fit on training cell
-lines only per split.
-
-### 6. Randomization controls for modalities
-
-Stronger than an ablation: keep the architecture fixed and permute one view.
-Shuffle the drug features across drugs, then the cell features across cell
-lines, and measure the damage. If permuting a modality costs nothing, that
-modality is decorative.
-
-The literature's expectation is specific and worth testing directly: expression
-carries nearly all the signal for `random_pair` and `cold_cell`, while drug
-representation only matters for `cold_drug` and `cold_scaffold`. B6 and B7 can
-answer this on this cohort.
-
-The drug-target half of that control is measured on `cold_drug`. Permuting
-whole-drug GDSC target vectors, keeping rows of the same drug identical,
-turns the −0.140 gain of targets + expression PCA into a +0.129 loss (0 of 5
-folds). `cold_scaffold` repeats it: the −0.097 gain becomes a +0.181 loss
-(0 of 5). The identity of the annotations is what transferred. Cell-view
-shuffles and the same null on `random_pair` / `cold_cell` are still open.
-
-### 7. Drug target profiles as a modality — done
-
-The first version is implemented and measured. `mcdrp.features.targets` builds
-a multi-hot encoding of `putative_target` with the vocabulary fit on training
-drugs only, and B6 exposes `targets`, `targets_expression_pca`,
-`targets_pathways`, and `targets_expression_pca_pathways`. 18 of 238 drugs
-have no annotation and become the zero vector; held-out targets that never
-appear on a training drug are dropped rather than leaked into the feature
-space.
-
-On the five `cold_drug` folds, B6 targets + expression PCA reaches 2.522 RMSE
-against the 2.662 +/- 0.424 `mean_effects` baseline and wins every fold
-(paired delta -0.140). The same model with Morgan instead of targets loses
-every fold (+0.092). `cold_scaffold` repeats the sign: targets + expression
-win 4 of 5 (-0.097), Morgan + expression win 1 of 5 (+0.048). Shuffle (+0.181),
-predicted targets + PCA (+0.148), and the aligned product (+0.167) lose every
-`cold_scaffold` fold.
-
-The controls on those same folds say what that gain is not. Shuffling target
-identity loses every fold (+0.129). A leakage-safe Ridge from Morgan onto the
-GDSC vocabulary loses every fold (+0.174 with expression PCA). An aligned
-product \(t_{\mathrm{drug}} \odot e_{\mathrm{cell}}\) on matched genes loses
-every fold (+0.170). B5's graph encoder (−0.120, 4 of 5) and B7's pretrained
-embeddings (−0.079, 4 of 5) beat Morgan and still lose to the annotations.
-
-That is the result the literature predicted and this cohort now owns:
-annotated targets transfer to unseen drugs; structural fingerprints, structure-
-predicted profiles, and a richer encoder do not match them. Cross-study
-validation is the next experiment that would stress the claim, not BindingDB
-or another graph.
-
-### 8. Cross-study validation
-
-Train on GDSC2, test on CTRP, CCLE, or PRISM after harmonizing the response
-target. The caveat from the literature is important: technical differences
-between screens are large, so treat this as a transfer experiment, not as extra
-training data.
-
-## Tier 3 — polish and depth
-
-### 9. Uncertainty
-
-Cold-start predictions should come with a confidence signal. Deep ensembles,
-Monte Carlo dropout, or conformal intervals — conformal being the cheapest
-defensible option since it needs only a calibration split.
-
-### 10. Multi-omics cell features
-
-Mutation status for driver genes, copy-number summaries, and methylation or
-proteomics if a clean matched release exists. Implement as feature blocks with
-train-only fitting and evaluate through the same protocol.
-
-### 11. Interpretation
-
-Pathway-level importance, scaffold-level error analysis, and two or three case
-studies on known targeted therapies. Treat attributions cautiously: leakage is
-known to inflate apparent biomarker counts several-fold without improving
-recovery of known drug targets, so any biomarker claim needs a stability check
-such as bootstrap selection frequency.
-
-### 12. External benchmark cross-check
-
-Run `drevalpy` on the same cohort as an independent implementation of the
-evaluation protocol. Agreement would be strong evidence the numbers here are
-sound; disagreement would be informative.
-
-## Explicit non-goals
-
-- Clinical or patient-level claims. This is preclinical cell-line modelling.
-- Chasing the best `random_pair` RMSE. It is an imputation setting.
-- Adding architectures without an ablation that isolates their contribution.
+No clinical, causal or universal architecture claims. Five overlapping folds
+are not five independent studies. The held-out PRISM screen has already been
+examined; further adaptations to its labels would require a fresh external
+cohort for confirmation. A useful negative result and a strong simple baseline
+are valid outcomes.
